@@ -25,15 +25,6 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-// Replace these variables with your AWS RDS MySQL database connection details
-var (
-	dbUser     = "your_db_username"
-	dbPassword = "your_db_password"
-	dbHost     = "your_db_host" // e.g., "your-db-instance.us-west-2.rds.amazonaws.com"
-	dbPort     = "3306"
-	dbName     = "your_db_name"
-)
-
 type RdsClient struct {
 	db *sql.DB
 }

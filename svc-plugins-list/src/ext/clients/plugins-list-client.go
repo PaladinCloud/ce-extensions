@@ -66,5 +66,4 @@ func (c *PluginsListClient) GetPluginsList(ctx context.Context) (*models.Plugins
 	c.cacheClient.SetPluginsCache(plugins)
 
 	return plugins, nil
-
 }
