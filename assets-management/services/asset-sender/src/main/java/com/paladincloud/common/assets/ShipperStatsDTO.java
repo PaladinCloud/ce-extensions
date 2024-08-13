@@ -7,7 +7,7 @@ import java.time.ZonedDateTime;
 import java.util.Date;
 
 public record ShipperStatsDTO(
-    @JsonProperty("datasouree")
+    @JsonProperty("datasource")
     String dataSource,
     @JsonProperty("docType")
     String docType,
