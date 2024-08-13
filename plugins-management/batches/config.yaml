@@ -1,0 +1,13 @@
+---
+# TODO: Incomplete Template - Need to implement installer
+- serviceName: svc-plugins-batch-example
+  serviceConfig:
+    environmentalVariables:
+      key1: non-sensitive-value
+    batchConfig:
+      cpu: small/medium/large
+      memory: small/medium/large
+      permissions:
+        requireS3: false
+        requireDynamoDB: false
+        requireSecretsManager: false

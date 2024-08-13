@@ -20,25 +20,25 @@ USE
 
 ########## start plugins seed data ##########
 ##### start cloud plugins #####
-INSERT INTO `plugins` (source, name, type, description, iconURL, isLegacy, gapPolicyAvailable, disablePolicyActions, isInbound, isComposite, isCloud, created_by, created_date)
+INSERT IGNORE INTO `plugins` (source, name, type, description, iconURL, isLegacy, gapPolicyAvailable, disablePolicyActions, isInbound, isComposite, isCloud, created_by, created_date)
 VALUES ('aws', 'AWS', 'Cloud Provider', '', '/assets/icons/aws-color.svg', _binary '\0', _binary '\0', _binary '\0', _binary '', _binary '\0', _binary '', 'system', CURDATE());
-INSERT INTO `plugins` (source, name, type, description, iconURL, isLegacy, gapPolicyAvailable, disablePolicyActions, isInbound, isComposite, isCloud, created_by, created_date)
+INSERT IGNORE INTO `plugins` (source, name, type, description, iconURL, isLegacy, gapPolicyAvailable, disablePolicyActions, isInbound, isComposite, isCloud, created_by, created_date)
 VALUES ('azure', 'Azure', 'Cloud Provider', '', '/assets/icons/azure-color.svg', _binary '\0', _binary '\0', _binary '\0', _binary '', _binary '\0', _binary '', 'system', CURDATE());
-INSERT INTO `plugins` (source, name, type, description, iconURL, isLegacy, gapPolicyAvailable, disablePolicyActions, isInbound, isComposite, isCloud, created_by, created_date)
+INSERT IGNORE INTO `plugins` (source, name, type, description, iconURL, isLegacy, gapPolicyAvailable, disablePolicyActions, isInbound, isComposite, isCloud, created_by, created_date)
 VALUES ('gcp', 'GCP', 'Cloud Provider', '', '/assets/icons/gcp-color.svg', _binary '', _binary '\0', _binary '\0', _binary '', _binary '\0', _binary '', 'system', CURDATE());
 ##### end cloud plugins #####
 
-INSERT INTO `plugins` (source, name, type, description, iconURL, isLegacy, gapPolicyAvailable, disablePolicyActions, isInbound, isComposite, isCloud, created_by, created_date)
+INSERT IGNORE INTO `plugins` (source, name, type, description, iconURL, isLegacy, gapPolicyAvailable, disablePolicyActions, isInbound, isComposite, isCloud, created_by, created_date)
 VALUES ('qualys', 'Qualys', 'Vulnerability Management', '', '/assets/icons/qualys-color.svg', _binary '', _binary '\0', _binary '\0', _binary '', _binary '\0', _binary '\0', 'system', CURDATE());
-INSERT INTO `plugins` (source, name, type, description, iconURL, isLegacy, gapPolicyAvailable, disablePolicyActions, isInbound, isComposite, isCloud, created_by, created_date)
+INSERT IGNORE INTO `plugins` (source, name, type, description, iconURL, isLegacy, gapPolicyAvailable, disablePolicyActions, isInbound, isComposite, isCloud, created_by, created_date)
 VALUES ('tenable', 'Tenable', 'Vulnerability Management', '', '/assets/icons/tenable-color.svg', _binary '\0', _binary '', _binary '\0', _binary '', _binary '\0', _binary '\0', 'system', CURDATE());
 ########## end of plugins seed data ##########
 
 ########## start plugin_policy_definitions seed data ##########
-INSERT INTO `plugin_policy_definitions` (source, target_name, cwe_enabled, cve_enabled, mitre_enabled, asset_lookup_key, source_asset_key, created_by, created_date)
+INSERT IGNORE INTO `plugin_policy_definitions` (source, target_name, cwe_enabled, cve_enabled, mitre_enabled, asset_lookup_key, source_asset_key, created_by, created_date)
 VALUES ('tenable', 'ec2', _binary '\0', _binary '', _binary '\0', 'instanceId', 'instanceid', 'system', CURDATE());
-INSERT INTO `plugin_policy_definitions` (source, target_name, cwe_enabled, cve_enabled, mitre_enabled, asset_lookup_key, source_asset_key, created_by, created_date)
+INSERT IGNORE INTO `plugin_policy_definitions` (source, target_name, cwe_enabled, cve_enabled, mitre_enabled, asset_lookup_key, source_asset_key, created_by, created_date)
 VALUES ('tenable', 'virtualmachine', _binary '\0', _binary '', _binary '\0', 'azure_vm_id', 'vmId', 'system', CURDATE());
-INSERT INTO `plugin_policy_definitions` (source, target_name, cwe_enabled, cve_enabled, mitre_enabled, asset_lookup_key, source_asset_key, created_by, created_date)
+INSERT IGNORE INTO `plugin_policy_definitions` (source, target_name, cwe_enabled, cve_enabled, mitre_enabled, asset_lookup_key, source_asset_key, created_by, created_date)
 VALUES ('tenable', 'vminstance', _binary '\0', _binary '', _binary '\0', 'instanceId', 'id', 'system', CURDATE());
 ########## end of plugin_policy_definitions seed data ##########
