@@ -17,15 +17,15 @@
 package main
 
 import (
-	"cache-layer/src/ext/clients"
-	"cache-layer/src/ext/extension"
-	"cache-layer/src/ext/server"
 	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"os/signal"
 	"path/filepath"
+	"svc-plugins-list-layer/clients"
+	"svc-plugins-list-layer/extension"
+	"svc-plugins-list-layer/server"
 	"syscall"
 )
 

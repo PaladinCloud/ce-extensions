@@ -17,9 +17,9 @@
 package clients
 
 import (
-	"cache-layer/src/ext/models"
 	"context"
 	"os"
+	"svc-plugins-list-layer/models"
 )
 
 type Configuration struct {

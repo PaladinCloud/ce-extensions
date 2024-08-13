@@ -17,7 +17,7 @@
 package clients
 
 import (
-	"cache-layer/src/ext/models"
+	"svc-plugins-list-layer/models"
 	"testing"
 )
 
@@ -31,6 +31,8 @@ func TestConfigurationDetails(t *testing.T) {
 			DbUsername: "DB_USERNAME",
 			DbPassword: "DB_PASSWORD",
 			DbHost:     "DB_HOST",
+			DbPort:     "DB_PORT",
+			DbName:     "DB_NAME",
 		},
 	}
 

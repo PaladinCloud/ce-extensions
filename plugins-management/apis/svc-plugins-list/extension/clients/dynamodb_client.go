@@ -17,7 +17,6 @@
 package clients
 
 import (
-	"cache-layer/src/ext/models"
 	"context"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
@@ -25,6 +24,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"log"
+	"svc-plugins-list-layer/models"
 )
 
 type DynamodbClient struct {

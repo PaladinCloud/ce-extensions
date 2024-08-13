@@ -21,4 +21,4 @@
         requireDynamoDB: true
         requireSecretsManager: true
       layers:
-        - name: svc-plugins-list-layer
+        - name: svc-plugins-list-extension

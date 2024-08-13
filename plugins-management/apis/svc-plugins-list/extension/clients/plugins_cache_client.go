@@ -17,7 +17,7 @@
 package clients
 
 import (
-	"cache-layer/src/ext/models"
+	"svc-plugins-list-layer/models"
 	"sync"
 )
 

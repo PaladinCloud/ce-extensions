@@ -17,8 +17,8 @@
 package clients
 
 import (
-	"cache-layer/src/ext/models"
 	"context"
+	"svc-plugins-list-layer/models"
 )
 
 type PluginsListClient struct {

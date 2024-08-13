@@ -17,12 +17,12 @@
 package clients
 
 import (
-	"cache-layer/src/ext/models"
 	"context"
 	"database/sql"
 	"fmt"
 	"github.com/georgysavva/scany/v2/sqlscan"
 	_ "github.com/go-sql-driver/mysql"
+	"svc-plugins-list-layer/models"
 )
 
 type RdsClient struct {

@@ -17,7 +17,6 @@
 package server
 
 import (
-	"cache-layer/src/ext/clients"
 	"encoding/json"
 	"fmt"
 	"github.com/go-chi/chi/v5"
@@ -25,6 +24,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"svc-plugins-list-layer/clients"
 )
 
 type HttpServer struct {
