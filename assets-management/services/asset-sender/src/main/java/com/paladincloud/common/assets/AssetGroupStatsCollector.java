@@ -242,7 +242,7 @@ public class AssetGroupStatsCollector {
                 doc.put("@id", id);
                 doc.put(AssetDocumentFields.DOC_TYPE, "count_asset");
                 doc.put("typeCount", assetCounts.get("assettype"));
-                doc.put("totalAssets", assetCounts.get("totalassets"));
+                doc.put("totalassets", assetCounts.get("totalassets"));
 
                 batch.add(BatchItem.documentEntry(ASSET_GROUP_STATS_INDEX, id, doc));
             }
