@@ -96,12 +96,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: asset-artifact
-          path: assets-management/dist/asset-sender.jar
+          path: assets-management/services/asset-sender/target/asset-sender-1.0-SNAPSHOT.jar
 
   PushBuildDev:
     name: Push JAR to Dev
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/heads/main') && github.event_name == 'push'
+    # if: startsWith(github.ref, 'refs/heads/main') && github.event_name == 'push'
     environment: 'SaaSDEV'
     needs:
       - AssetBuild
@@ -114,15 +114,15 @@ jobs:
         with:
           role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_DEV }}
           aws-region: ${{ secrets.AWS_REGION }}
-          
+
       # Download Api artifact
       - name: Download API artifact
         uses: actions/download-artifact@v4
         with:
           name: asset-artifact
-          path: assets-management/dist/asset-sender.jar
+          path: asset-sender-1.0-SNAPSHOT.jar
 
       # push api artifact to s3
       - name: copy API jars to S3 
         run: |
-          aws s3 cp --recursive assets-management/dist/asset-sender.jar s3://${{ secrets.AWS_BUCKET_DEV }}/vlatest/dev/lambda
+          aws s3 cp --recursive asset-sender-1.0-SNAPSHOT.jar s3://${{ secrets.AWS_BUCKET_DEV }}/vlatest/dev/lambda
