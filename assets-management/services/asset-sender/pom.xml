@@ -235,6 +235,9 @@
         <version>${maven-surefire.version}</version>
         <configuration>
           <argLine>--enable-preview -XX:+EnableDynamicAgentLoading</argLine>
+          <target>
+								<copy file="target/asset-sender.jar" tofile="../../dist/asset-sender.jar" />
+					</target>
         </configuration>
       </plugin>
 

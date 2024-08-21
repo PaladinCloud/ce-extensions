@@ -4,6 +4,7 @@ on:
     branches:
       - main
       - release-v*.*.*
+
   pull_request:
     branches:
       - main
@@ -86,9 +87,42 @@ jobs:
           java-distribution: temurin
           maven-version: 3.9.9
     # This step is for building the Asset jar
-      - name: Building asset jar
+      - name: Building asset shipper jar
         run: |
-          cd assets-management
+          cd assets-management/services/asset-sender
           mvn clean install -DskipTests=true -Dmaven.javadoc.skip=true
-          cd ..
-          tree
+
+      - name: Upload Asset Shipper artifact 
+        uses: actions/upload-artifact@v4
+        with:
+          name: asset-artifact
+          path: assets-management/dist/asset-sender.jar
+
+  PushBuildDev:
+    name: Push JAR to Dev
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/heads/main') && github.event_name == 'push'
+    environment: 'SaaSDEV'
+    needs:
+      - AssetBuild
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Configure AWS credentials for Dev account
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_DEV }}
+          aws-region: ${{ secrets.AWS_REGION }}
+          
+      # Download Api artifact
+      - name: Download API artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: asset-artifact
+          path: assets-management/dist/asset-sender.jar
+
+      # push api artifact to s3
+      - name: copy API jars to S3 
+        run: |
+          aws s3 cp --recursive assets-management/dist/asset-sender.jar s3://${{ secrets.AWS_BUCKET_DEV }}/vlatest/dev/lambda
