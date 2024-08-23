@@ -36,6 +36,8 @@ var (
 	lambdaRuntimeAPI = os.Getenv("AWS_LAMBDA_RUNTIME_API")
 	extensionClient  = extension.NewClient(lambdaRuntimeAPI)
 	printPrefix      = fmt.Sprintf("[%s]", extensionName)
+
+	port = "4567"
 )
 
 func init() {
@@ -69,8 +71,8 @@ func main() {
 
 	println(printPrefix, "Client Registered:", prettyPrint(res))
 
-	println("hello world! Starting Local HTTP Server")
-	server.Start("4567", httpConfig)
+	println("Starting Local HTTP Server")
+	server.Start(port, httpConfig)
 
 	// Will block until shutdown event is received or cancelled via the context.
 	processEvents(ctx)
