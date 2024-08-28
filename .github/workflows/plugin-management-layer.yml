@@ -1,0 +1,120 @@
+name: Build, Package, and Deploy Lambda Layer
+
+on:
+  push:
+    branches:
+      - main
+      - chore/workflow-_setup
+  pull_request:
+    branches:
+      - main
+      - release-v*.*.*
+
+permissions:
+  id-token: write
+  contents: read  
+  pull-requests: read
+  issues: write
+
+jobs:
+  build-package:
+    name: Build and Package Lambda Layer
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+
+    - name: Execute Makefile
+      run: |
+        cd plugins-management/apis/svc-plugins-list/extension
+        make build package
+
+    - name: Upload Lambda Layer ZIP
+      uses: actions/upload-artifact@v3
+      with:
+        name: lambda-layer-zip
+        path: plugins-management/apis/svc-plugins-list/extension/bin/extension.zip
+
+  dev-lambda-layer:
+    name: Deploy Lambda Layer to Dev
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/heads/chore/workflow-_setup') && github.event_name == 'push'
+    environment: 'SaaSDEV'
+    needs:
+      - build-package  # Ensure this job runs after the build-package job
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Download Lambda Layer ZIP
+      uses: actions/download-artifact@v3
+      with:
+        name: lambda-layer-zip
+
+    - name: Configure AWS credentials for Dev account
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_DEV }}
+        aws-region: ${{ secrets.AWS_REGION }}
+
+    - name: Upload lambda function code to s3 bucket 
+      run: |
+        ls
+        pwd
+        aws s3 cp --recursive plugins-management/apis/svc-plugins-list/service/ s3://${{ secrets.AWS_BUCKET_DEV }}/vlatest/dev/lambda
+
+    - name: Deploy Lambda Layer
+      run: |
+        aws lambda publish-layer-version \
+          --layer-name 'dev-svc-plugins-list-layer' \
+          --region ${{ secrets.AWS_REGION }} \
+          --zip-file 'fileb://extension.zip'
+
+  qa-lambda-layer:
+    name: Deploy Lambda Layer to QA
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release-v') 
+    environment: 'SaaSQA'
+    needs:
+      - build-package  # Ensure this job runs after the build-package job
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Manual approval
+      uses: trstringer/manual-approval@v1
+      timeout-minutes: 3
+      with:
+        secret: ${{ github.TOKEN }}
+        approvers: rnithinpaladin,ershad-paladin,plyubich,arunpaladin
+        minimum-approvals: 1
+        issue-title: "API jars to QA"
+        issue-body: "Please approve or deny the deployment for QA"
+        exclude-workflow-initiator-as-approver: false
+        additional-approved-words: ''
+        additional-denied-words: ''
+     
+    - name: Download Lambda Layer ZIP
+      uses: actions/download-artifact@v3
+      with:
+        name: lambda-layer-zip
+
+    - name: Configure AWS credentials for QA account
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_QA }}
+        aws-region: ${{ secrets.AWS_REGION }}
+
+    - name: Deploy Lambda Layer
+      run: |
+        aws lambda publish-layer-version \
+          --layer-name 'svc-qa-plugins-list-layer' \
+          --region ${{ secrets.AWS_REGION }} \
+          --zip-file 'fileb://extension.zip'
