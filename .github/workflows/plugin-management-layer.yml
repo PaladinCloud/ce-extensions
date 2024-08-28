@@ -1,0 +1,41 @@
+name: Build, Package, and Deploy Lambda Layer
+
+on:
+  push:
+    branches:
+      - chore/workflow-_setup
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-package-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.19'
+
+    - name: Execute Makefile
+      run: |
+        cd plugins-management/apis/svc-plugins-list/extension
+        make package
+
+    - name: Configure AWS credentials for Dev account
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_DEV }}
+        aws-region: ${{ secrets.AWS_REGION }}
+
+    - name: Deploy Lambda Layer
+      run: |
+        cd plugins-management/apis/svc-plugins-list/extension/bin
+        aws lambda publish-layer-version \
+          --layer-name 'svc-dev-plugins-list-layer' \
+          --region ${{ secrets.AWS_REGION }} \
+          --zip-file 'fileb://extension.zip'
