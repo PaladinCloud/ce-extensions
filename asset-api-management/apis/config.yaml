@@ -1,0 +1,23 @@
+---
+- serviceName: svc-asset-details
+  apiConfig:
+    method: GET
+    path: "/api/v2/asset"
+    requireAuth: true
+  serviceConfig:
+    environmentalVariables:
+      REGION: {REGION}
+      TENANT_ID: {TENANT_ID}
+      ELASTICSEARCH_URL: {ELASTICSEARCH_URL}
+    lambdaConfig:
+      handler: lambda_function.lambda_handler
+      runtime: python
+      runtimeVersion: latest
+      timeout: 10
+      isArm64: true
+      permissions:
+        requireS3: false
+        requireDynamoDB: true
+        requireSecretsManager: true
+      layers:
+        - name: svc-asset-details-extension
