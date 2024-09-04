@@ -45,7 +45,7 @@ func Start(port string, server *HttpServer) {
 func startHTTPServer(port string, httpConfig *HttpServer) {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
-	r.Get("/{ag}/{targetType}/{assetId}", handleValue(httpConfig))
+	r.Get("/{ag}/{targetType}/{assetId}/details", handleValue(httpConfig))
 
 	err := http.ListenAndServe(fmt.Sprintf(":%s", port), r)
 	if err != nil {

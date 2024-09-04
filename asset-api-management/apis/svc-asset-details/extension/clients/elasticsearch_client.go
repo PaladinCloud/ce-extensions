@@ -19,8 +19,15 @@ func FetchAssetDetails(ctx context.Context, ag string, targetType string, assetI
 
 	var buffer bytes.Buffer
 	json.NewEncoder(&buffer).Encode(esRequest)
+
 	client, _ := elasticsearch.NewDefaultClient()
-	response, _ := client.Search(client.Search.WithIndex(ag), client.Search.WithBody(&buffer))
+	response, err := client.Search(client.Search.WithIndex(ag), client.Search.WithBody(&buffer))
+
+	if err != nil {
+		return nil, fmt.Errorf("error getting response from ES for assetId: %s. err: %s", assetId, err)
+	}
+	defer response.Body.Close()
+
 	if response.StatusCode != 200 {
 		return nil, fmt.Errorf("error while fetching asset detials from ES for assetId: %s", assetId)
 	}
