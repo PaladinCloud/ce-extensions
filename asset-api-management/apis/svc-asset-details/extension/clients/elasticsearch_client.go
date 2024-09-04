@@ -9,7 +9,14 @@ import (
 	elasticsearch "github.com/elastic/go-elasticsearch/v7"
 )
 
-func FetchAssetDetails(ctx context.Context, ag string, targetType string, assetId string, size int) (*map[string]interface{}, error) {
+type ElasticSearchClient struct {
+}
+
+func NewElasticSearchClient() *ElasticSearchClient {
+	return &ElasticSearchClient{}
+}
+
+func (c *ElasticSearchClient) FetchAssetDetails(ctx context.Context, ag string, targetType string, assetId string, size int) (*map[string]interface{}, error) {
 
 	query := buildQuery(targetType, assetId)
 	esRequest := map[string]interface{}{

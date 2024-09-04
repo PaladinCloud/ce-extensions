@@ -8,7 +8,11 @@ import (
 )
 
 type AssetDetailsClient struct {
-	rdsClient *RdsClient
+	elasticSearchClient *ElasticSearchClient
+}
+
+func NewAssetDetailsClient() *AssetDetailsClient {
+	return &AssetDetailsClient{elasticSearchClient: NewElasticSearchClient()}
 }
 
 const (
@@ -16,16 +20,12 @@ const (
 	docTypeKeyword = "docType.keyword"
 )
 
-func NewAssetDetailsClient(configuration *Configuration) *AssetDetailsClient {
-	return &AssetDetailsClient{rdsClient: NewRdsClient(configuration)}
-}
-
 func (c *AssetDetailsClient) GetAssetDetails(ctx context.Context, ag string, targetType string, assetId string) (*models.AssetDetails, error) {
 	if len(strings.TrimSpace(assetId)) == 0 {
 		return nil, fmt.Errorf("assetId must be present")
 	}
 
-	result, err := FetchAssetDetails(ctx, ag, targetType, assetId, 1)
+	result, err := c.elasticSearchClient.FetchAssetDetails(ctx, ag, targetType, assetId, 1)
 
 	if err != nil {
 		return nil, err
