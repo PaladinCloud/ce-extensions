@@ -28,17 +28,22 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 )
 
+type HttpServer struct {
+	Configuration      *clients.Configuration
+	AssetDetailsClient *clients.AssetDetailsClient
+}
+
 // Start begins running the sidecar
-func Start(port string) {
+func Start(port string, server *HttpServer) {
 	println("starting the server in background")
-	go startHTTPServer(port)
+	go startHTTPServer(port, server)
 }
 
 // Method that responds back with the cached values
-func startHTTPServer(port string) {
+func startHTTPServer(port string, httpConfig *HttpServer) {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
-	r.Get("/{ag}/{targetType}/{assetId}/details", handleValue())
+	r.Get("/{ag}/{targetType}/{assetId}/details", handleValue(httpConfig))
 
 	err := http.ListenAndServe(fmt.Sprintf(":%s", port), r)
 	if err != nil {
@@ -49,12 +54,12 @@ func startHTTPServer(port string) {
 	log.Printf("Server started on %s", port)
 }
 
-func handleValue() http.HandlerFunc {
+func handleValue(config *HttpServer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ag := chi.URLParam(r, "ag")
 		targetType := chi.URLParam(r, "targetType")
 		assetId := chi.URLParam(r, "assetId")
-		assetDetails, err := clients.NewAssetDetailsClient().GetAssetDetails(r.Context(), ag, targetType, assetId)
+		assetDetails, err := config.AssetDetailsClient.GetAssetDetails(r.Context(), ag, targetType, assetId)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return

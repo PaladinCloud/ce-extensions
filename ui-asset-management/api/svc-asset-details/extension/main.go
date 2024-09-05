@@ -23,6 +23,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"svc-asset-details-layer/clients"
 	"svc-asset-details-layer/extension"
 	"svc-asset-details-layer/server"
 
@@ -30,6 +31,7 @@ import (
 )
 
 var (
+	httpConfig       *server.HttpServer
 	extensionName    = filepath.Base(os.Args[0]) // extension name has to match the filename
 	lambdaRuntimeAPI = os.Getenv("AWS_LAMBDA_RUNTIME_API")
 	extensionClient  = extension.NewClient(lambdaRuntimeAPI)
@@ -42,6 +44,12 @@ func init() {
 
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
+	configuration := clients.LoadConfigurationDetails(ctx)
+
+	httpConfig = &server.HttpServer{
+		Configuration:      configuration,
+		AssetDetailsClient: clients.NewAssetDetailsClient(configuration),
+	}
 
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGTERM, syscall.SIGINT)
@@ -62,7 +70,7 @@ func main() {
 	println(printPrefix, "Client Registered:", prettyPrint(res))
 
 	println("hello world! Starting Local HTTP Server")
-	server.Start("4567")
+	server.Start("4567", httpConfig)
 
 	// Will block until shutdown event is received or cancelled via the context.
 	processEvents(ctx)
