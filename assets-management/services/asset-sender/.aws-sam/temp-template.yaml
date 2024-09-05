@@ -5,7 +5,7 @@ Resources:
       Timeout: 300
       MemorySize: 1152
       Handler: com.paladincloud.assetsender.AssetDoneHandler::handleRequest
-      CodeUri: /Users/kevintavog/Workspace/paladin/CE/assets-subsystem/services/asset-sender
+      CodeUri: /Users/kevintavog/Workspace/paladin/ce-extensions/assets-management/services/asset-sender
       Runtime: java21
       Architectures:
         - x86_64

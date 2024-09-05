@@ -10,6 +10,8 @@ public interface AssetDocumentFields {
     String NAME = "name";
     String ASSET_ID_DISPLAY_NAME = "assetIdDisplayName";
     String TARGET_TYPE_DISPLAY_NAME = "targettypedisplayname";
+    String SOURCE_DISPLAY_NAME = "sourceDisplayName";
+    String RAW_DATA = "rawData";
 
     String DOC_TYPE = "docType";
 

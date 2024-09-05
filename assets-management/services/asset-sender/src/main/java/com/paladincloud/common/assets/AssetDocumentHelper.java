@@ -79,10 +79,12 @@ public class AssetDocumentHelper {
             entry(AssetDocumentFields.DISCOVERY_DATE,
                 v -> dto.setDiscoveryDate(TimeHelper.parseDiscoveryDate(v.toString()))),
             entry(AssetDocumentFields.NAME, v -> dto.setName(v.toString())),
+            entry(AssetDocumentFields.SOURCE_DISPLAY_NAME, v -> dto.setSourceDisplayName(v.toString())),
+            entry(AssetDocumentFields.RAW_DATA, v -> dto.setRawData(v.toString())),
             entry(AssetDocumentFields.REPORTING_SOURCE, v -> dto.setReportingSource(v.toString())));
 
         fieldSetterMap.forEach((key, value) -> {
-            var fieldValue = getAndRemove(key, data);
+            var fieldValue = getOrNull(key, data);
             if (fieldValue != null) {
                 value.set(fieldValue);
             }
@@ -93,16 +95,13 @@ public class AssetDocumentHelper {
         dto.setEntity(true);
         dto.setReportingSource(dataSource);
 
-        // Populate the dto with all existing mapper values. Some of these may get overwritten
-        data.forEach(dto::addAdditionalProperty);
-
         // Set common asset properties
         dto.setEntityType(type);
         dto.setTargetTypeDisplayName(displayName);
         dto.setDocType(type);
 
         if (dto.isOwner()) {
-            dto.addAdditionalProperty(STR."\{type}\{AssetDocumentFields.RELATIONS}", type);
+            dto.addRelation(STR."\{type}\{AssetDocumentFields.RELATIONS}", type);
         }
         dto.setResourceName(data.getOrDefault(resourceNameField, idValue).toString());
         dto.setResourceId(data.getOrDefault(AssetDocumentFields.RESOURCE_ID, idValue).toString());
@@ -125,7 +124,7 @@ public class AssetDocumentHelper {
             .forEach(tag -> {
                 var key = tag.get("key").toString();
                 if (StringUtils.isNotBlank(key)) {
-                    dto.addAdditionalProperty(STR."tags.\{key}", tag.get("value"));
+                    dto.addType(STR."tags.\{key}", tag.get("value"));
                 }
             });
 
@@ -157,6 +156,9 @@ public class AssetDocumentHelper {
      */
     public void updateFrom(Map<String, Object> data, AssetDTO dto) {
         var idValue = data.getOrDefault(idField, "").toString();
+
+        dto.setRawData(data.getOrDefault(AssetDocumentFields.RAW_DATA, "").toString());
+        dto.setSourceDisplayName(data.getOrDefault(AssetDocumentFields.SOURCE_DISPLAY_NAME, "").toString());
 
         // One time only, existing assets in ElasticSearch must be updated to include new fields
         if (StringUtils.isEmpty(dto.getCspmSource())) {
@@ -208,11 +210,9 @@ public class AssetDocumentHelper {
         dto.setLatest(false);
     }
 
-    private Object getAndRemove(String key, Map<String, Object> data) {
+    private Object getOrNull(String key, Map<String, Object> data) {
         if (data.containsKey(key)) {
-            var value = data.get(key);
-            data.remove(key);
-            return value;
+            return data.get(key);
         }
         return null;
     }
@@ -256,7 +256,7 @@ public class AssetDocumentHelper {
                     var firstChar = key.substring(0, 1).toUpperCase();
                     var remainder = key.substring(1);
                     var upperCaseStart = STR."\{firstChar}\{remainder}";
-                    dto.addAdditionalProperty(STR."\{AssetDocumentFields.asTag(upperCaseStart)}",
+                    dto.addType(STR."\{AssetDocumentFields.asTag(upperCaseStart)}",
                         value);
                 });
             }

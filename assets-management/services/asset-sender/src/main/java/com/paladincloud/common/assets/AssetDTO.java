@@ -40,12 +40,12 @@ public class AssetDTO {
 
     @Setter
     @Getter
-    @JsonProperty("_cspm_source")
+    @JsonProperty(AssetDocumentFields.CSPM_SOURCE)
     private String cspmSource;          // Usually PaladinCloud, but can be Wiz and others
 
     @Setter
     @Getter
-    @JsonProperty("_reporting_source")
+    @JsonProperty(AssetDocumentFields.REPORTING_SOURCE)
     private String reportingSource;     // Qualys, Tenable, gcp, aws, azure
 
     @Setter
@@ -95,6 +95,16 @@ public class AssetDTO {
 
     @Setter
     @Getter
+    @JsonProperty(AssetDocumentFields.SOURCE_DISPLAY_NAME)
+    private String sourceDisplayName;
+
+    @Setter
+    @Getter
+    @JsonProperty(AssetDocumentFields.RAW_DATA)
+    private String rawData;
+
+    @Setter
+    @Getter
     @JsonProperty(AssetDocumentFields.ASSET_ID_DISPLAY_NAME)
     private String assetIdDisplayName;
 
@@ -133,14 +143,27 @@ public class AssetDTO {
     @JsonProperty(AssetDocumentFields.FIRST_DISCOVERED)
     private ZonedDateTime firstDiscoveryDate;
 
+    /**
+     * This is used by the JSON parser when it can't find a matching field. It's needed for
+     * tags & relations
+     * @param key - key
+     * @param value - value
+     */
     @JsonAnySetter
-    public void addAdditionalProperty(String key, Object value) {
+    private void addAdditionalProperty(String key, Object value) {
         additionalProperties.put(key, value);
     }
 
+    public void addRelation(String key, String value) {
+        additionalProperties.put(key, value);
+    }
+
+    public void addType(String key, Object value) {
+        additionalProperties.put(key, value);
+    }
     /**
      * This property provides access to the remaining fields in this document. Set non-common
-     * properties via {@link #addAdditionalProperty(String, Object)}.
+     * properties via {@link #addRelation(String, String)} and {@link #addType(String, Object)}.
      */
     @JsonAnyGetter
     public Map<String, Object> getAdditionalProperties() {
