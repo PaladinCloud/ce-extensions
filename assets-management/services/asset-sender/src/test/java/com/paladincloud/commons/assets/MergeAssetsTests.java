@@ -50,6 +50,7 @@ public class MergeAssetsTests {
             .idField("id")
             .docIdFields(List.of("id"))
             .dataSource(dataSource)
+            .isCloud(true)
             .displayName(type)
             .tags(List.of())
             .type(type)

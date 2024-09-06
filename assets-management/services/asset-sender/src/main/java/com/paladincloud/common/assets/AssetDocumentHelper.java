@@ -3,6 +3,7 @@ package com.paladincloud.common.assets;
 import static java.util.Map.entry;
 
 import com.paladincloud.common.AssetDocumentFields;
+import com.paladincloud.common.errors.JobException;
 import com.paladincloud.common.util.MapHelper;
 import com.paladincloud.common.util.StringHelper;
 import com.paladincloud.common.util.TimeHelper;
@@ -37,6 +38,8 @@ public class AssetDocumentHelper {
     @NonNull
     private String dataSource;
     @NonNull
+    private boolean isCloud;
+    @NonNull
     private String displayName;
     @NonNull
     private String type;
@@ -63,6 +66,10 @@ public class AssetDocumentHelper {
             if (docId.contains(AssetDocumentFields.ACCOUNT_ID)) {
                 docId = STR."\{StringHelper.indexName(dataSource, type)}_\{docId}";
             }
+        }
+
+        if (!isCloud) {
+            throw new JobException("Opinions are not yet supported by the delta engine");
         }
 
         var dto = new AssetDTO();

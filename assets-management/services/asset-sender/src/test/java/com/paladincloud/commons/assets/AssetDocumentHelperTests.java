@@ -25,6 +25,7 @@ public class AssetDocumentHelperTests {
             .idField(idField)
             .docIdFields(List.of("accountid", "region", "instanceid"))
             .dataSource(dataSource)
+            .isCloud(true)
             .displayName("ec2")
             .tags(List.of())
             .type("ec2")
