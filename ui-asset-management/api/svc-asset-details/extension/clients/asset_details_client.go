@@ -26,16 +26,17 @@ const (
 	targetType     = "targetType"
 	targetTypeName = "targetTypeName"
 	accountId      = "accountId"
+	allSources     = "all-sources"
 )
 
-var fieldsToBeSkipped = [...]string{"_cloudType", "_resourceid", "_docid", "_discoverydate", "discoverydate", "firstdiscoveredon", "_entity", "_entitytype", "_loaddate", "assetRiskScore"}
+var fieldsToBeSkipped = [...]string{"_cloudType", "_resourceid", "_docid", "_discoverydate", "discoverydate", "firstdiscoveredon", "_entity", "_entitytype", "_loaddate", "assetRiskScore", "targettypedisplayname", "arsLoadDate"}
 
-func (c *AssetDetailsClient) GetAssetDetails(ctx context.Context, ag string, targetType string, assetId string) (*models.AssetDetails, error) {
+func (c *AssetDetailsClient) GetAssetDetails(ctx context.Context, assetId string) (*models.AssetDetails, error) {
 	if len(strings.TrimSpace(assetId)) == 0 {
 		return nil, fmt.Errorf("assetId must be present")
 	}
 
-	result, err := c.elasticSearchClient.FetchAssetDetails(ctx, ag, targetType, assetId, 1)
+	result, err := c.elasticSearchClient.FetchAssetDetails(ctx, allSources, assetId, 1)
 
 	if err != nil {
 		return nil, err
@@ -43,7 +44,7 @@ func (c *AssetDetailsClient) GetAssetDetails(ctx context.Context, ag string, tar
 
 	sourceArr := (*result)["hits"].(map[string]interface{})["hits"].([]interface{})
 	if len(sourceArr) > 0 {
-		assetDetails := sourceArr[0].(map[string]interface{})
+		assetDetails := sourceArr[0].(map[string]interface{})["_source"].(map[string]interface{})
 		var primaryProvider string
 		var tags map[string]string
 		var commonFields map[string]string
@@ -51,6 +52,9 @@ func (c *AssetDetailsClient) GetAssetDetails(ctx context.Context, ag string, tar
 			tags = val.(map[string]string)
 		} else {
 			tags = c.buildTagsForLegacyAssetModel(assetDetails)
+			for k := range tags {
+				delete(assetDetails, "tags."+k)
+			}
 		}
 		if val, present := assetDetails["primaryProvider"]; present {
 			commonFields = c.buildCommonFields(assetDetails)
@@ -94,7 +98,7 @@ func (c *AssetDetailsClient) buildCommonFields(assetDetails map[string]interface
 
 func (c *AssetDetailsClient) buildCommonFieldsLegacy(assetDetails map[string]interface{}) map[string]string {
 	commonFields := map[string]string{}
-	commonFields[accountId] = fmt.Sprintf("%v", assetDetails[accountId])
+	commonFields[accountId] = fmt.Sprintf("%v", assetDetails["accountid"])
 	commonFields[source] = assetDetails["_cloudType"].(string)
 	commonFields[targetType] = assetDetails["_entitytype"].(string)
 	commonFields[targetTypeName] = assetDetails["targettypedisplayname"].(string)
@@ -106,7 +110,7 @@ func (c *AssetDetailsClient) buildPrimaryProviderForLegacyAssetModel(assetDetail
 		delete(assetDetails, key)
 	}
 	primaryProviderJson, _ := json.Marshal(assetDetails)
-	return fmt.Sprintf("%v", primaryProviderJson), nil
+	return string(primaryProviderJson[:]), nil
 }
 
 func (c *AssetDetailsClient) buildTagsForLegacyAssetModel(assetDetails map[string]interface{}) map[string]string {

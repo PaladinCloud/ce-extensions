@@ -22,7 +22,7 @@ def lambda_handler(event, context):
     print("Getting Plugins List from API")
 
     connection = http.client.HTTPConnection(CACHE_HOST, CACHE_PORT)
-    connection.request('GET', '/' + event['pathParameters']['ag'] + '/' + event['pathParameters']['targetType'] + '/' + event['pathParameters']['assetId'])
+    connection.request('GET', '/assets/' + event['pathParameters']['assetId'])
 
     response = connection.getresponse()
     return response.read().decode()

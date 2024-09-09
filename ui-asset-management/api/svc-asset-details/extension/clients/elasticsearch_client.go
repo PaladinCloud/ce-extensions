@@ -16,9 +16,9 @@ func NewElasticSearchClient() *ElasticSearchClient {
 	return &ElasticSearchClient{}
 }
 
-func (c *ElasticSearchClient) FetchAssetDetails(ctx context.Context, ag string, targetType string, assetId string, size int) (*map[string]interface{}, error) {
+func (c *ElasticSearchClient) FetchAssetDetails(ctx context.Context, ag string, assetId string, size int) (*map[string]interface{}, error) {
 
-	query := buildQuery(targetType, assetId)
+	query := buildQuery(assetId)
 	esRequest := map[string]interface{}{
 		"size":  size,
 		"query": query,
@@ -43,21 +43,17 @@ func (c *ElasticSearchClient) FetchAssetDetails(ctx context.Context, ag string, 
 	return &result, nil
 }
 
-func buildQuery(targetType string, assetId string) map[string]interface{} {
+func buildQuery(assetId string) map[string]interface{} {
 
 	assetIdFilter := map[string]interface{}{
 		"term": map[string]interface{}{
-			docIDKeyword: assetId,
+			"_id": assetId,
 		},
 	}
-	targetTypeFilter := map[string]interface{}{
-		"term": map[string]interface{}{
-			docTypeKeyword: targetType,
-		},
-	}
+
 	query := map[string]interface{}{
 		"bool": map[string]interface{}{
-			"must": [2]map[string]interface{}{assetIdFilter, targetTypeFilter},
+			"must": [1]map[string]interface{}{assetIdFilter},
 		},
 	}
 	return query
