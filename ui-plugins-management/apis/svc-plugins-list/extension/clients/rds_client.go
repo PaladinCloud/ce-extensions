@@ -89,6 +89,7 @@ func (r *RdsClient) GetPluginsList(ctx context.Context, tenantId string, flags m
 		FROM 
 			plugins p;
 	`
+	formattedQuery := fmt.Sprintf(query, tenantId)
 
 	var plugins []models.Plugin
 	if err := sqlscan.Select(ctx, r.db, &plugins, formattedQuery); err != nil {
