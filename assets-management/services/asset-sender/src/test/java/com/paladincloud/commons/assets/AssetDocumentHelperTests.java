@@ -1,6 +1,7 @@
 package com.paladincloud.commons.assets;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -45,7 +46,9 @@ public class AssetDocumentHelperTests {
 
         assertNotNull(dto);
         assertNotNull(dtoAsMap.get(AssetDocumentFields.LOAD_DATE));
-        assertNotNull(dtoAsMap.get(AssetDocumentFields.RAW_DATA));
+        assertFalse(dtoAsMap.get(AssetDocumentFields.LOAD_DATE).toString().isBlank());
+        assertNotNull(dtoAsMap.get(AssetDocumentFields.PRIMARY_PROVIDER));
+        assertEquals(mappedAsMap.get("rawData"), dtoAsMap.get(AssetDocumentFields.PRIMARY_PROVIDER));
 
         // Ensure each value in the sample asset exists in the serialized/deserialized instance
         expectedMap.forEach((key, value) -> {

@@ -27,6 +27,8 @@ import org.apache.commons.lang3.StringUtils;
 @Builder
 public class AssetDocumentHelper {
 
+    static private String MAPPER_RAW_DATA = "rawData";
+
     static private Map<String, String> accountIdNameMap = new HashMap<>();
     @NonNull
     private ZonedDateTime loadDate;
@@ -37,7 +39,6 @@ public class AssetDocumentHelper {
     private List<String> docIdFields;
     @NonNull
     private String dataSource;
-    @NonNull
     private boolean isCloud;
     @NonNull
     private String displayName;
@@ -87,7 +88,7 @@ public class AssetDocumentHelper {
                 v -> dto.setDiscoveryDate(TimeHelper.parseDiscoveryDate(v.toString()))),
             entry(AssetDocumentFields.NAME, v -> dto.setName(v.toString())),
             entry(AssetDocumentFields.SOURCE_DISPLAY_NAME, v -> dto.setSourceDisplayName(v.toString())),
-            entry(AssetDocumentFields.RAW_DATA, v -> dto.setRawData(v.toString())),
+            entry(MAPPER_RAW_DATA, v -> dto.setPrimaryProvider(v.toString())),
             entry(AssetDocumentFields.REPORTING_SOURCE, v -> dto.setReportingSource(v.toString())));
 
         fieldSetterMap.forEach((key, value) -> {
@@ -104,6 +105,7 @@ public class AssetDocumentHelper {
 
         // Set common asset properties
         dto.setEntityType(type);
+        dto.setLegacyTargetTypeDisplayName(displayName);
         dto.setTargetTypeDisplayName(displayName);
         dto.setDocType(type);
 
@@ -164,7 +166,7 @@ public class AssetDocumentHelper {
     public void updateFrom(Map<String, Object> data, AssetDTO dto) {
         var idValue = data.getOrDefault(idField, "").toString();
 
-        dto.setRawData(data.getOrDefault(AssetDocumentFields.RAW_DATA, "").toString());
+        dto.setPrimaryProvider(data.getOrDefault(MAPPER_RAW_DATA, "").toString());
         dto.setSourceDisplayName(data.getOrDefault(AssetDocumentFields.SOURCE_DISPLAY_NAME, "").toString());
 
         // One time only, existing assets in ElasticSearch must be updated to include new fields
@@ -196,6 +198,7 @@ public class AssetDocumentHelper {
 
         // The display name comes out of our database, but could potentially change with an update.
         // Hence, it gets updated here.
+        dto.setLegacyTargetTypeDisplayName(displayName);
         dto.setTargetTypeDisplayName(displayName);
         if ("Azure".equalsIgnoreCase(dto.getCloudType())) {
             dto.setAssetIdDisplayName(getAssetIdDisplayName(data));

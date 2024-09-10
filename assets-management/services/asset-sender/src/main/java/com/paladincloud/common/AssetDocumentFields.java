@@ -9,9 +9,15 @@ public interface AssetDocumentFields {
     String REPORTING_SOURCE = "_reporting_source";
     String NAME = "name";
     String ASSET_ID_DISPLAY_NAME = "assetIdDisplayName";
-    String TARGET_TYPE_DISPLAY_NAME = "targettypedisplayname";
+    /**
+     * This is the legacy field for the target type display name; the field name is
+     * all lowercase and is being replaced with `targetTypeDisplayName`. Until the
+     * transition is complete, both fields will exist simultaneously.
+     */
+    String LEGACY_TARGET_TYPE_DISPLAY_NAME = "targettypedisplayname";
+    String TARGET_TYPE_DISPLAY_NAME = "targetTypeDisplayName";
     String SOURCE_DISPLAY_NAME = "sourceDisplayName";
-    String RAW_DATA = "rawData";
+    String PRIMARY_PROVIDER = "primaryProvider";
 
     String DOC_TYPE = "docType";
 

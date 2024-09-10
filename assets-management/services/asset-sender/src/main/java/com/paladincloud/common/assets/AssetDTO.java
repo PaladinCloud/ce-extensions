@@ -100,13 +100,23 @@ public class AssetDTO {
 
     @Setter
     @Getter
-    @JsonProperty(AssetDocumentFields.RAW_DATA)
-    private String rawData;
+    @JsonProperty(AssetDocumentFields.PRIMARY_PROVIDER)
+    private String primaryProvider;
 
     @Setter
     @Getter
     @JsonProperty(AssetDocumentFields.ASSET_ID_DISPLAY_NAME)
     private String assetIdDisplayName;
+
+    /**
+     * This is the legacy field for the target type display name; the field name is
+     * all lowercase and is being replaced with `targetTypeDisplayName`. Until the
+     * transition is complete, both fields will exist simultaneously.
+     */
+    @Setter
+    @Getter
+    @JsonProperty(AssetDocumentFields.LEGACY_TARGET_TYPE_DISPLAY_NAME)
+    private String legacyTargetTypeDisplayName;
 
     @Setter
     @Getter
