@@ -18,38 +18,26 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-	"os"
-	"os/signal"
 	"partner-access-auth/service"
 	"partner-access-auth/service/clients"
-	"syscall"
+	logger "partner-access-auth/service/logging"
 )
 
-var (
-	Version string
-)
+var log *logger.Logger
 
-func HandleRequest(request events.APIGatewayCustomAuthorizerRequest) (events.APIGatewayCustomAuthorizerResponse, error) {
-	ctx, cancel := context.WithCancel(context.Background())
+func init() {
+	log = logger.NewLogger()
+}
+
+func HandleRequest(ctx context.Context, request events.APIGatewayV2HTTPRequest) (events.APIGatewayV2CustomAuthorizerSimpleResponse, error) {
+	log.Info("Request received", request)
 	configuration := clients.LoadConfigurationDetails(ctx)
-
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGTERM, syscall.SIGINT)
-	go func() {
-		s := <-sigs
-		cancel()
-		fmt.Printf("Request received: %+v\n", request)
-		fmt.Printf("Exiting due to signal: %+v\n", s)
-	}()
 
 	return service.HandleLambdaRequest(ctx, request, configuration)
 }
 
 func main() {
-	fmt.Println("Partner Access Auth Invoke - Started - Version: " + Version)
 	lambda.Start(HandleRequest)
-	fmt.Println("Partner Access Auth - Ended")
 }

@@ -44,14 +44,15 @@ func NewDynamoDBClient(configuration *Configuration) *DynamodbClient {
 
 	svc := dynamodb.New(sess)
 
+	println("Initialized DynamoDB Client")
 	return &DynamodbClient{
 		configuration: configuration,
 		client:        svc,
 	}
 }
 
-func (d *DynamodbClient) GetPluginFeatureFlags(ctx context.Context) (*models.PluginFeatureFlags, error) {
-	tenantId := d.configuration.TenantId
+func (d *DynamodbClient) GetPluginFeatureFlags(ctx context.Context, tenant string) (*models.PluginFeatureFlags, error) {
+	tenantId := tenant
 
 	// Define the query input
 	input := &dynamodb.QueryInput{

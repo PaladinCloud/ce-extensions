@@ -13,16 +13,55 @@
 #  the License.
 
 import http.client
+import json
+import logging
+from logging import Logger
 
-CACHE_HOST = 'localhost'
-CACHE_PORT = 4567
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+EXTENSION_HOST = 'localhost'
+EXTENSION_HOST_PORT = 4567
 
 
 def lambda_handler(event, context):
-    print("Getting Plugins List from API")
+    Logger.log(logging.INFO, "Received event: " + json.dumps(event, indent=2))
 
-    connection = http.client.HTTPConnection(CACHE_HOST, CACHE_PORT)
-    connection.request('GET', '/')
+    try:
+        tenant_id = event['requestContext']['authorizer']['lambda']['tenantId']
+        logger.info(f"Extracted Tenant ID: {tenant_id}")
 
-    response = connection.getresponse()
-    return response.read().decode()
+        # Construct the path
+        path = f"/plugins/{tenant_id}"
+
+        # Create a connection object
+        connection = http.client.HTTPConnection(EXTENSION_HOST, EXTENSION_HOST_PORT)
+
+        # Make the GET request
+        connection.request("GET", path)
+
+        # Get the response
+        response = connection.getresponse()
+
+        # Read and decode the response data
+        data = response.read().decode()
+
+        # Check if the response is in JSON format
+        try:
+            # Attempt to parse the JSON response
+            result = json.loads(data)
+        except json.JSONDecodeError:
+            # Handle cases where the response is not JSON
+            logger.error(f"Invalid JSON response: {data}")
+            result = data
+
+        # Close the connection
+        connection.close()
+
+        # Return the parsed result
+        return result
+
+    except Exception as e:
+        # Handle any exceptions (e.g., network issues, invalid response, etc.)
+        print(f"Error while making GET request: {e}")
+        return None

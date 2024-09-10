@@ -24,12 +24,12 @@ import (
 func TestNewSecretsClient(t *testing.T) {
 	ctx := context.Background()
 	configuration := &Configuration{
-		Region:   "us-east-1",
-		TenantId: "saasdev",
+		Region:        "us-east-1",
+		RdsSecretName: "SECRET_NAME",
 	}
 
 	secretsClient := NewSecretsClient(configuration.Region)
-	secrets, _ := secretsClient.GetRdsSecret(ctx, "paladincloud/secret/"+configuration.TenantId)
+	secrets, _ := secretsClient.GetRdsSecret(ctx, configuration.RdsSecretName)
 
 	println(secrets)
 }

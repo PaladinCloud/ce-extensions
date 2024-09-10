@@ -19,6 +19,7 @@ package clients
 import (
 	"context"
 	"os"
+	"strconv"
 	"svc-plugins-list-layer/models"
 )
 
@@ -26,28 +27,41 @@ type Configuration struct {
 	Region                   string
 	TenantConfigTable        string
 	TenantConfigPartitionKey string
-	TenantId                 string
+	RdsSecretName            string
+	RdsHost                  string
+	RdsPort                  string
+	RdsDbName                string
 	RdsCredentials           models.RdsSecret
+	IsDebug                  bool
 }
 
-var (
-	secretsName = "paladincloud/secret/"
-)
-
 func LoadConfigurationDetails(ctx context.Context) *Configuration {
+	isDebugStr := os.Getenv("IS_DEBUG")
+	isDebug, err := strconv.ParseBool(isDebugStr)
+	if err != nil {
+		isDebug = false
+	}
+
 	region := os.Getenv("REGION")
 	tenantConfigTable := os.Getenv("TENANT_CONFIG_TABLE")
 	tenantConfigPartitionKey := os.Getenv("TENANT_CONFIG_PARTITION_KEY")
-	tenantId := os.Getenv("TENANT_ID")
+	rdsSecretName := os.Getenv("RDS_SECRET_NAME")
+	rdsHost := os.Getenv("RDS_HOST")
+	rdsPort := os.Getenv("RDS_PORT")
+	rdsDbName := os.Getenv("RDS_DB_NAME")
 
 	secretsClient := NewSecretsClient(region)
-	rdsCredentials, _ := secretsClient.GetRdsSecret(ctx, secretsName+tenantId)
+	rdsCredentials, _ := secretsClient.GetRdsSecret(ctx, rdsSecretName)
 
 	return &Configuration{
+		IsDebug:                  isDebug,
 		Region:                   region,
 		TenantConfigTable:        tenantConfigTable,
 		TenantConfigPartitionKey: tenantConfigPartitionKey,
-		TenantId:                 tenantId,
+		RdsSecretName:            rdsSecretName,
+		RdsHost:                  rdsHost,
+		RdsPort:                  rdsPort,
+		RdsDbName:                rdsDbName,
 		RdsCredentials:           *rdsCredentials,
 	}
 }

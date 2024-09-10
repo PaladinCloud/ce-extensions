@@ -17,9 +17,6 @@
 package models
 
 type RdsSecret struct {
-	DbUsername string `json:"DB_USERNAME"`
-	DbPassword string `json:"DB_PASSWORD"`
-	DbHost     string `json:"RDS_HOST"`
-	DbPort     string `json:"DB_PORT"`
-	DbName     string `json:"DB_NAME"`
+	DbUsername string `json:"username"`
+	DbPassword string `json:"password"`
 }

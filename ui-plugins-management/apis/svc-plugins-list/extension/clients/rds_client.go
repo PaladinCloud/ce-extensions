@@ -33,9 +33,9 @@ func NewRdsClient(configuration *Configuration) *RdsClient {
 	var (
 		dbUser     = configuration.RdsCredentials.DbUsername
 		dbPassword = configuration.RdsCredentials.DbPassword
-		dbHost     = configuration.RdsCredentials.DbHost
-		dbPort     = configuration.RdsCredentials.DbPort
-		dbName     = configuration.RdsCredentials.DbName
+		dbHost     = configuration.RdsHost
+		dbPort     = configuration.RdsPort
+		dbName     = configuration.RdsDbName
 	)
 
 	// Data Plugin Name (DSN)
@@ -55,37 +55,43 @@ func NewRdsClient(configuration *Configuration) *RdsClient {
 	}
 
 	fmt.Println("Connected to the database successfully!")
-
 	return &RdsClient{
 		db: db,
 	}
 }
 
-func (r *RdsClient) GetPluginsList(ctx context.Context, flags models.PluginFeatureFlags) (*models.Plugins, error) {
+func (r *RdsClient) GetPluginsList(ctx context.Context, tenantId string, flags models.PluginFeatureFlags) (*models.Plugins, error) {
 	println("Getting Plugins List from RDS")
 	query := `
-						SELECT p.source,
-						       p.name,
-						       p.type,
-						       p.description,
-						       p.iconURL,
-						       CAST(p.isLegacy AS DECIMAL)             AS isLegacy,
-						       CAST(p.disablePolicyActions AS DECIMAL) AS disablePolicyActions,
-						       CAST(p.isInbound AS DECIMAL)            AS isInbound,
-						       CAST((
-						                   p.isCloud = true
-						               AND EXISTS (SELECT 1
-						                           FROM cf_Accounts a
-						                           WHERE a.platform IN (SELECT cp.source
-						                                                FROM plugins cp
-						                                                WHERE cp.isComposite = true)
-						                             AND p.source != a.platform)
-						           ) AS DECIMAL)                       AS isHidden
-						FROM plugins p;
-`
+		SELECT 
+			p.source,
+			p.name,
+			p.type,
+			p.description,
+			p.iconURL,
+			CAST(p.isLegacy AS DECIMAL) AS isLegacy,
+			CAST(p.disablePolicyActions AS DECIMAL) AS disablePolicyActions,
+			CAST(p.isInbound AS DECIMAL) AS isInbound,
+			CAST((
+				p.isCloud = true
+				AND EXISTS (
+					SELECT 1
+					FROM tenant_accounts a
+					WHERE a.tenant_id = '%s'
+					AND a.source IN (
+						SELECT cp.source
+						FROM plugins cp
+						WHERE cp.isComposite = true
+					)
+					AND p.source != a.source
+				)
+			) AS DECIMAL) AS isHidden
+		FROM 
+			plugins p;
+	`
 
 	var plugins []models.Plugin
-	if err := sqlscan.Select(ctx, r.db, &plugins, query); err != nil {
+	if err := sqlscan.Select(ctx, r.db, &plugins, formattedQuery); err != nil {
 		return nil, err
 	}
 

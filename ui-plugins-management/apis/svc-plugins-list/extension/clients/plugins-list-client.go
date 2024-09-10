@@ -27,10 +27,6 @@ type PluginsListClient struct {
 	cacheClient    *PluginsCacheClient
 }
 
-const (
-	cacheKey = "plugins"
-)
-
 func NewPluginsListClient(configuration *Configuration) *PluginsListClient {
 	return &PluginsListClient{
 		dynamodbClient: NewDynamoDBClient(configuration),
@@ -39,7 +35,7 @@ func NewPluginsListClient(configuration *Configuration) *PluginsListClient {
 	}
 }
 
-func (c *PluginsListClient) GetPluginsList(ctx context.Context) (*models.Plugins, error) {
+func (c *PluginsListClient) GetPluginsList(ctx context.Context, tenantId string) (*models.Plugins, error) {
 	println("Getting Plugins List")
 	plugins, err := c.cacheClient.GetPluginsCache()
 	if err != nil {
@@ -52,13 +48,13 @@ func (c *PluginsListClient) GetPluginsList(ctx context.Context) (*models.Plugins
 
 	println("Populating Plugins List")
 	// Get plugin feature flags
-	pluginFeatureFlags, err := c.dynamodbClient.GetPluginFeatureFlags(ctx)
+	pluginFeatureFlags, err := c.dynamodbClient.GetPluginFeatureFlags(ctx, tenantId)
 	if err != nil {
 		return nil, err
 	}
 
 	// Get plugins list and join with feature flags
-	plugins, err = c.rdsClient.GetPluginsList(ctx, *pluginFeatureFlags)
+	plugins, err = c.rdsClient.GetPluginsList(ctx, tenantId, *pluginFeatureFlags)
 	if err != nil {
 		return nil, err
 	}

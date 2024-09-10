@@ -26,14 +26,14 @@ func TestDynamodbClient(t *testing.T) {
 	ctx := context.Background()
 	configuration := &Configuration{
 		Region:                   "us-east-1",
-		TenantId:                 "[TENANT_ID]",
-		TenantConfigTable:        "[DYNAMODB_TENANT_CONFIG_TABLE]",
-		TenantConfigPartitionKey: "[DYNAMODB_TENANT_CONFIG_PARTITION_KEY]",
+		TenantConfigTable:        "tenant-config",
+		TenantConfigPartitionKey: "tenant_id",
+		RdsSecretName:            "SECRET_NAME",
 	}
 
 	client := NewDynamoDBClient(configuration)
 
-	pluginFeatureFlags, err := client.GetPluginFeatureFlags(ctx)
+	pluginFeatureFlags, err := client.GetPluginFeatureFlags(ctx, configuration.RdsSecretName)
 	if err != nil {
 		panic(err)
 	}

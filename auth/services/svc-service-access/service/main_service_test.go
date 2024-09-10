@@ -25,10 +25,11 @@ import (
 
 func TestHandleLambdaRequest(t *testing.T) {
 	t.Log("TestHandleLambdaRequest")
-	request := events.APIGatewayCustomAuthorizerRequest{
-		Type:               "Get",
-		AuthorizationToken: "",
-		MethodArn:          "arn:aws:execute-api:us-east-1:123456789012:example/prod/POST/{proxy+}",
+	request := events.APIGatewayV2HTTPRequest{
+		Headers: map[string]string{
+			"authorization": "Bearer {TOKEN}",
+		},
+		RouteKey: "GET /api/v2/plugins",
 	}
 
 	configuration := &clients.Configuration{
@@ -44,7 +45,7 @@ func TestHandleLambdaRequest(t *testing.T) {
 		t.Errorf("Expected response to be not nil")
 	}
 
-	if response.PolicyDocument.Statement[0].Effect != "Allow" {
+	if !response.IsAuthorized {
 		t.Errorf("Expected response status code to be Allow")
 	}
 }

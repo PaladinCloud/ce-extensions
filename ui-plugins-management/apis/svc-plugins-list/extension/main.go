@@ -18,19 +18,21 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"svc-plugins-list-layer/clients"
 	"svc-plugins-list-layer/extension"
+	logger "svc-plugins-list-layer/logging"
 	"svc-plugins-list-layer/server"
 	"syscall"
 )
 
 var (
-	httpConfig *server.HttpServer
+	log *logger.Logger
+
+	httpServerClient *server.HttpServer
 
 	extensionName    = filepath.Base(os.Args[0]) // extension name has to match the filename
 	lambdaRuntimeAPI = os.Getenv("AWS_LAMBDA_RUNTIME_API")
@@ -41,63 +43,66 @@ var (
 )
 
 func init() {
-	println(printPrefix, "Initializing extension clients")
+	log = logger.NewLogger()
+	log.Info("Initializing extension clients - ", extensionName)
 }
 
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
-	configuration := clients.LoadConfigurationDetails(ctx)
 
-	httpConfig = &server.HttpServer{
+	log.Info("Loading Configuration")
+	configuration := clients.LoadConfigurationDetails(ctx)
+	log.Info("Configuration loaded successfully!")
+
+	log.Info("Initializing HTTP Server")
+	httpServerClient = &server.HttpServer{
 		Configuration:     configuration,
 		PluginsListClient: clients.NewPluginsListClient(configuration),
 	}
+	log.Info("HTTP Server initialized successfully!")
 
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGTERM, syscall.SIGINT)
-	go func() {
-		s := <-sigs
-		cancel()
-		println(printPrefix, "Received", s)
-		println(printPrefix, "Exiting")
-	}()
+	if !configuration.IsDebug {
+		log.Info("Registering extension client", extensionName, lambdaRuntimeAPI)
+		sigs := make(chan os.Signal, 1)
+		signal.Notify(sigs, syscall.SIGTERM, syscall.SIGINT)
+		go func() {
+			s := <-sigs
+			cancel()
+			println(printPrefix, "Received", s)
+			println(printPrefix, "Exiting")
+		}()
 
-	println(printPrefix, "Registering extension client", extensionName, lambdaRuntimeAPI)
+		// Register the extension client with the Lambda runtime
+		res, err := extensionClient.Register(ctx, extensionName)
+		if err != nil {
+			log.Info("Unable to register extension:", err)
+		}
 
-	res, err := extensionClient.Register(ctx, extensionName)
-	if err != nil {
-		println(printPrefix, "Unable to register extension:", prettyPrint(err))
+		log.Info("Client Registered:", res)
 	}
 
-	println(printPrefix, "Client Registered:", prettyPrint(res))
-
 	println("Starting Local HTTP Server")
-	server.Start(port, httpConfig)
+	server.Start(port, httpServerClient)
 
 	// Will block until shutdown event is received or cancelled via the context.
 	processEvents(ctx)
 }
 
 func processEvents(ctx context.Context) {
+	log.Info("Starting Processing events")
 	for {
 		select {
 		case <-ctx.Done():
-
+			log.Info("Context done, exiting event loop")
 			return
 		default:
+			log.Info("Waiting for next event...")
+			// Fetch the next event and check for errors.
 			_, err := extensionClient.NextEvent(ctx)
 			if err != nil {
-				println(printPrefix, "Error:", err)
+				log.Info("Error fetching next event:", err)
 				return
 			}
 		}
 	}
-}
-
-func prettyPrint(v interface{}) string {
-	data, err := json.MarshalIndent(v, "", "\t")
-	if err != nil {
-		return ""
-	}
-	return string(data)
 }

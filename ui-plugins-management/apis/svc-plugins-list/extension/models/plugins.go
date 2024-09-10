@@ -18,16 +18,16 @@ package models
 
 // Plugin represents the structure of each item in the inbound and outbound arrays.
 type Plugin struct {
-	Source               string       `db:"source"`
-	Name                 string       `db:"name"`
-	Type                 string       `db:"type"`
-	Description          string       `db:"description"`
-	IconUrl              string       `db:"iconURL"`
-	IsLegacy             bool         `db:"isLegacy"`
-	DisablePolicyActions bool         `db:"disablePolicyActions"`
-	IsInbound            bool         `db:"isInbound"`
-	IsHidden             bool         `db:"isHidden"`
-	Flags                FeatureFlags `db:"-"` // This field is not in the database.
+	Source               string       `db:"source" json:"source"`
+	Name                 string       `db:"name" json:"name"`
+	Type                 string       `db:"type" json:"type"`
+	Description          string       `db:"description" json:"description"`
+	IconUrl              string       `db:"iconURL" json:"iconUrl"`
+	IsLegacy             bool         `db:"isLegacy" json:"isLegacy"`
+	DisablePolicyActions bool         `db:"disablePolicyActions" json:"disablePolicyActions"`
+	IsInbound            bool         `db:"isInbound" json:"isInbound"`
+	IsHidden             bool         `db:"isHidden" json:"isHidden"`
+	Flags                FeatureFlags `db:"-" json:"flags"` // This field is not in the database.
 }
 
 // Plugins represents the overall structure of the plugins list JSON data.

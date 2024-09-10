@@ -19,6 +19,7 @@ package clients
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/secretsmanager"
@@ -39,6 +40,7 @@ func NewSecretsClient(region string) *SecretsClient {
 		aws.NewConfig().WithRegion(region),
 	)
 
+	fmt.Println("Initialized Secrets Client")
 	return &SecretsClient{
 		secretsClient: svc,
 	}

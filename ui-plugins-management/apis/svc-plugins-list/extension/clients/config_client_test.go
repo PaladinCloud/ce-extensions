@@ -24,15 +24,14 @@ import (
 func TestConfigurationDetails(t *testing.T) {
 	configuration := &Configuration{
 		Region:                   "us-east-1",
-		TenantId:                 "[TENANT_ID]",
-		TenantConfigTable:        "[DYNAMODB_TENANT_CONFIG_TABLE]",
-		TenantConfigPartitionKey: "[DYNAMODB_TENANT_CONFIG_PARTITION_KEY]",
+		TenantConfigTable:        "tenant-config",
+		TenantConfigPartitionKey: "tenant_id",
+		RdsHost:                  "RDS_HOST",
+		RdsPort:                  "RDS_PORT",
+		RdsDbName:                "RDS_DB_NAME",
 		RdsCredentials: models.RdsSecret{
-			DbUsername: "DB_USERNAME",
-			DbPassword: "DB_PASSWORD",
-			DbHost:     "DB_HOST",
-			DbPort:     "DB_PORT",
-			DbName:     "DB_NAME",
+			DbUsername: "USERNAME",
+			DbPassword: "PASSWORD",
 		},
 	}
 

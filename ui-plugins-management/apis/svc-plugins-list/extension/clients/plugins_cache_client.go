@@ -28,7 +28,7 @@ type PluginsCacheClient struct {
 
 // NewCacheClient  inits a DynamoDB session to be used throughout the services
 func NewCacheClient() *PluginsCacheClient {
-	println("Creating new Cache Client")
+	println("Initialized Cache Client")
 	return &PluginsCacheClient{
 		cache: nil,
 	}

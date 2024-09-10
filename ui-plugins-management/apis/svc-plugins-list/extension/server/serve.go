@@ -19,23 +19,23 @@ package server
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 	"log"
 	"net/http"
 	"os"
 	"svc-plugins-list-layer/clients"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
 type HttpServer struct {
 	Configuration     *clients.Configuration
-	HttpClient        *http.Client
 	PluginsListClient *clients.PluginsListClient
 }
 
 // Start begins running the sidecar
 func Start(port string, server *HttpServer) {
-	println("starting the server in background")
+	println("Starting the local http server in background")
 	go startHTTPServer(port, server)
 }
 
@@ -43,7 +43,8 @@ func Start(port string, server *HttpServer) {
 func startHTTPServer(port string, httpConfig *HttpServer) {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
-	r.Get("/", handleValue(httpConfig))
+	r.Use(middleware.Recoverer)
+	r.Get("/plugins/{tenantId}", handleValue(httpConfig))
 
 	err := http.ListenAndServe(fmt.Sprintf(":%s", port), r)
 	if err != nil {
@@ -56,13 +57,14 @@ func startHTTPServer(port string, httpConfig *HttpServer) {
 
 func handleValue(config *HttpServer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		plugins, err := config.PluginsListClient.GetPluginsList(r.Context())
+		tenantId := chi.URLParam(r, "tenantId")
+		pluginsList, err := config.PluginsListClient.GetPluginsList(r.Context(), tenantId)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
 
-		b, _ := json.Marshal(&plugins)
+		b, _ := json.Marshal(pluginsList)
 		w.Write(b)
 	}
 }

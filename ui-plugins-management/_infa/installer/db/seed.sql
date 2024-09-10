@@ -21,13 +21,15 @@ USE
 ########## start plugins seed data ##########
 ##### start cloud plugins #####
 INSERT IGNORE INTO `plugins` (source, name, type, description, iconURL, isLegacy, gapPolicyAvailable, disablePolicyActions, isInbound, isComposite, isCloud, created_by, created_date)
-VALUES ('aws', 'AWS', 'Cloud Provider', '', '/assets/icons/aws-color.svg', _binary '\0', _binary '\0', _binary '\0', _binary '', _binary '\0', _binary '', 'system', CURDATE());
+VALUES ('aws', 'AWS', 'Cloud Provider', '', '/assets/icons/aws-color.svg', _binary '', _binary '\0', _binary '\0', _binary '', _binary '\0', _binary '', 'system', CURDATE());
 INSERT IGNORE INTO `plugins` (source, name, type, description, iconURL, isLegacy, gapPolicyAvailable, disablePolicyActions, isInbound, isComposite, isCloud, created_by, created_date)
-VALUES ('azure', 'Azure', 'Cloud Provider', '', '/assets/icons/azure-color.svg', _binary '\0', _binary '\0', _binary '\0', _binary '', _binary '\0', _binary '', 'system', CURDATE());
+VALUES ('azure', 'Azure', 'Cloud Provider', '', '/assets/icons/azure-color.svg', _binary '', _binary '\0', _binary '\0', _binary '', _binary '\0', _binary '', 'system', CURDATE());
 INSERT IGNORE INTO `plugins` (source, name, type, description, iconURL, isLegacy, gapPolicyAvailable, disablePolicyActions, isInbound, isComposite, isCloud, created_by, created_date)
-VALUES ('gcp', 'GCP', 'Cloud Provider', '', '/assets/icons/gcp-color.svg', _binary '', _binary '\0', _binary '\0', _binary '', _binary '\0', _binary '', 'system', CURDATE());
+VALUES ('gcp', 'GCP', 'Cloud Provider', '', '/assets/icons/gcp-color.svg', _binary '\0', _binary '\0', _binary '\0', _binary '', _binary '\0', _binary '', 'system', CURDATE());
 ##### end cloud plugins #####
 
+INSERT IGNORE INTO `plugins` (source, name, type, description, iconURL, isLegacy, gapPolicyAvailable, disablePolicyActions, isInbound, isComposite, isCloud, created_by, created_date)
+VALUES ('aqua', 'Aqua', 'Vulnerability Management', '', '/assets/icons/aqua-color.svg', _binary '', _binary '\1', _binary '\0', _binary '', _binary '\0', _binary '\0', 'system', CURDATE());
 INSERT IGNORE INTO `plugins` (source, name, type, description, iconURL, isLegacy, gapPolicyAvailable, disablePolicyActions, isInbound, isComposite, isCloud, created_by, created_date)
 VALUES ('qualys', 'Qualys', 'Vulnerability Management', '', '/assets/icons/qualys-color.svg', _binary '', _binary '\0', _binary '\0', _binary '', _binary '\0', _binary '\0', 'system', CURDATE());
 INSERT IGNORE INTO `plugins` (source, name, type, description, iconURL, isLegacy, gapPolicyAvailable, disablePolicyActions, isInbound, isComposite, isCloud, created_by, created_date)

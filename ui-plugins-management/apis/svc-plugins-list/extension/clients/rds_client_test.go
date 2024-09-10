@@ -18,29 +18,39 @@ package clients
 
 import (
 	"context"
+	"svc-plugins-list-layer/clients/tests"
+	"svc-plugins-list-layer/models"
 	"testing"
 )
 
 func TestRdsClient_GetPluginsList(t *testing.T) {
 	ctx := context.Background()
+	rdsSecrets := &models.RdsSecret{
+		DbUsername: "USERNAME",
+		DbPassword: "PASSWORD",
+	}
 	configuration := &Configuration{
 		Region:                   "us-east-1",
-		TenantId:                 "[TENANT_ID]",
-		TenantConfigTable:        "[DYNAMODB_TENANT_CONFIG_TABLE]",
-		TenantConfigPartitionKey: "[DYNAMODB_TENANT_CONFIG_PARTITION_KEY]",
+		TenantConfigTable:        "tenant-config",
+		TenantConfigPartitionKey: "tenant_id",
+		RdsSecretName:            "RDS_SECRET_NAME",
+		RdsDbName:                "DB_NAME",
+		RdsHost:                  "RDS_HOST",
+		RdsPort:                  "3306",
+		RdsCredentials:           *rdsSecrets,
 	}
 
 	secretsClient := NewSecretsClient(configuration.Region)
-	secrets, _ := secretsClient.GetRdsSecret(ctx, "paladincloud/secret/"+configuration.TenantId)
+	secrets, _ := secretsClient.GetRdsSecret(ctx, configuration.RdsSecretName)
 
 	dynamoClient := NewDynamoDBClient(configuration)
-	featureFlags, _ := dynamoClient.GetPluginFeatureFlags(ctx)
+	featureFlags, _ := dynamoClient.GetPluginFeatureFlags(ctx, tests.TenantId)
 	configuration.RdsCredentials = *secrets
 
 	rdsClient := NewRdsClient(configuration)
 	defer rdsClient.Close()
 
-	plugins, _ := rdsClient.GetPluginsList(ctx, *featureFlags)
+	plugins, _ := rdsClient.GetPluginsList(ctx, tests.TenantId, *featureFlags)
 
 	println(plugins)
 }
