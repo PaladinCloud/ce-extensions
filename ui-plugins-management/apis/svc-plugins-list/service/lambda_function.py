@@ -15,7 +15,6 @@
 import http.client
 import json
 import logging
-from logging import Logger
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -25,7 +24,7 @@ EXTENSION_HOST_PORT = 4567
 
 
 def lambda_handler(event, context):
-    Logger.info(logging.INFO, "Received event: " + json.dumps(event, indent=2))
+    logger.info("Received event: %s", json.dumps(event, indent=2))
 
     try:
         tenant_id = event['requestContext']['authorizer']['lambda']['tenantId']
