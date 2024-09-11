@@ -18,48 +18,77 @@ package clients
 
 import (
 	"context"
+	logger "svc-plugins-list-layer/logging"
 	"svc-plugins-list-layer/models"
 )
 
 type PluginsListClient struct {
-	dynamodbClient *DynamodbClient
-	rdsClient      *RdsClient
-	cacheClient    *PluginsCacheClient
+	dynamodbClient *DynamodbClient     `json:"dynamodbClient,omitempty"`
+	rdsClient      *RdsClient          `json:"rdsClient,omitempty"`
+	cacheClient    *PluginsCacheClient `json:"cacheClient,omitempty"`
+	log            *logger.Logger      `json:"logger,omitempty"`
 }
 
-func NewPluginsListClient(configuration *Configuration) *PluginsListClient {
+func NewPluginsListClient(configuration *Configuration, log *logger.Logger) *PluginsListClient {
 	return &PluginsListClient{
 		dynamodbClient: NewDynamoDBClient(configuration),
 		rdsClient:      NewRdsClient(configuration),
 		cacheClient:    NewCacheClient(),
+		log:            log,
 	}
 }
 
 func (c *PluginsListClient) GetPluginsList(ctx context.Context, tenantId string) (*models.Plugins, error) {
-	println("Getting Plugins List")
-	plugins, err := c.cacheClient.GetPluginsCache()
+	c.log.Info("Getting Plugins List")
+	pluginsListCache, err := c.cacheClient.GetPluginsCache()
 	if err != nil {
 		return nil, err
 	}
-	if plugins != nil {
-		println("Got Plugins List from cache")
-		return plugins, nil
+	if pluginsListCache != nil {
+		c.log.Info("Got Plugins List from cache")
+		return pluginsListCache, nil
 	}
 
-	println("Populating Plugins List")
+	// Cache is missed, populate the plugins list
+	c.log.Info("Populating Plugins List")
 	// Get plugin feature flags
 	pluginFeatureFlags, err := c.dynamodbClient.GetPluginFeatureFlags(ctx, tenantId)
 	if err != nil {
 		return nil, err
 	}
 
-	// Get plugins list and join with feature flags
-	plugins, err = c.rdsClient.GetPluginsList(ctx, tenantId, *pluginFeatureFlags)
+	// Get plugins list
+	pluginsList, err := c.rdsClient.GetPluginsList(ctx, tenantId)
 	if err != nil {
 		return nil, err
 	}
 
+	// Assemble plugins list and set it in cache
+	plugins, err := AssemblePluginsList(pluginsList, *pluginFeatureFlags)
+	if err != nil {
+		return nil, err
+	}
 	c.cacheClient.SetPluginsCache(plugins)
 
 	return plugins, nil
+}
+
+func AssemblePluginsList(plugins []models.Plugin, flags models.PluginFeatureFlags) (*models.Plugins, error) {
+	var inboundPlugins []models.Plugin
+	var outboundPlugins []models.Plugin
+	for i := range plugins {
+		plugin := &plugins[i]
+		plugin.Flags = flags[plugin.Source]
+
+		if plugin.IsInbound {
+			inboundPlugins = append(inboundPlugins, *plugin)
+		} else {
+			outboundPlugins = append(outboundPlugins, *plugin)
+		}
+	}
+
+	return &models.Plugins{
+		Inbound:  inboundPlugins,
+		Outbound: outboundPlugins,
+	}, nil
 }

@@ -28,7 +28,7 @@ import (
 var log *logger.Logger
 
 func init() {
-	log = logger.NewLogger()
+	log = logger.NewLogger("svc-api-authorizer - main_service")
 }
 
 func HandleLambdaRequest(ctx context.Context, request events.APIGatewayV2HTTPRequest, config *clients.Configuration) (events.APIGatewayV2CustomAuthorizerSimpleResponse, error) {
@@ -36,32 +36,32 @@ func HandleLambdaRequest(ctx context.Context, request events.APIGatewayV2HTTPReq
 	authorizationHeader := ExtractAuthorizationHeader(request)
 	if authorizationHeader == "" {
 		log.Error("Authorization header is missing")
-		return CreateDenyAllPolicy("user", request.RouteKey), nil
+		return CreateDenyAllPolicy(), nil
 	}
 
 	// Split "Bearer <token>"
 	token := strings.TrimPrefix(authorizationHeader, "Bearer ")
 	if token == "" {
 		log.Error("Missing access token\n")
-		return CreateDenyAllPolicy("user", request.RouteKey), nil
+		return CreateDenyAllPolicy(), nil
 	}
 
 	isValid, claims, err := jwt.ValidateToken(ctx, token, config.JwksURL, config.Audience, config.Issuer)
 	if err != nil {
 		log.Error("Error getting authorization:", err)
-		return CreateDenyAllPolicy("user", request.RouteKey), nil
+		return CreateDenyAllPolicy(), nil
 	}
 
 	if !isValid {
 		log.Error("User is not authorized")
-		return CreateDenyAllPolicy("user", request.RouteKey), nil
+		return CreateDenyAllPolicy(), nil
 	}
 
 	// to hide the tenantId from the client, we will use the accessId claim
 	tenantId, err := jwt.GetClaim(claims, "custom:accessId")
 	if tenantId == "" {
 		log.Error("Missing accessId")
-		return CreateDenyAllPolicy("user", request.RouteKey), nil
+		return CreateDenyAllPolicy(), nil
 	}
 
 	log.Info("User is authorized")
@@ -92,7 +92,7 @@ func CreateAllowAllPolicy(tenantId string) events.APIGatewayV2CustomAuthorizerSi
 	return allowPolicyDocument
 }
 
-func CreateDenyAllPolicy(principalID string, methodArn string) events.APIGatewayV2CustomAuthorizerSimpleResponse {
+func CreateDenyAllPolicy() events.APIGatewayV2CustomAuthorizerSimpleResponse {
 	denyPolicyDocument := events.APIGatewayV2CustomAuthorizerSimpleResponse{
 		IsAuthorized: false,
 	}

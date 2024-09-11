@@ -23,7 +23,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
-	"log"
 	"svc-plugins-list-layer/models"
 )
 
@@ -37,14 +36,13 @@ func NewDynamoDBClient(configuration *Configuration) *DynamodbClient {
 	sess, err := session.NewSession(&aws.Config{
 		Region: aws.String(configuration.Region),
 	})
-
 	if err != nil {
-		log.Fatal(err)
+		fmt.Errorf("error creating dynamoDB client %v", err)
 	}
 
 	svc := dynamodb.New(sess)
 
-	println("Initialized DynamoDB Client")
+	fmt.Println("Initialized DynamoDB Client")
 	return &DynamodbClient{
 		configuration: configuration,
 		client:        svc,

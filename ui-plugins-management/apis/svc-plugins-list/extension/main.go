@@ -43,7 +43,7 @@ var (
 )
 
 func init() {
-	log = logger.NewLogger()
+	log = logger.NewLogger(printPrefix)
 	log.Info("Initializing extension clients - ", extensionName)
 }
 
@@ -57,19 +57,19 @@ func main() {
 	log.Info("Initializing HTTP Server")
 	httpServerClient = &server.HttpServer{
 		Configuration:     configuration,
-		PluginsListClient: clients.NewPluginsListClient(configuration),
+		PluginsListClient: clients.NewPluginsListClient(configuration, log),
 	}
 	log.Info("HTTP Server initialized successfully!")
 
-	if !configuration.IsDebug {
+	if configuration.EnableExtension {
 		log.Info("Registering extension client", extensionName, lambdaRuntimeAPI)
 		sigs := make(chan os.Signal, 1)
 		signal.Notify(sigs, syscall.SIGTERM, syscall.SIGINT)
 		go func() {
 			s := <-sigs
 			cancel()
-			println(printPrefix, "Received", s)
-			println(printPrefix, "Exiting")
+			log.Info("Received", s)
+			log.Info("Exiting")
 		}()
 
 		// Register the extension client with the Lambda runtime
@@ -81,7 +81,7 @@ func main() {
 		log.Info("Client Registered:", res)
 	}
 
-	println("Starting Local HTTP Server")
+	log.Info("Starting Local HTTP Server")
 	server.Start(port, httpServerClient)
 
 	// Will block until shutdown event is received or cancelled via the context.

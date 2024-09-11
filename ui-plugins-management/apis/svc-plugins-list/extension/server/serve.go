@@ -19,7 +19,6 @@ package server
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"svc-plugins-list-layer/clients"
@@ -35,7 +34,7 @@ type HttpServer struct {
 
 // Start begins running the sidecar
 func Start(port string, server *HttpServer) {
-	println("Starting the local http server in background")
+	fmt.Println("Starting the local http server in background")
 	go startHTTPServer(port, server)
 }
 
@@ -48,11 +47,11 @@ func startHTTPServer(port string, httpConfig *HttpServer) {
 
 	err := http.ListenAndServe(fmt.Sprintf(":%s", port), r)
 	if err != nil {
-		log.Fatal("error starting the server", err)
+		fmt.Errorf("error starting the server %v", err)
 		os.Exit(0)
 	}
 
-	log.Printf("Server started on %s", port)
+	fmt.Printf("server started on %s\n", port)
 }
 
 func handleValue(config *HttpServer) http.HandlerFunc {

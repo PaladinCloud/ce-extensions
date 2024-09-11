@@ -32,14 +32,15 @@ type Configuration struct {
 	RdsPort                  string
 	RdsDbName                string
 	RdsCredentials           models.RdsSecret
-	IsDebug                  bool
+	EnableExtension          bool
 }
 
 func LoadConfigurationDetails(ctx context.Context) *Configuration {
-	isDebugStr := os.Getenv("IS_DEBUG")
-	isDebug, err := strconv.ParseBool(isDebugStr)
+	enableExtensionStr := os.Getenv("ENABLE_EXTENSION")
+	enableExtension, err := strconv.ParseBool(enableExtensionStr)
 	if err != nil {
-		isDebug = false
+		// When we deploy the lambda + extension, set the default runtime to enable extension
+		enableExtension = true
 	}
 
 	region := os.Getenv("REGION")
@@ -54,7 +55,7 @@ func LoadConfigurationDetails(ctx context.Context) *Configuration {
 	rdsCredentials, _ := secretsClient.GetRdsSecret(ctx, rdsSecretName)
 
 	return &Configuration{
-		IsDebug:                  isDebug,
+		EnableExtension:          enableExtension,
 		Region:                   region,
 		TenantConfigTable:        tenantConfigTable,
 		TenantConfigPartitionKey: tenantConfigPartitionKey,

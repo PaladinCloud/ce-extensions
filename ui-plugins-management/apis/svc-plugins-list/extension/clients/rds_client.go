@@ -60,8 +60,8 @@ func NewRdsClient(configuration *Configuration) *RdsClient {
 	}
 }
 
-func (r *RdsClient) GetPluginsList(ctx context.Context, tenantId string, flags models.PluginFeatureFlags) (*models.Plugins, error) {
-	println("Getting Plugins List from RDS")
+func (r *RdsClient) GetPluginsList(ctx context.Context, tenantId string) ([]models.Plugin, error) {
+	fmt.Println("Getting Plugins List from RDS")
 	query := `
 		SELECT 
 			p.source,
@@ -96,23 +96,7 @@ func (r *RdsClient) GetPluginsList(ctx context.Context, tenantId string, flags m
 		return nil, err
 	}
 
-	var inboundPlugins []models.Plugin
-	var outboundPlugins []models.Plugin
-	for i := range plugins {
-		plugin := &plugins[i]
-		plugin.Flags = flags[plugin.Source]
-
-		if plugin.IsInbound {
-			inboundPlugins = append(inboundPlugins, *plugin)
-		} else {
-			outboundPlugins = append(outboundPlugins, *plugin)
-		}
-	}
-
-	return &models.Plugins{
-		Inbound:  inboundPlugins,
-		Outbound: outboundPlugins,
-	}, nil
+	return plugins, nil
 }
 
 func (r *RdsClient) Close() error {

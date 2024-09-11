@@ -28,7 +28,7 @@ import (
 var log *logger.Logger
 
 func init() {
-	log = logger.NewLogger()
+	log = logger.NewLogger("svc-api-authorizer - main")
 }
 
 func HandleRequest(ctx context.Context, request events.APIGatewayV2HTTPRequest) (events.APIGatewayV2CustomAuthorizerSimpleResponse, error) {

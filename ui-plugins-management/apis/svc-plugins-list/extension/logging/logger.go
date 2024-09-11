@@ -22,14 +22,19 @@ import (
 	"log"
 )
 
-// Logger is a struct that holds the logger instance
+// Logger is a struct that holds the logger instance with an optional prefix
 type Logger struct {
-	// You can add more fields if needed
+	prefix string
 }
 
-// NewLogger creates a new instance of Logger
-func NewLogger() *Logger {
-	return &Logger{}
+// NewLogger creates a new instance of Logger with an optional prefix
+func NewLogger(prefix ...string) *Logger {
+	// Check if a prefix is provided
+	var pfx string
+	if len(prefix) > 0 {
+		pfx = prefix[0]
+	}
+	return &Logger{prefix: pfx}
 }
 
 // Info logs an info message
@@ -70,5 +75,10 @@ func (l *Logger) log(level string, message string, data ...interface{}) {
 		}
 	}
 
-	log.Printf("[%s] %s: %s", level, message, output)
+	// Include the prefix in the log output if it's set
+	if l.prefix != "" {
+		log.Printf("[%s] %s: %s - %s", level, l.prefix, message, output)
+	} else {
+		log.Printf("[%s] %s: %s", level, message, output)
+	}
 }
