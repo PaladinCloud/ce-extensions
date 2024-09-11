@@ -13,16 +13,61 @@
 #  the License.
 
 import http.client
+import json
+import logging
+from urllib.parse import quote  # Import quote for URL encoding
 
-CACHE_HOST = 'localhost'
-CACHE_PORT = 4567
+# Set up logging
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+EXTENSION_HOST = 'localhost'
+EXTENSION_HOST_PORT = 4567
 
 
 def lambda_handler(event, context):
-    print("Getting Plugins List from API")
+    # Log the received event
+    logger.info("Received event: %s", json.dumps(event, indent=2))
 
-    connection = http.client.HTTPConnection(CACHE_HOST, CACHE_PORT)
-    connection.request('GET', '/' + event['pathParameters']['ag'] + '/' + event['pathParameters']['targetType'] + '/' + event['pathParameters']['assetId'])
+    try:
+        # Extract asset ID from the event path parameters
+        asset_id = event['pathParameters']['assetId']
+        logger.info(f"Extracted Asset ID: {asset_id}")
 
-    response = connection.getresponse()
-    return response.read().decode()
+        # URL encode the asset_id to safely include it in the path
+        encoded_asset_id = quote(asset_id, safe='')
+        logger.info(f"Encoded Asset ID: {encoded_asset_id}")
+
+        # Construct the path for the HTTP request
+        path = f"/assets/{encoded_asset_id}"
+
+        # Create a connection object
+        connection = http.client.HTTPConnection(EXTENSION_HOST, EXTENSION_HOST_PORT)
+
+        # Make the GET request
+        connection.request("GET", path)
+
+        # Get the response
+        response = connection.getresponse()
+
+        # Read and decode the response data
+        data = response.read().decode()
+
+        # Attempt to parse the JSON response
+        try:
+            result = json.loads(data)
+        except json.JSONDecodeError:
+            # Handle cases where the response is not JSON
+            logger.error(f"Invalid JSON response: {data}")
+            result = data
+
+        # Close the connection
+        connection.close()
+
+        # Return the parsed result
+        return result
+
+    except Exception as e:
+        # Handle any exceptions (e.g., network issues, invalid response, etc.)
+        logger.error(f"Error while making GET request: {e}")
+        return None

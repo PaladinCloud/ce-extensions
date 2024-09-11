@@ -35,7 +35,7 @@ type HttpServer struct {
 
 // Start begins running the sidecar
 func Start(port string, server *HttpServer) {
-	println("starting the server in background")
+	println("Starting the server in background")
 	go startHTTPServer(port, server)
 }
 
@@ -43,7 +43,8 @@ func Start(port string, server *HttpServer) {
 func startHTTPServer(port string, httpConfig *HttpServer) {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
-	r.Get("/{ag}/{targetType}/{assetId}/details", handleValue(httpConfig))
+	r.Use(middleware.Recoverer)
+	r.Get("/assets/{assetId}", handleValue(httpConfig))
 
 	err := http.ListenAndServe(fmt.Sprintf(":%s", port), r)
 	if err != nil {
@@ -56,10 +57,8 @@ func startHTTPServer(port string, httpConfig *HttpServer) {
 
 func handleValue(config *HttpServer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ag := chi.URLParam(r, "ag")
-		targetType := chi.URLParam(r, "targetType")
 		assetId := chi.URLParam(r, "assetId")
-		assetDetails, err := config.AssetDetailsClient.GetAssetDetails(r.Context(), ag, targetType, assetId)
+		assetDetails, err := config.AssetDetailsClient.GetAssetDetails(r.Context(), assetId)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return

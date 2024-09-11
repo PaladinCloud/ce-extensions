@@ -2,7 +2,7 @@
 - serviceName: svc-asset-details
   apiConfig:
     method: GET
-    path: "/api/v2/asset"
+    path: "/api/v2/assets/{assetId}"
     requireAuth: true
   serviceConfig:
     environmentalVariables:

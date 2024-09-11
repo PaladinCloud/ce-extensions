@@ -20,8 +20,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 
-	"github.com/georgysavva/scany/v2/sqlscan"
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -64,14 +64,16 @@ func NewRdsClient(configuration *Configuration) *RdsClient {
 func (r *RdsClient) GetPluginName(ctx context.Context, source string) (string, error) {
 	println("Getting Plugin name from RDS")
 	query := `
-						 SELECT p.name 
+						 SELECT p.name as pluginName 
 						 FROM plugins p 
-						 WHERE p.source = %s;
+						 WHERE lower(p.source) = '%s';
  `
-	query = fmt.Sprintf(query, source)
+	query = fmt.Sprintf(query, strings.ToLower(source))
 
 	var pluginName string
-	if err := sqlscan.Select(ctx, r.db, &pluginName, query); err != nil {
+	row := r.db.QueryRow(query)
+
+	if err := row.Scan(&pluginName); err != nil {
 		return "", err
 	}
 
