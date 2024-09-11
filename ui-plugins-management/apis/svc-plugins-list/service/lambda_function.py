@@ -25,7 +25,7 @@ EXTENSION_HOST_PORT = 4567
 
 
 def lambda_handler(event, context):
-    Logger.log(logging.INFO, "Received event: " + json.dumps(event, indent=2))
+    Logger.info(logging.INFO, "Received event: " + json.dumps(event, indent=2))
 
     try:
         tenant_id = event['requestContext']['authorizer']['lambda']['tenantId']
