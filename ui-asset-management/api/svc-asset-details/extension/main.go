@@ -31,7 +31,9 @@ import (
 )
 
 var (
-	httpConfig       *server.HttpServer
+	httpServerClient *server.HttpServer
+	port             = "4567"
+
 	extensionName    = filepath.Base(os.Args[0]) // extension name has to match the filename
 	lambdaRuntimeAPI = os.Getenv("AWS_LAMBDA_RUNTIME_API")
 	extensionClient  = extension.NewClient(lambdaRuntimeAPI)
@@ -46,7 +48,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	configuration := clients.LoadConfigurationDetails(ctx)
 
-	httpConfig = &server.HttpServer{
+	httpServerClient = &server.HttpServer{
 		Configuration:      configuration,
 		AssetDetailsClient: clients.NewAssetDetailsClient(configuration),
 	}
@@ -69,14 +71,15 @@ func main() {
 
 	println(printPrefix, "Client Registered:", prettyPrint(res))
 
-	println("hello world! Starting Local HTTP Server")
-	server.Start("4567", httpConfig)
+	println("Starting Local HTTP Server")
+	server.Start(port, httpServerClient)
 
 	// Will block until shutdown event is received or cancelled via the context.
 	processEvents(ctx)
 }
 
 func processEvents(ctx context.Context) {
+	println(printPrefix, "Start - Processing events")
 	for {
 		select {
 		case <-ctx.Done():

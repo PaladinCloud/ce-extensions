@@ -35,7 +35,7 @@ type HttpServer struct {
 
 // Start begins running the sidecar
 func Start(port string, server *HttpServer) {
-	println("starting the server in background")
+	println("Starting the server in background")
 	go startHTTPServer(port, server)
 }
 
@@ -43,6 +43,7 @@ func Start(port string, server *HttpServer) {
 func startHTTPServer(port string, httpConfig *HttpServer) {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
 	r.Get("/assets/{assetId}", handleValue(httpConfig))
 
 	err := http.ListenAndServe(fmt.Sprintf(":%s", port), r)
