@@ -31,7 +31,7 @@ def lambda_handler(event, context):
         logger.info(f"Extracted Tenant ID: {tenant_id}")
 
         # Construct the path
-        path = f"/plugins/{tenant_id}"
+        path = f"/tenant/{tenant_id}/plugins"
 
         # Create a connection object
         connection = http.client.HTTPConnection(EXTENSION_HOST, EXTENSION_HOST_PORT)

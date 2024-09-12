@@ -43,7 +43,7 @@ func startHTTPServer(port string, httpConfig *HttpServer) {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
-	r.Get("/plugins/{tenantId}", handleValue(httpConfig))
+	r.Get("/tenant/{tenantId}/plugins", handleValue(httpConfig))
 
 	err := http.ListenAndServe(fmt.Sprintf(":%s", port), r)
 	if err != nil {
