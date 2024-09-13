@@ -20,8 +20,9 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strings"
+	"svc-asset-violations-layer/models"
 
+	"github.com/georgysavva/scany/sqlscan"
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -33,9 +34,9 @@ func NewRdsClient(configuration *Configuration) *RdsClient {
 	var (
 		dbUser     = configuration.RdsCredentials.DbUsername
 		dbPassword = configuration.RdsCredentials.DbPassword
-		dbHost     = configuration.RdsCredentials.DbHost
-		dbPort     = configuration.RdsCredentials.DbPort
-		dbName     = configuration.RdsCredentials.DbName
+		dbHost     = configuration.RdsHost
+		dbPort     = configuration.RdsPort
+		dbName     = configuration.RdsDbName
 	)
 
 	// Data Plugin Name (DSN)
@@ -55,29 +56,41 @@ func NewRdsClient(configuration *Configuration) *RdsClient {
 	}
 
 	fmt.Println("Connected to the database successfully!")
-
 	return &RdsClient{
 		db: db,
 	}
 }
 
-func (r *RdsClient) GetPluginName(ctx context.Context, source string) (string, error) {
-	println("Getting Plugin name from RDS")
+func (r *RdsClient) GetPolicies(ctx context.Context, targetType string) ([]models.Policy, error) {
+	fmt.Println("Getting Plugins List from RDS")
 	query := `
-						 SELECT p.name as pluginName 
-						 FROM plugins p 
-						 WHERE lower(p.source) = '%s';
- `
-	query = fmt.Sprintf(query, strings.ToLower(source))
+		SELECT 
+			p.policyId,
+			p.policyDisplayName,
+			p.category,
+			p.severity,
+		FROM 
+			cf_PolicyTable p
+		LEFT JOIN 
+			cf_PolicyParams pp ON p.policyId = pp.policyId 
+			AND pp.paramKey = 'pluginType'
+		LEFT JOIN 
+			cf_Accounts a ON pp.paramValue = a.platform
+		WHERE 
+			p.status = 'ENABLED' 
+			AND p.targetType = '%s'
+			AND (a.platform IS NULL OR pp.policyId IS NULL)
+		ORDER BY 
+			p.policyId;
+	`
+	formattedQuery := fmt.Sprintf(query, targetType)
 
-	var pluginName string
-	row := r.db.QueryRow(query)
-
-	if err := row.Scan(&pluginName); err != nil {
-		return "", err
+	var policies []models.Policy
+	if err := sqlscan.Select(ctx, r.db, &policies, formattedQuery); err != nil {
+		return nil, err
 	}
 
-	return pluginName, nil
+	return policies, nil
 }
 
 func (r *RdsClient) Close() error {

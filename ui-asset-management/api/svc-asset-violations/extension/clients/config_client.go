@@ -20,12 +20,18 @@ import (
 	"context"
 	"os"
 	"strconv"
+	"svc-asset-violations-layer/models"
 )
 
 type Configuration struct {
 	Region          string
 	TenantId        string
 	EnableExtension bool
+	RdsSecretName   string
+	RdsHost         string
+	RdsPort         string
+	RdsDbName       string
+	RdsCredentials  models.RdsSecret
 }
 
 func LoadConfigurationDetails(ctx context.Context) *Configuration {
@@ -37,10 +43,22 @@ func LoadConfigurationDetails(ctx context.Context) *Configuration {
 	}
 	region := os.Getenv("REGION")
 	tenantId := os.Getenv("TENANT_ID")
+	rdsSecretName := os.Getenv("RDS_SECRET_NAME")
+	rdsHost := os.Getenv("RDS_HOST")
+	rdsPort := os.Getenv("RDS_PORT")
+	rdsDbName := os.Getenv("RDS_DB_NAME")
+
+	secretsClient := NewSecretsClient(region)
+	rdsCredentials, _ := secretsClient.GetRdsSecret(ctx, rdsSecretName)
 
 	return &Configuration{
 		EnableExtension: enableExtension,
 		Region:          region,
 		TenantId:        tenantId,
+		RdsSecretName:   rdsSecretName,
+		RdsHost:         rdsHost,
+		RdsPort:         rdsPort,
+		RdsDbName:       rdsDbName,
+		RdsCredentials:  *rdsCredentials,
 	}
 }
