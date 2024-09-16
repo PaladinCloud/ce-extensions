@@ -30,6 +30,9 @@ def lambda_handler(event, context):
     logger.info("Received event: %s", json.dumps(event, indent=2))
 
     try:
+        tenant_id = event['requestContext']['authorizer']['lambda']['tenantId']
+        logger.info(f"Extracted Tenant ID: {tenant_id}")
+
         # Extract asset ID from the event path parameters
         asset_id = event['pathParameters']['assetId']
         logger.info(f"Extracted Asset ID: {asset_id}")
@@ -39,7 +42,7 @@ def lambda_handler(event, context):
         logger.info(f"Encoded Asset ID: {encoded_asset_id}")
 
         # Construct the path for the HTTP request
-        path = f"/assets/{encoded_asset_id}"
+        path = f"tenant/{tenant_id}/assets/{encoded_asset_id}"
 
         # Create a connection object
         connection = http.client.HTTPConnection(EXTENSION_HOST, EXTENSION_HOST_PORT)

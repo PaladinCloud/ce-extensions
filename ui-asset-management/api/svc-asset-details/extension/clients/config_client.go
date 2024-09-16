@@ -23,8 +23,6 @@ import (
 )
 
 type Configuration struct {
-	Region          string
-	TenantId        string
 	EnableExtension bool
 }
 
@@ -35,12 +33,8 @@ func LoadConfigurationDetails(ctx context.Context) *Configuration {
 		// When we deploy the lambda + extension, set the default runtime to enable extension
 		enableExtension = true
 	}
-	region := os.Getenv("REGION")
-	tenantId := os.Getenv("TENANT_ID")
 
 	return &Configuration{
 		EnableExtension: enableExtension,
-		Region:          region,
-		TenantId:        tenantId,
 	}
 }

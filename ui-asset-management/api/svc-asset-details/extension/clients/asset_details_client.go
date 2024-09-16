@@ -32,7 +32,7 @@ const (
 
 var fieldsToBeSkipped = [...]string{"_cloudType", "_resourceid", "_docid", "_discoverydate", "discoverydate", "firstdiscoveredon", "_entity", "_entitytype", "_loaddate", "assetRiskScore", "targettypedisplayname", "arsLoadDate"}
 
-func (c *AssetDetailsClient) GetAssetDetails(ctx context.Context, assetId string) (*models.AssetDetails, error) {
+func (c *AssetDetailsClient) GetAssetDetails(ctx context.Context, tenantId, assetId string) (*models.AssetDetails, error) {
 	if len(strings.TrimSpace(assetId)) == 0 {
 		return nil, fmt.Errorf("assetId must be present")
 	}

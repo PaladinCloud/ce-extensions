@@ -57,8 +57,9 @@ func startHTTPServer(port string, httpConfig *HttpServer) {
 
 func handleValue(config *HttpServer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		tenantId := chi.URLParam(r, "tenantId")
 		assetId := chi.URLParam(r, "assetId")
-		assetDetails, err := config.AssetDetailsClient.GetAssetDetails(r.Context(), assetId)
+		assetDetails, err := config.AssetDetailsClient.GetAssetDetails(r.Context(), tenantId, assetId)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return

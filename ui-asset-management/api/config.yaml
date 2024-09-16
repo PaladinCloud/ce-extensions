@@ -6,9 +6,6 @@
     requireAuth: true
   serviceConfig:
     environmentalVariables:
-      REGION: {REGION}
-      TENANT_ID: {TENANT_ID}
-      ELASTICSEARCH_URL: {ELASTICSEARCH_URL}
     lambdaConfig:
       handler: lambda_function.lambda_handler
       runtime: python
@@ -28,9 +25,6 @@
     requireAuth: true
   serviceConfig:
     environmentalVariables:
-      REGION: {REGION}
-      TENANT_ID: {TENANT_ID}
-      ELASTICSEARCH_URL: {ELASTICSEARCH_URL}
     lambdaConfig:
       handler: lambda_function.lambda_handler
       runtime: python
