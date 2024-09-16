@@ -19,7 +19,8 @@ package clients
 import (
 	"context"
 	"encoding/json"
-	"svc-asset-details-layer/models"
+	"fmt"
+	"svc-asset-violations-layer/models"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -40,6 +41,7 @@ func NewSecretsClient(region string) *SecretsClient {
 		aws.NewConfig().WithRegion(region),
 	)
 
+	fmt.Println("Initialized Secrets Client")
 	return &SecretsClient{
 		secretsClient: svc,
 	}

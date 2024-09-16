@@ -5,16 +5,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	logger "svc-asset-details-layer/logging"
 	"svc-asset-details-layer/models"
 )
 
 type AssetDetailsClient struct {
 	elasticSearchClient *ElasticSearchClient
-	rdsClient           *RdsClient
+	log                 *logger.Logger
 }
 
 func NewAssetDetailsClient(configuration *Configuration) *AssetDetailsClient {
-	return &AssetDetailsClient{elasticSearchClient: NewElasticSearchClient(), rdsClient: NewRdsClient(configuration)}
+	return &AssetDetailsClient{elasticSearchClient: NewElasticSearchClient()}
 }
 
 const (
@@ -35,7 +36,7 @@ func (c *AssetDetailsClient) GetAssetDetails(ctx context.Context, assetId string
 	if len(strings.TrimSpace(assetId)) == 0 {
 		return nil, fmt.Errorf("assetId must be present")
 	}
-
+	c.log.Info("Starting to fetch asset details")
 	result, err := c.elasticSearchClient.FetchAssetDetails(ctx, allSources, assetId, 1)
 
 	if err != nil {
@@ -44,6 +45,7 @@ func (c *AssetDetailsClient) GetAssetDetails(ctx context.Context, assetId string
 
 	sourceArr := (*result)["hits"].(map[string]interface{})["hits"].([]interface{})
 	if len(sourceArr) > 0 {
+		c.log.Info("Found asset details for assetId: " + assetId)
 		assetDetails := sourceArr[0].(map[string]interface{})["_source"].(map[string]interface{})
 		var primaryProvider string
 		var tags map[string]string
@@ -55,6 +57,7 @@ func (c *AssetDetailsClient) GetAssetDetails(ctx context.Context, assetId string
 			for k := range tags {
 				delete(assetDetails, "tags."+k)
 			}
+			assetDetails["tags"] = tags
 		}
 		if val, present := assetDetails["primaryProvider"]; present {
 			commonFields = c.buildCommonFields(assetDetails)
@@ -64,11 +67,6 @@ func (c *AssetDetailsClient) GetAssetDetails(ctx context.Context, assetId string
 			primaryProvider = fmt.Sprintf("%v", val)
 		} else {
 			commonFields = c.buildCommonFieldsLegacy(assetDetails)
-			pluginName, err := c.rdsClient.GetPluginName(ctx, commonFields[source])
-			if err != nil {
-				return nil, err
-			}
-			commonFields[sourceName] = pluginName
 			primaryProvider, _ = c.buildPrimaryProviderForLegacyAssetModel(assetDetails)
 		}
 
@@ -82,6 +80,7 @@ func (c *AssetDetailsClient) GetAssetDetails(ctx context.Context, assetId string
 			PrimaryProvider: primaryProvider,
 		}, nil
 	} else {
+		c.log.Error("asset detials not found for assetId: %s", assetId)
 		return nil, fmt.Errorf("asset detials not found for assetId: %s", assetId)
 	}
 }
@@ -109,7 +108,11 @@ func (c *AssetDetailsClient) buildPrimaryProviderForLegacyAssetModel(assetDetail
 	for _, key := range fieldsToBeSkipped {
 		delete(assetDetails, key)
 	}
-	primaryProviderJson, _ := json.Marshal(assetDetails)
+	primaryProviderJson, err := json.Marshal(assetDetails)
+	if err != nil {
+		c.log.Error("Error while formatting legacy asset details to json string")
+		return "", err
+	}
 	return string(primaryProviderJson[:]), nil
 }
 

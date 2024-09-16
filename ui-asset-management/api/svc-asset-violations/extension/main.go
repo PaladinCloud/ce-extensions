@@ -22,10 +22,10 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"svc-asset-details-layer/clients"
-	"svc-asset-details-layer/extension"
-	logger "svc-asset-details-layer/logging"
-	"svc-asset-details-layer/server"
+	"svc-asset-violations-layer/clients"
+	"svc-asset-violations-layer/extension"
+	logger "svc-asset-violations-layer/logging"
+	"svc-asset-violations-layer/server"
 
 	"syscall"
 )
@@ -55,8 +55,8 @@ func main() {
 
 	log.Info("Initializing HTTP Server")
 	httpServerClient = &server.HttpServer{
-		Configuration:      configuration,
-		AssetDetailsClient: clients.NewAssetDetailsClient(configuration),
+		Configuration:         configuration,
+		AssetViolationsClient: clients.NewAssetViolationsClient(configuration, log),
 	}
 	log.Info("HTTP Server initialized successfully!")
 
