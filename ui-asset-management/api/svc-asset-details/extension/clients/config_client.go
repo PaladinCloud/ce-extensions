@@ -23,7 +23,10 @@ import (
 )
 
 type Configuration struct {
-	EnableExtension bool
+	Region                   string
+	TenantConfigTable        string
+	TenantConfigPartitionKey string
+	EnableExtension          bool
 }
 
 func LoadConfigurationDetails(ctx context.Context) *Configuration {
@@ -33,8 +36,14 @@ func LoadConfigurationDetails(ctx context.Context) *Configuration {
 		// When we deploy the lambda + extension, set the default runtime to enable extension
 		enableExtension = true
 	}
+	region := os.Getenv("REGION")
+	tenantConfigTable := os.Getenv("TENANT_CONFIG_TABLE")
+	tenantConfigPartitionKey := os.Getenv("TENANT_CONFIG_PARTITION_KEY")
 
 	return &Configuration{
-		EnableExtension: enableExtension,
+		EnableExtension:          enableExtension,
+		Region:                   region,
+		TenantConfigTable:        tenantConfigTable,
+		TenantConfigPartitionKey: tenantConfigPartitionKey,
 	}
 }

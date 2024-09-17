@@ -56,7 +56,7 @@ func main() {
 	log.Info("Initializing HTTP Server")
 	httpServerClient = &server.HttpServer{
 		Configuration:      configuration,
-		AssetDetailsClient: clients.NewAssetDetailsClient(configuration),
+		AssetDetailsClient: clients.NewAssetDetailsClient(configuration, log),
 	}
 	log.Info("HTTP Server initialized successfully!")
 

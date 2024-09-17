@@ -10,12 +10,13 @@ import (
 )
 
 type AssetDetailsClient struct {
+	dynamodbClient      *DynamodbClient
 	elasticSearchClient *ElasticSearchClient
 	log                 *logger.Logger
 }
 
-func NewAssetDetailsClient(configuration *Configuration) *AssetDetailsClient {
-	return &AssetDetailsClient{elasticSearchClient: NewElasticSearchClient()}
+func NewAssetDetailsClient(configuration *Configuration, log *logger.Logger) *AssetDetailsClient {
+	return &AssetDetailsClient{dynamodbClient: NewDynamoDBClient(configuration, log), elasticSearchClient: NewElasticSearchClient(), log: log}
 }
 
 const (
@@ -36,8 +37,14 @@ func (c *AssetDetailsClient) GetAssetDetails(ctx context.Context, tenantId, asse
 	if len(strings.TrimSpace(assetId)) == 0 {
 		return nil, fmt.Errorf("assetId must be present")
 	}
+
+	esDomainProperties, err := c.dynamodbClient.GetEsDomain(ctx, tenantId)
+	if err != nil {
+		return nil, err
+	}
+
 	c.log.Info("Starting to fetch asset details")
-	result, err := c.elasticSearchClient.FetchAssetDetails(ctx, allSources, assetId, 1)
+	result, err := c.elasticSearchClient.FetchAssetDetails(ctx, esDomainProperties, allSources, assetId, 1)
 
 	if err != nil {
 		return nil, err

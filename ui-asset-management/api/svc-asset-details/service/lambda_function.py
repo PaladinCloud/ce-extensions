@@ -42,7 +42,7 @@ def lambda_handler(event, context):
         logger.info(f"Encoded Asset ID: {encoded_asset_id}")
 
         # Construct the path for the HTTP request
-        path = f"tenant/{tenant_id}/assets/{encoded_asset_id}"
+        path = f"/tenant/{tenant_id}/assets/{encoded_asset_id}"
 
         # Create a connection object
         connection = http.client.HTTPConnection(EXTENSION_HOST, EXTENSION_HOST_PORT)

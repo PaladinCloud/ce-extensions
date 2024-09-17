@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"svc-asset-details-layer/models"
 
 	elasticsearch "github.com/elastic/go-elasticsearch/v7"
 )
@@ -16,7 +17,7 @@ func NewElasticSearchClient() *ElasticSearchClient {
 	return &ElasticSearchClient{}
 }
 
-func (c *ElasticSearchClient) FetchAssetDetails(ctx context.Context, ag string, assetId string, size int) (*map[string]interface{}, error) {
+func (c *ElasticSearchClient) FetchAssetDetails(ctx context.Context, esDomainProperties *models.EsDomainProperties, ag string, assetId string, size int) (*map[string]interface{}, error) {
 
 	query := buildQuery(assetId)
 	esRequest := map[string]interface{}{
@@ -27,7 +28,7 @@ func (c *ElasticSearchClient) FetchAssetDetails(ctx context.Context, ag string, 
 	var buffer bytes.Buffer
 	json.NewEncoder(&buffer).Encode(esRequest)
 
-	client, _ := elasticsearch.NewDefaultClient()
+	client, _ := elasticsearch.NewClient(elasticsearch.Config{Addresses: []string{"https://" + esDomainProperties.Endpoint}})
 	response, err := client.Search(client.Search.WithIndex(ag), client.Search.WithBody(&buffer))
 
 	if err != nil {
