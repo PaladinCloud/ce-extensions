@@ -50,6 +50,17 @@ public class AssetDocumentHelper {
     private Function<String, String> accountIdToNameFn;
     private String resourceNameField;
 
+
+    public String buildDocId(Map<String, Object> data) {
+        var docId = StringHelper.concatenate(data, docIdFields, "_");
+        if ("aws".equalsIgnoreCase(dataSource)) {
+            if (docIdFields.contains(AssetDocumentFields.ACCOUNT_ID)) {
+                docId = STR."\{StringHelper.indexName(dataSource, type)}_\{docId}";
+            }
+        }
+        return docId;
+    }
+
     /**
      * Given mapper data, create an Asset document from it
      *
@@ -62,12 +73,7 @@ public class AssetDocumentHelper {
             return null;
         }
 
-        var docId = StringHelper.concatenate(data, docIdFields, "_");
-        if ("aws".equalsIgnoreCase(dataSource)) {
-            if (docId.contains(AssetDocumentFields.ACCOUNT_ID)) {
-                docId = STR."\{StringHelper.indexName(dataSource, type)}_\{docId}";
-            }
-        }
+        var docId = buildDocId(data);
 
         if (!isCloud) {
             throw new JobException("Opinions are not yet supported by the delta engine");
