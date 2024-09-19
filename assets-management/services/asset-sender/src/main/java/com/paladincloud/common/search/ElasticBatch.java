@@ -17,7 +17,7 @@ public class ElasticBatch implements AssetRepository.Batch {
     private static final int DEFAULT_BATCH_SIZE = 5000;
     private final List<BatchItem> batchItems = new ArrayList<>();
     private final ElasticSearchHelper elasticSearch;
-    private int batchSize = DEFAULT_BATCH_SIZE;
+    private final int batchSize = DEFAULT_BATCH_SIZE;
 
     @Inject
     public ElasticBatch(ElasticSearchHelper elasticSearch) {
@@ -67,7 +67,12 @@ public class ElasticBatch implements AssetRepository.Batch {
         var response = elasticSearch.invokeCheckAndConvert(ElasticBulkResponse.class,
             ElasticSearchHelper.HttpMethod.POST, "/_bulk", payload.toString());
         if (response.errors) {
-            LOGGER.error("ElasticBulkResponse error: {} for {}", response.items, payload);
+            var failedItems = response.items.stream()
+                .filter(i -> i.get("index") != null && ((Map<String, Object>)i.get("index")).get("error") != null)
+                .toList();
+            var niceItems = failedItems.stream().map(MapHelper::toJsonString).toList();
+
+            LOGGER.error("ElasticBulkResponse failed with {} errors: {}", niceItems.size(), niceItems);
             throw new JobException("bulk insert failed");
         }
         batchItems.clear();

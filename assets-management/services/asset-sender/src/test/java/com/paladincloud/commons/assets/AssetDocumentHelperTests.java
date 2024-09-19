@@ -1,11 +1,13 @@
 package com.paladincloud.commons.assets;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.paladincloud.common.AssetDocumentFields;
+import com.paladincloud.common.assets.AssetDTO;
 import com.paladincloud.common.assets.AssetDocumentHelper;
 import com.paladincloud.common.util.JsonHelper;
 import java.time.ZonedDateTime;
@@ -24,6 +26,7 @@ public class AssetDocumentHelperTests {
             .idField(idField)
             .docIdFields(List.of("accountid", "region", "instanceid"))
             .dataSource(dataSource)
+            .isCloud(true)
             .displayName("ec2")
             .tags(List.of())
             .type("ec2")
@@ -33,52 +36,36 @@ public class AssetDocumentHelperTests {
 
     @Test
     void primaryDtoIsFullyPopulated() throws JsonProcessingException {
-        AssetDocumentHelper helper = getHelper("aws", "instanceid");
+        AssetDocumentHelper helper = getHelper("gcp", "id");
         var mappedAsMap = JsonHelper.mapFromString(getSampleMapperPrimaryDocument());
 
         var dto = helper.createFrom(mappedAsMap);
-        assertNotNull(dto);
 
         var dtoAsMap = JsonHelper.mapFromString(JsonHelper.objectMapper.writeValueAsString(dto));
-        var expectedAssetMap = JsonHelper.mapFromString(getSamplePrimaryAssetDocument());
+        var expectedMap = JsonHelper.mapFromString(getSamplePrimaryAssetDocument());
 
+        assertNotNull(dto);
         assertNotNull(dtoAsMap.get(AssetDocumentFields.LOAD_DATE));
-
-        // assetRiskScore & arsLoadDate are set by a later job
-        // LoadDate is different for each test; a check that it exists is good enough
-        // tags aren't being set at this time, they don't appear te be required
-        var skippedFields = Set.of("assetRiskScore", "arsLoadDate", AssetDocumentFields.LOAD_DATE, "tags.Name", "tags.Tenant");
+        assertFalse(dtoAsMap.get(AssetDocumentFields.LOAD_DATE).toString().isBlank());
+        assertNotNull(dtoAsMap.get(AssetDocumentFields.PRIMARY_PROVIDER));
+        assertEquals(mappedAsMap.get("rawData"), dtoAsMap.get(AssetDocumentFields.PRIMARY_PROVIDER));
 
         // Ensure each value in the sample asset exists in the serialized/deserialized instance
-        expectedAssetMap.forEach((key, value) -> {
-            if (!skippedFields.contains(key)) {
+        expectedMap.forEach((key, value) -> {
                 assertTrue(dtoAsMap.containsKey(key), key);
                 assertEquals(value, dtoAsMap.get(key),
                     STR."\{key} value differs. expected=\{value} actual=\{dtoAsMap.get(key)}");
-            }
         });
-
-        // Ensure a few extra properties are set as well
-        assertEquals("64_us-west-1_i-76", dto.getDocId());
-        assertEquals("ec2", dto.getDocType());
-        assertEquals("aws", dto.getReportingSource());
-        assertEquals("64", dto.getAccountId());
-        assertEquals("fubar", dto.getAccountName());
-        assertEquals("Paladin Cloud", dto.getCspmSource());
-        assertEquals("aws", dto.getReportingSource());
-        assertTrue(dto.isEntity());
-        assertTrue(dto.isOwner());
-        assertTrue(dto.isLatest());
     }
 
     @Test
     void dtoIsUpdated() throws JsonProcessingException {
         var mappedAsMap = JsonHelper.mapFromString(getSampleMapperPrimaryDocument());
-        var dto = getHelper("aws", "instanceid").createFrom(mappedAsMap);
+        var dto = getHelper("gcp", "id").createFrom(mappedAsMap);
 
         mappedAsMap.put(AssetDocumentFields.ACCOUNT_NAME, "new account name");
 
-        AssetDocumentHelper helper = getHelper("aws", "instanceid");
+        AssetDocumentHelper helper = getHelper("gcp", "id");
         helper.updateFrom(mappedAsMap, dto);
 
         assertEquals("new account name", dto.getAccountName());
@@ -92,13 +79,13 @@ public class AssetDocumentHelperTests {
     @Test
     void updatedDtoHasNewFields() throws JsonProcessingException {
         var mappedAsMap = JsonHelper.mapFromString(getSampleMapperPrimaryDocument());
-        var dto = getHelper("aws", "instanceid").createFrom(mappedAsMap);
+        var dto = getHelper("gcp", "id").createFrom(mappedAsMap);
 
-        AssetDocumentHelper helper = getHelper("aws", "instanceid");
+        AssetDocumentHelper helper = getHelper("gcp", "id");
         helper.updateFrom(mappedAsMap, dto);
 
         assertEquals("Paladin Cloud", dto.getCspmSource());
-        assertEquals("aws", dto.getReportingSource());
+        assertEquals("gcp", dto.getReportingSource());
     }
 
     @Test
@@ -117,51 +104,89 @@ void secondaryDtoIsFullyPopulated() throws JsonProcessingException {
             {
                 "_cspm_source": "Paladin Cloud",
                 "_reporting_source": "aws",
-                "monitoringstate": "disabled",
-                "imageid": "ami-43",
-                "discoverydate": "2024-07-23 18:00:00+0000",
-                "clienttoken": "55-33",
-                "hostid": "",
-                "statereasoncode": "Client.UserInitiatedShutdown",
-                "_cloudType": "Aws",
-                "statetransitionreason": "User initiated (2024-02-09 06:43:46 GMT)",
-                "statecode": "80",
-                "platform": "",
-                "privatednsname": "ip-10-0-400-500.ec2.internal",
-                "accountid": "64",
-                "enasupport": "true",
-                "sourcedestcheck": "true",
-                "virtualizationtype": "hvm",
-                "accountname": "fubar",
-                "rootdevicename": "/dev/xvda",
-                "iaminstanceprofilearn": "",
-                "hypervisor": "xen",
-                "instancetype": "t2.xlarge",
-                "spotinstancerequestid": "",
-                "keyname": "fdnew",
-                "architecture": "x86_64",
-                "launchtime": "2024-02-09 06:39:55+0000",
-                "subnetid": "subnet-76",
-                "amilaunchindex": "0",
-                "kernelid": "",
-                "ramdiskid": "",
-                "tenancy": "default",
-                "rootdevicetype": "ebs",
-                "statename": "stopped",
-                "groupname": "",
-                "sriovnetsupport": "",
-                "ebsoptimized": "false",
-                "privateipaddress": "10.0.400.500",
-                "publicipaddress": "",
-                "statereasonmessage": "Client.UserInitiatedShutdown: User initiated shutdown",
-                "instanceid": "i-76",
-                "iaminstanceprofileid": "",
-                "publicdnsname": "",
-                "vpcid": "vpc-88",
-                "region": "us-west-1",
-                "instancelifecycle": "",
-                "availabilityzone": "us-west-1z",
-                "affinity": ""
+                "rawData": "{\\"auto_restart\\":true,\\"can_ip_forward\\":false,\\"confidential_computing\\":false,\\"description\\":\\"\\",\\"disks\\":[{\\"id\\":\\"0\\",\\"projectId\\":\\"xyz\\",\\"projectName\\":\\"Project\\",\\"name\\":\\"instance-abc\\",\\"sizeInGb\\":50,\\"type\\":\\"PERSISTENT\\",\\"autoDelete\\":true,\\"hasSha256\\":false,\\"hasKMSKeyName\\":false,\\"labels\\":null,\\"region\\":\\"\\"}],\\"emails\\":[\\"fubar@developer.gserviceaccount.com\\"],\\"id\\":17,\\"item_interfaces\\":[{\\"key\\":\\"enable-oslogin\\",\\"value\\":\\"true\\"}],\\"labels\\":{},\\"machine_type\\":\\"https://www.googleapis.com/compute/v1/projects/xyz/zones/z/machineTypes/e2-standard-2\\",\\"name\\":\\"instance-abc\\",\\"network_interfaces\\":[{\\"id\\":\\"100.128.100.189\\",\\"name\\":\\"nic0\\",\\"network\\":\\"https://www.googleapis.com/compute/v1/projects/xyz/global/networks/default\\",\\"accessConfig\\":[{\\"id\\":\\"External NAT\\",\\"name\\":\\"External NAT\\",\\"natIp\\":null,\\"projectName\\":\\"Project\\"}]}],\\"on_host_maintainence\\":\\"MIGRATE\\",\\"project_id\\":\\"xyz\\",\\"project_name\\":\\"Project\\",\\"project_number\\":344106022091,\\"region\\":\\"r\\",\\"scopes\\":[\\"https://www.googleapis.com/auth/devstorage.read_only\\",\\"https://www.googleapis.com/auth/logging.write\\",\\"https://www.googleapis.com/auth/monitoring.write\\",\\"https://www.googleapis.com/auth/servicecontrol\\",\\"https://www.googleapis.com/auth/service.management.readonly\\",\\"https://www.googleapis.com/auth/trace.append\\"],\\"service_accounts\\":[{\\"email\\":\\"fubar@developer.gserviceaccount.com\\",\\"emailBytes\\":{},\\"scopeList\\":[\\"https://www.googleapis.com/auth/devstorage.read_only\\",\\"https://www.googleapis.com/auth/logging.write\\",\\"https://www.googleapis.com/auth/monitoring.write\\",\\"https://www.googleapis.com/auth/servicecontrol\\",\\"https://www.googleapis.com/auth/service.management.readonly\\",\\"https://www.googleapis.com/auth/trace.append\\"]}],\\"shielded_instance_config\\":{\\"enableVtpm\\":true,\\"enableIntegrityMonitoring\\":true},\\"status\\":\\"TERMINATED\\"}",
+                "autoRestart": true,
+                "sourceDisplayName": "GCP",
+                "serviceAccounts": [
+                    {
+                        "email": "fubar@developer.gserviceaccount.com",
+                        "emailBytes": {},
+                        "scopeList": [
+                            "https://www.googleapis.com/auth/devstorage.read_only",
+                            "https://www.googleapis.com/auth/logging.write",
+                            "https://www.googleapis.com/auth/monitoring.write",
+                            "https://www.googleapis.com/auth/servicecontrol",
+                            "https://www.googleapis.com/auth/service.management.readonly",
+                            "https://www.googleapis.com/auth/trace.append"
+                        ]
+                    }
+                ],
+                "disks": [
+                    {
+                        "id": "0",
+                        "projectId": "xyz",
+                        "projectName": "Project",
+                        "name": "instance-abc",
+                        "sizeInGb": 50,
+                        "type": "PERSISTENT",
+                        "autoDelete": true,
+                        "hasSha256": false,
+                        "hasKmsKeyName": false,
+                        "labels": null,
+                        "region": ""
+                    }
+                ],
+                "shieldedInstanceConfig": {
+                    "enableVtpm": true,
+                    "enableIntegrityMonitoring": true
+                },
+                "emailList": [
+                    "fubar@developer.gserviceaccount.com"
+                ],
+                "discoverydate": "2024-09-05 14:57:00+0000",
+                "projectNumber": 19,
+                "onHostMaintainence": "MIGRATE",
+                "description": "",
+                "confidentialComputing": false,
+                "canIPForward": false,
+                "_cloudType": "gcp",
+                "tags": {},
+                "networkInterfaces": [
+                    {
+                        "id": "10.128.0.89",
+                        "name": "nic0",
+                        "network": "https://www.googleapis.com/compute/v1/projects/abc/global/networks/default",
+                        "accessConfigs": [
+                            {
+                                "id": "External NAT",
+                                "name": "External NAT",
+                                "natIP": null,
+                                "projectName": "Project"
+                            }
+                        ]
+                    }
+                ],
+                "name": "instance-abc",
+                "id": "17",
+                "region": "us-central",
+                "projectId": "xyz",
+                "items": [
+                    {
+                        "key": "enable-oslogin",
+                        "value": "true"
+                    }
+                ],
+                "machineType": "https://www.googleapis.com/compute/v1/projects/central-run-349616/zones/us-central1-f/machineTypes/e2-standard-2",
+                "scopesList": [
+                    "https://www.googleapis.com/auth/devstorage.read_only",
+                    "https://www.googleapis.com/auth/logging.write",
+                    "https://www.googleapis.com/auth/monitoring.write",
+                    "https://www.googleapis.com/auth/servicecontrol",
+                    "https://www.googleapis.com/auth/service.management.readonly",
+                    "https://www.googleapis.com/auth/trace.append"
+                ],
+                "status": "TERMINATED"
+
             }""".trim();
     }
 
@@ -194,69 +219,35 @@ void secondaryDtoIsFullyPopulated() throws JsonProcessingException {
             }""".trim();
     }
 
+    /**
+     * This is the expected DTO, converted to a map converted to a JSON string
+     *
+     * The validation checks each top-level field; in order to minimize problems, some fields, such
+     * as load date, are removed from this sample in order to allow simple comparison
+     */
     private String getSamplePrimaryAssetDocument() {
         return """
             {
-                "monitoringstate": "disabled",
-                "imageid": "ami-43",
-                "discoverydate": "2024-07-23 18:00:00+0000",
-                "clienttoken": "55-33",
-                "hostid": "",
-                "statereasoncode": "Client.UserInitiatedShutdown",
-                "_cloudType": "aws",
-                "statetransitionreason": "User initiated (2024-02-09 06:43:46 GMT)",
-                "statecode": "80",
-                "platform": "",
-                "privatednsname": "ip-10-0-400-500.ec2.internal",
-                "accountid": "64",
-                "enasupport": "true",
-                "sourcedestcheck": "true",
-                "virtualizationtype": "hvm",
-                "accountname": "fubar",
-                "rootdevicename": "/dev/xvda",
-                "iaminstanceprofilearn": "",
-                "hypervisor": "xen",
-                "instancetype": "t2.xlarge",
-                "spotinstancerequestid": "",
-                "keyname": "fdnew",
-                "architecture": "x86_64",
-                "launchtime": "2024-02-09 06:39:55+0000",
-                "subnetid": "subnet-76",
-                "amilaunchindex": "0",
-                "kernelid": "",
-                "ramdiskid": "",
-                "tenancy": "default",
-                "rootdevicetype": "ebs",
-                "statename": "stopped",
-                "groupname": "",
-                "sriovnetsupport": "",
-                "ebsoptimized": "false",
-                "privateipaddress": "10.0.400.500",
-                "publicipaddress": "",
-                "statereasonmessage": "Client.UserInitiatedShutdown: User initiated shutdown",
-                "instanceid": "i-76",
-                "iaminstanceprofileid": "",
-                "publicdnsname": "",
-                "vpcid": "vpc-88",
-                "region": "us-west-1",
-                "instancelifecycle": "",
-                "availabilityzone": "us-west-1z",
-                "affinity": "",
-                "_resourcename": "i-76",
-                "_resourceid": "i-76",
-                "_docid": "64_us-west-1_i-76",
+                "owner": true,
+                "_docid": "us-central",
+                "docType": "ec2",
+                "_cspm_source": "Paladin Cloud",
+                "_reporting_source": "gcp",
+                "_cloudType": "gcp",
+                "latest": true,
                 "_entity": "true",
                 "_entitytype": "ec2",
+                "name": "instance-abc",
+                "_resourcename": "17",
+                "_resourceid": "17",
+                "sourceDisplayName": "GCP",
+                "assetIdDisplayName": null,
                 "targettypedisplayname": "ec2",
-                "docType": "ec2",
-                "ec2_relations": "ec2",
-                "firstdiscoveredon": "2024-07-23 18:00:00+0000",
-                "assetRiskScore": 570,
-                "arsLoadDate": "2024-07-23 18:45:00+0000",
-                "tags.Name": "fd-mysql-upgrade",
-                "tags.Tenant": "FD",
-                "latest": true,
-                "_loaddate": "2024-07-23 18:36:00+0000"
+                "accountid": "xyz",
+                "accountname": null,
+                "discoverydate": "2024-09-05 14:57:00+0000",
+                "firstdiscoveredon": "2024-09-05 14:57:00+0000",
+                "ec2_relations": "ec2"
             }
         """.trim();
     }

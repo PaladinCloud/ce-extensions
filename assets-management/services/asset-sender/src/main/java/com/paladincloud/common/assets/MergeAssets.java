@@ -35,21 +35,23 @@ public class MergeAssets {
         var response = new MergeAssets();
 
         latestAssets.forEach(latestDoc -> {
-            var id = latestDoc.getOrDefault(assetHelper.getIdField(), "").toString();
-            if (id.isEmpty()) {
+            var idField = latestDoc.getOrDefault(assetHelper.getIdField(), "").toString();
+            if (idField.isEmpty()) {
                 throw new JobException(STR."Asset missing the id field '\{assetHelper.getIdField()}'");
             }
-            if (!existingAssets.containsKey(id)) {
-                response.newAssets.put(id, assetHelper.createFrom(latestDoc));
+            var docId = assetHelper.buildDocId(latestDoc);
+            if (!existingAssets.containsKey(docId)) {
+                response.newAssets.put(docId, assetHelper.createFrom(latestDoc));
+                response.updatedAssets.remove(docId);
             } else {
-                var asset = existingAssets.get(id);
-                response.updatedAssets.put(id, asset);
+                var asset = existingAssets.get(docId);
+                response.updatedAssets.put(docId, asset);
                 assetHelper.updateFrom(latestDoc, asset);
             }
         });
 
         existingAssets.forEach( (key, value) -> {
-            if (!response.updatedAssets.containsKey(key)) {
+            if (!response.updatedAssets.containsKey(key) && !response.newAssets.containsKey(key)) {
                 response.removedAssets.put(key, value);
                 assetHelper.remove(value);
             }

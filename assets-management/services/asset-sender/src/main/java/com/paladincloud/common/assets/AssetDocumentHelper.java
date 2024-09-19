@@ -3,6 +3,7 @@ package com.paladincloud.common.assets;
 import static java.util.Map.entry;
 
 import com.paladincloud.common.AssetDocumentFields;
+import com.paladincloud.common.errors.JobException;
 import com.paladincloud.common.util.MapHelper;
 import com.paladincloud.common.util.StringHelper;
 import com.paladincloud.common.util.TimeHelper;
@@ -26,6 +27,8 @@ import org.apache.commons.lang3.StringUtils;
 @Builder
 public class AssetDocumentHelper {
 
+    static private String MAPPER_RAW_DATA = "rawData";
+
     static private Map<String, String> accountIdNameMap = new HashMap<>();
     @NonNull
     private ZonedDateTime loadDate;
@@ -36,6 +39,7 @@ public class AssetDocumentHelper {
     private List<String> docIdFields;
     @NonNull
     private String dataSource;
+    private boolean isCloud;
     @NonNull
     private String displayName;
     @NonNull
@@ -45,6 +49,17 @@ public class AssetDocumentHelper {
     @NonNull
     private Function<String, String> accountIdToNameFn;
     private String resourceNameField;
+
+
+    public String buildDocId(Map<String, Object> data) {
+        var docId = StringHelper.concatenate(data, docIdFields, "_");
+        if ("aws".equalsIgnoreCase(dataSource)) {
+            if (docIdFields.contains(AssetDocumentFields.ACCOUNT_ID)) {
+                docId = STR."\{StringHelper.indexName(dataSource, type)}_\{docId}";
+            }
+        }
+        return docId;
+    }
 
     /**
      * Given mapper data, create an Asset document from it
@@ -58,11 +73,10 @@ public class AssetDocumentHelper {
             return null;
         }
 
-        var docId = StringHelper.concatenate(data, docIdFields, "_");
-        if ("aws".equalsIgnoreCase(dataSource)) {
-            if (docId.contains(AssetDocumentFields.ACCOUNT_ID)) {
-                docId = STR."\{StringHelper.indexName(dataSource, type)}_\{docId}";
-            }
+        var docId = buildDocId(data);
+
+        if (!isCloud) {
+            throw new JobException("Opinions are not yet supported by the delta engine");
         }
 
         var dto = new AssetDTO();
@@ -79,10 +93,12 @@ public class AssetDocumentHelper {
             entry(AssetDocumentFields.DISCOVERY_DATE,
                 v -> dto.setDiscoveryDate(TimeHelper.parseDiscoveryDate(v.toString()))),
             entry(AssetDocumentFields.NAME, v -> dto.setName(v.toString())),
+            entry(AssetDocumentFields.SOURCE_DISPLAY_NAME, v -> dto.setSourceDisplayName(v.toString())),
+            entry(MAPPER_RAW_DATA, v -> dto.setPrimaryProvider(v.toString())),
             entry(AssetDocumentFields.REPORTING_SOURCE, v -> dto.setReportingSource(v.toString())));
 
         fieldSetterMap.forEach((key, value) -> {
-            var fieldValue = getAndRemove(key, data);
+            var fieldValue = getOrNull(key, data);
             if (fieldValue != null) {
                 value.set(fieldValue);
             }
@@ -93,16 +109,14 @@ public class AssetDocumentHelper {
         dto.setEntity(true);
         dto.setReportingSource(dataSource);
 
-        // Populate the dto with all existing mapper values. Some of these may get overwritten
-        data.forEach(dto::addAdditionalProperty);
-
         // Set common asset properties
         dto.setEntityType(type);
+        dto.setLegacyTargetTypeDisplayName(displayName);
         dto.setTargetTypeDisplayName(displayName);
         dto.setDocType(type);
 
         if (dto.isOwner()) {
-            dto.addAdditionalProperty(STR."\{type}\{AssetDocumentFields.RELATIONS}", type);
+            dto.addRelation(STR."\{type}\{AssetDocumentFields.RELATIONS}", type);
         }
         dto.setResourceName(data.getOrDefault(resourceNameField, idValue).toString());
         dto.setResourceId(data.getOrDefault(AssetDocumentFields.RESOURCE_ID, idValue).toString());
@@ -125,7 +139,7 @@ public class AssetDocumentHelper {
             .forEach(tag -> {
                 var key = tag.get("key").toString();
                 if (StringUtils.isNotBlank(key)) {
-                    dto.addAdditionalProperty(STR."tags.\{key}", tag.get("value"));
+                    dto.addType(STR."tags.\{key}", tag.get("value"));
                 }
             });
 
@@ -158,6 +172,9 @@ public class AssetDocumentHelper {
     public void updateFrom(Map<String, Object> data, AssetDTO dto) {
         var idValue = data.getOrDefault(idField, "").toString();
 
+        dto.setPrimaryProvider(data.getOrDefault(MAPPER_RAW_DATA, "").toString());
+        dto.setSourceDisplayName(data.getOrDefault(AssetDocumentFields.SOURCE_DISPLAY_NAME, "").toString());
+
         // One time only, existing assets in ElasticSearch must be updated to include new fields
         if (StringUtils.isEmpty(dto.getCspmSource())) {
             dto.setCspmSource(data.getOrDefault(AssetDocumentFields.CSPM_SOURCE, "").toString());
@@ -187,6 +204,7 @@ public class AssetDocumentHelper {
 
         // The display name comes out of our database, but could potentially change with an update.
         // Hence, it gets updated here.
+        dto.setLegacyTargetTypeDisplayName(displayName);
         dto.setTargetTypeDisplayName(displayName);
         if ("Azure".equalsIgnoreCase(dto.getCloudType())) {
             dto.setAssetIdDisplayName(getAssetIdDisplayName(data));
@@ -208,11 +226,9 @@ public class AssetDocumentHelper {
         dto.setLatest(false);
     }
 
-    private Object getAndRemove(String key, Map<String, Object> data) {
+    private Object getOrNull(String key, Map<String, Object> data) {
         if (data.containsKey(key)) {
-            var value = data.get(key);
-            data.remove(key);
-            return value;
+            return data.get(key);
         }
         return null;
     }
@@ -256,7 +272,7 @@ public class AssetDocumentHelper {
                     var firstChar = key.substring(0, 1).toUpperCase();
                     var remainder = key.substring(1);
                     var upperCaseStart = STR."\{firstChar}\{remainder}";
-                    dto.addAdditionalProperty(STR."\{AssetDocumentFields.asTag(upperCaseStart)}",
+                    dto.addType(STR."\{AssetDocumentFields.asTag(upperCaseStart)}",
                         value);
                 });
             }
