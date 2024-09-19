@@ -68,7 +68,7 @@ func (r *RdsClient) GetPolicies(ctx context.Context, targetType string) ([]model
 			p.policyId,
 			p.policyDisplayName,
 			p.category,
-			p.severity,
+			p.severity
 		FROM 
 			cf_PolicyTable p
 		LEFT JOIN 
@@ -79,7 +79,8 @@ func (r *RdsClient) GetPolicies(ctx context.Context, targetType string) ([]model
 		WHERE 
 			p.status = 'ENABLED' 
 			AND p.targetType = '%s'
-			AND (a.platform IS NULL OR pp.policyId IS NULL)
+			AND ((a.platform IS NULL AND pp.policyId IS NULL)
+            OR (a.platform IS NOT NULL AND pp.policyId IS NOT NULL))
 		ORDER BY 
 			p.policyId;
 	`

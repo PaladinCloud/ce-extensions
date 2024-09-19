@@ -16,7 +16,14 @@
 
 package models
 
-type RdsSecret struct {
-	DbUsername string `json:"spring.datasource.username"`
-	DbPassword string `json:"spring.datasource.password"`
+// EsDomainProperties represents the properties of elasticsearch configs
+type EsDomainProperties struct {
+	Endpoint       string `json:"endpoint"`
+	Id             string `json:"id"`
+	KibanaEndpoint string `json:"kibana_endpoint"`
+}
+
+// TenantConfig represents the tenant configuration containing ES domain configs
+type TenantConfig struct {
+	EsDomain EsDomainProperties `json:"datastore_es_ESDomain"`
 }

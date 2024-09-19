@@ -44,7 +44,7 @@ func startHTTPServer(port string, httpConfig *HttpServer) {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
-	r.Get("/targets/{targetType}/assets/{assetId}/violations", handleValue(httpConfig))
+	r.Get("/tenant/{tenantId}/targets/{targetType}/assets/{assetId}/violations", handleValue(httpConfig))
 
 	err := http.ListenAndServe(fmt.Sprintf(":%s", port), r)
 	if err != nil {
@@ -57,9 +57,10 @@ func startHTTPServer(port string, httpConfig *HttpServer) {
 
 func handleValue(config *HttpServer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		tenantId := chi.URLParam(r, "tenantId")
 		targetType := chi.URLParam(r, "targetType")
 		assetId := chi.URLParam(r, "assetId")
-		assetDetails, err := config.AssetViolationsClient.GetAssetViolations(r.Context(), targetType, assetId)
+		assetDetails, err := config.AssetViolationsClient.GetAssetViolations(r.Context(), targetType, tenantId, assetId)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return

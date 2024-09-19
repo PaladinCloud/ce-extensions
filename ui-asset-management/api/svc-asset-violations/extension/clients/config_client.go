@@ -24,14 +24,16 @@ import (
 )
 
 type Configuration struct {
-	Region          string
-	TenantId        string
-	EnableExtension bool
-	RdsSecretName   string
-	RdsHost         string
-	RdsPort         string
-	RdsDbName       string
-	RdsCredentials  models.RdsSecret
+	Region                   string
+	TenantId                 string
+	EnableExtension          bool
+	RdsSecretName            string
+	RdsHost                  string
+	RdsPort                  string
+	RdsDbName                string
+	RdsCredentials           models.RdsSecret
+	TenantConfigTable        string
+	TenantConfigPartitionKey string
 }
 
 func LoadConfigurationDetails(ctx context.Context) *Configuration {
@@ -47,18 +49,22 @@ func LoadConfigurationDetails(ctx context.Context) *Configuration {
 	rdsHost := os.Getenv("RDS_HOST")
 	rdsPort := os.Getenv("RDS_PORT")
 	rdsDbName := os.Getenv("RDS_DB_NAME")
+	tenantConfigTable := os.Getenv("TENANT_CONFIG_TABLE")
+	tenantConfigPartitionKey := os.Getenv("TENANT_CONFIG_PARTITION_KEY")
 
 	secretsClient := NewSecretsClient(region)
 	rdsCredentials, _ := secretsClient.GetRdsSecret(ctx, rdsSecretName)
 
 	return &Configuration{
-		EnableExtension: enableExtension,
-		Region:          region,
-		TenantId:        tenantId,
-		RdsSecretName:   rdsSecretName,
-		RdsHost:         rdsHost,
-		RdsPort:         rdsPort,
-		RdsDbName:       rdsDbName,
-		RdsCredentials:  *rdsCredentials,
+		EnableExtension:          enableExtension,
+		Region:                   region,
+		TenantId:                 tenantId,
+		RdsSecretName:            rdsSecretName,
+		RdsHost:                  rdsHost,
+		RdsPort:                  rdsPort,
+		RdsDbName:                rdsDbName,
+		RdsCredentials:           *rdsCredentials,
+		TenantConfigTable:        tenantConfigTable,
+		TenantConfigPartitionKey: tenantConfigPartitionKey,
 	}
 }

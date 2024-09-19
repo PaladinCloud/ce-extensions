@@ -3,6 +3,7 @@ package clients
 import (
 	"context"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	logger "svc-asset-violations-layer/logging"
@@ -10,13 +11,14 @@ import (
 )
 
 type AssetViolationsClient struct {
+	dynamodbClient      *DynamodbClient
 	elasticSearchClient *ElasticSearchClient
 	rdsClient           *RdsClient
 	log                 *logger.Logger
 }
 
 func NewAssetViolationsClient(configuration *Configuration, log *logger.Logger) *AssetViolationsClient {
-	return &AssetViolationsClient{elasticSearchClient: NewElasticSearchClient(), rdsClient: NewRdsClient(configuration), log: log}
+	return &AssetViolationsClient{dynamodbClient: NewDynamoDBClient(configuration, log), elasticSearchClient: NewElasticSearchClient(), rdsClient: NewRdsClient(configuration), log: log}
 }
 
 const (
@@ -29,9 +31,19 @@ const (
 	targetTypeName = "targetTypeName"
 	accountId      = "accountId"
 	allSources     = "all-sources"
+	open           = "open"
+	fail           = "Fail"
+	exempted       = "exempted"
+	exempt         = "Exempt"
+	pass           = "Pass"
+	issueStatus    = "issueStatus"
+	policyId       = "policyId"
 )
 
-func (c *AssetViolationsClient) GetAssetViolations(ctx context.Context, targetType string, assetId string) (*models.AssetViolations, error) {
+var severities = [4]string{"low", "medium", "high", "critical"}
+var severityWeights = map[string]int{"low": 1, "medium": 3, "high": 5, "critical": 10}
+
+func (c *AssetViolationsClient) GetAssetViolations(ctx context.Context, targetType string, tenantId, assetId string) (*models.AssetViolations, error) {
 	if len(strings.TrimSpace(assetId)) == 0 {
 		return nil, fmt.Errorf("assetId must be present")
 	}
@@ -50,8 +62,13 @@ func (c *AssetViolationsClient) GetAssetViolations(ctx context.Context, targetTy
 	}
 	c.log.Info("got " + strconv.Itoa(len(policies)) + " policies for target type: " + targetType)
 
+	esDomainProperties, err := c.dynamodbClient.GetEsDomain(ctx, tenantId)
+	if err != nil {
+		return nil, err
+	}
+
 	// fetch violations for the asset
-	result, err := c.elasticSearchClient.FetchAssetViolations(ctx, allSources, assetId)
+	result, err := c.elasticSearchClient.FetchAssetViolations(ctx, esDomainProperties, allSources, assetId)
 	if err != nil {
 		return nil, err
 	}
@@ -65,21 +82,70 @@ func (c *AssetViolationsClient) GetAssetViolations(ctx context.Context, targetTy
 		// put the violations in map with policyId as key, so that they can be retrieved at constant time when building response with all policies
 		for i := 0; i < len(sourceArr); i++ {
 			violationDetail := sourceArr[i].(map[string]interface{})["_source"].(map[string]interface{})
-			policyViolation[violationDetail["policyId"].(string)] = violationDetail
+			violationDetail["_id"] = sourceArr[i].(map[string]interface{})["_id"]
+			policyViolation[violationDetail[policyId].(string)] = violationDetail
 		}
 	}
-	response := models.AssetViolations{Violations: make([]models.Violation, len(policies))}
 
+	policyViolations := models.PolicyViolations{Violations: []models.Violation{}}
+	severityCount := make(map[string]int, len(severities))
+	for _, severity := range severities {
+		severityCount[severity] = 0
+	}
+
+	var totalSeverityWeights int
+	totalViolations := 0
 	for _, policy := range policies {
-		violationInfo := policyViolation[policy.PolicyId].(map[string]string)
-		response.Violations = append(response.Violations, models.Violation{
+		var lastScanStatus string
+		var issueId string
+		var evaluationStatus string
+
+		if policyViolation[policy.PolicyId] != nil {
+			violationInfo := policyViolation[policy.PolicyId].(map[string]interface{})
+			lastScanStatus = violationInfo[issueStatus].(string)
+			issueId = violationInfo["_id"].(string)
+		}
+		if lastScanStatus == open {
+			evaluationStatus = fail
+			totalViolations++
+			severityCount[policy.Severity] = severityCount[policy.Severity] + 1
+		} else if lastScanStatus == exempted {
+			evaluationStatus = exempt
+		} else {
+			evaluationStatus = pass
+		}
+
+		policyViolations.Violations = append(policyViolations.Violations, models.Violation{
 			PolicyName:     policy.PolicyName,
 			Severity:       policy.Severity,
 			Category:       policy.Category,
-			LastScanStatus: violationInfo["issueStatus"],
-			IssueId:        violationInfo["_id"],
+			LastScanStatus: evaluationStatus,
+			IssueId:        issueId,
 		})
-
+		policyViolations.SeverityInfos = buildSeverityInfo(severityCount)
+		policyViolations.TotalPolicies = len(policies)
+		policyViolations.TotalViolations = totalViolations
+		totalSeverityWeights += severityWeights[policy.Severity]
+		policyViolations.Compliance = calculateCompliancePercent(totalSeverityWeights, severityCount)
 	}
-	return &response, nil
+	return &models.AssetViolations{Data: policyViolations}, nil
+}
+
+func buildSeverityInfo(severityCounts map[string]int) []models.SeverityInfo {
+	severityInfoArr := make([]models.SeverityInfo, 0, len(severities))
+	for k, v := range severityCounts {
+		severityInfo := models.SeverityInfo{Severity: k, Count: v}
+		severityInfoArr = append(severityInfoArr, severityInfo)
+	}
+	return severityInfoArr
+}
+
+func calculateCompliancePercent(totalPolicySeverityWeights int, severityCounts map[string]int) int {
+	violatedPolicySeverityWeights := severityCounts["critical"]*severityWeights["critical"] + severityCounts["high"]*severityWeights["high"] + severityCounts["medium"]*severityWeights["medium"] + severityCounts["low"]*severityWeights["low"]
+	if totalPolicySeverityWeights > 0 {
+		compliance := 100 - (violatedPolicySeverityWeights * 100 / totalPolicySeverityWeights)
+		return int(math.Floor(float64(compliance)))
+	} else {
+		return 100
+	}
 }

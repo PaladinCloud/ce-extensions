@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"svc-asset-violations-layer/models"
 
 	elasticsearch "github.com/elastic/go-elasticsearch/v7"
 )
@@ -16,19 +17,21 @@ func NewElasticSearchClient() *ElasticSearchClient {
 	return &ElasticSearchClient{}
 }
 
-func (c *ElasticSearchClient) FetchAssetViolations(ctx context.Context, ag string, assetId string) (*map[string]interface{}, error) {
+func (c *ElasticSearchClient) FetchAssetViolations(ctx context.Context, esDomainProperties *models.EsDomainProperties, ag string, assetId string) (*map[string]interface{}, error) {
 
 	query := buildQuery(assetId)
+	fmt.Println("query: ", query)
 	esRequest := map[string]interface{}{
-		"size":    500,
+		"size":    1000,
 		"query":   query,
-		"_source": [2]string{"policyId", "issueStatus"},
+		"_source": [3]string{"policyId", "issueStatus", "_id"},
 	}
 
 	var buffer bytes.Buffer
 	json.NewEncoder(&buffer).Encode(esRequest)
+	fmt.Println("esRequest: ", string(buffer.Bytes()))
 
-	client, _ := elasticsearch.NewDefaultClient()
+	client, _ := elasticsearch.NewClient(elasticsearch.Config{Addresses: []string{"https://" + esDomainProperties.Endpoint}})
 	response, err := client.Search(client.Search.WithIndex(ag), client.Search.WithBody(&buffer))
 
 	if err != nil {
@@ -48,7 +51,7 @@ func buildQuery(assetId string) map[string]interface{} {
 
 	query := map[string]interface{}{
 		"bool": map[string]interface{}{
-			"must": [3]map[string]interface{}{buildTermQuery("_docid.keyword", assetId), buildTermQuery("type", "issue"), buildTermQuery("issueStatus", [2]string{"open", "exempted"})},
+			"must": [3]map[string]interface{}{buildTermQuery("_docid.keyword", assetId), buildTermQuery("type", "issue"), buildTermQuery("issueStatus", []string{"open", "exempted"})},
 		},
 	}
 	return query
