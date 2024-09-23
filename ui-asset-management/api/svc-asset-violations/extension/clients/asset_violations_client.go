@@ -116,6 +116,7 @@ func (c *AssetViolationsClient) GetAssetViolations(ctx context.Context, targetTy
 		}
 
 		policyViolations.Violations = append(policyViolations.Violations, models.Violation{
+			PolicyId:       policy.PolicyId,
 			PolicyName:     policy.PolicyName,
 			Severity:       policy.Severity,
 			Category:       policy.Category,

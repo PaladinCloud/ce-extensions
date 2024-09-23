@@ -1,6 +1,7 @@
 package models
 
 type Violation struct {
+	PolicyId       string `json:"policyId"`
 	PolicyName     string `json:"policyName"`
 	Severity       string `json:"severity"`
 	Category       string `json:"category"`
