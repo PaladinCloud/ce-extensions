@@ -23,5 +23,6 @@ type PolicyViolations struct {
 }
 
 type AssetViolations struct {
-	Data PolicyViolations `json:"data"`
+	Data    PolicyViolations `json:"data"`
+	Message string           `json:"message"`
 }

@@ -57,6 +57,7 @@ func main() {
 	httpServerClient = &server.HttpServer{
 		Configuration:         configuration,
 		AssetViolationsClient: clients.NewAssetViolationsClient(configuration, log),
+		Log:                   log,
 	}
 	log.Info("HTTP Server initialized successfully!")
 

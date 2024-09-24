@@ -57,6 +57,7 @@ func main() {
 	httpServerClient = &server.HttpServer{
 		Configuration:      configuration,
 		AssetDetailsClient: clients.NewAssetDetailsClient(configuration, log),
+		Log:                log,
 	}
 	log.Info("HTTP Server initialized successfully!")
 
@@ -95,13 +96,13 @@ func processEvents(ctx context.Context) {
 			log.Info("Context done, exiting event loop")
 			return
 		default:
-			log.Info("Waiting for next event...")
-			// Fetch the next event and check for errors.
-			_, err := extensionClient.NextEvent(ctx)
-			if err != nil {
-				log.Info("Error fetching next event:", err)
-				return
-			}
+			// log.Info("Waiting for next event...")
+			// // Fetch the next event and check for errors.
+			// _, err := extensionClient.NextEvent(ctx)
+			// if err != nil {
+			// 	log.Info("Error fetching next event:", err)
+			// 	return
+			// }
 		}
 	}
 }

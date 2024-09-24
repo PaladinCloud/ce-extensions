@@ -38,6 +38,7 @@ const (
 	pass           = "Pass"
 	issueStatus    = "issueStatus"
 	policyId       = "policyId"
+	success        = "success"
 )
 
 var severities = [4]string{"low", "medium", "high", "critical"}
@@ -129,7 +130,7 @@ func (c *AssetViolationsClient) GetAssetViolations(ctx context.Context, targetTy
 		totalSeverityWeights += severityWeights[policy.Severity]
 		policyViolations.Compliance = calculateCompliancePercent(totalSeverityWeights, severityCount)
 	}
-	return &models.AssetViolations{Data: policyViolations}, nil
+	return &models.AssetViolations{Data: policyViolations, Message: success}, nil
 }
 
 func buildSeverityInfo(severityCounts map[string]int) []models.SeverityInfo {

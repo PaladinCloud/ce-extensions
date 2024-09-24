@@ -19,10 +19,11 @@ package server
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"svc-asset-details-layer/clients"
+	logger "svc-asset-details-layer/logging"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -31,6 +32,7 @@ import (
 type HttpServer struct {
 	Configuration      *clients.Configuration
 	AssetDetailsClient *clients.AssetDetailsClient
+	Log                *logger.Logger
 }
 
 // Start begins running the sidecar
@@ -48,17 +50,23 @@ func startHTTPServer(port string, httpConfig *HttpServer) {
 
 	err := http.ListenAndServe(fmt.Sprintf(":%s", port), r)
 	if err != nil {
-		log.Fatal("error starting the server", err)
+		httpConfig.Log.Error("error starting the server", err)
 		os.Exit(0)
 	}
 
-	log.Printf("Server started on %s", port)
+	httpConfig.Log.Info("Server started on %s", port)
 }
 
 func handleValue(config *HttpServer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tenantId := chi.URLParam(r, "tenantId")
-		assetId := chi.URLParam(r, "assetId")
+		assetId, err := url.QueryUnescape(chi.URLParam(r, "assetId"))
+		if err != nil {
+			config.Log.Error("Error decoding the assetId from Url path")
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
 		assetDetails, err := config.AssetDetailsClient.GetAssetDetails(r.Context(), tenantId, assetId)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)

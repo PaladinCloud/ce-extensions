@@ -20,20 +20,25 @@ func NewAssetDetailsClient(configuration *Configuration, log *logger.Logger) *As
 }
 
 const (
-	docIDKeyword   = "_docid.keyword"
-	docTypeKeyword = "docType.keyword"
-	cloudType      = "_cloudType"
-	source         = "source"
-	sourceName     = "sourceName"
-	targetType     = "targetType"
-	targetTypeName = "targetTypeName"
-	accountId      = "accountId"
-	allSources     = "all-sources"
+	docIDKeyword      = "_docid.keyword"
+	docTypeKeyword    = "docType.keyword"
+	cloudType         = "_cloudType"
+	source            = "source"
+	sourceName        = "sourceName"
+	targetType        = "targetType"
+	targetTypeName    = "targetTypeName"
+	region            = "region"
+	accountId         = "accountId"
+	accountName       = "accountName"
+	allSources        = "all-sources"
+	sourceDisplayName = "sourceDisplayName"
+	entitytype        = "_entitytype"
+	success           = "success"
 )
 
 var fieldsToBeSkipped = [...]string{"_cloudType", "_resourceid", "_docid", "_discoverydate", "discoverydate", "firstdiscoveredon", "_entity", "_entitytype", "_loaddate", "assetRiskScore", "targettypedisplayname", "arsLoadDate"}
 
-func (c *AssetDetailsClient) GetAssetDetails(ctx context.Context, tenantId, assetId string) (*models.AssetDetails, error) {
+func (c *AssetDetailsClient) GetAssetDetails(ctx context.Context, tenantId, assetId string) (*models.Response, error) {
 	if len(strings.TrimSpace(assetId)) == 0 {
 		return nil, fmt.Errorf("assetId must be present")
 	}
@@ -58,7 +63,11 @@ func (c *AssetDetailsClient) GetAssetDetails(ctx context.Context, tenantId, asse
 		var tags map[string]string
 		var commonFields map[string]string
 		if val, present := assetDetails["tags"]; present {
-			tags = val.(map[string]string)
+			tagsMap := val.(map[string]interface{})
+			tags = make(map[string]string)
+			for k, v := range tagsMap {
+				tags[k] = v.(string)
+			}
 		} else {
 			tags = c.buildTagsForLegacyAssetModel(assetDetails)
 			for k := range tags {
@@ -77,15 +86,16 @@ func (c *AssetDetailsClient) GetAssetDetails(ctx context.Context, tenantId, asse
 			primaryProvider, _ = c.buildPrimaryProviderForLegacyAssetModel(assetDetails)
 		}
 
-		return &models.AssetDetails{
+		return &models.Response{Data: models.AssetDetails{
 			AccountId:       commonFields[accountId],
+			AccountName:     commonFields[accountName],
 			Source:          commonFields[source],
 			SourceName:      commonFields[sourceName],
 			TargetType:      commonFields[targetType],
 			TargetTypeName:  commonFields[targetTypeName],
 			Tags:            tags,
 			PrimaryProvider: primaryProvider,
-		}, nil
+		}, Message: success}, nil
 	} else {
 		c.log.Error("asset detials not found for assetId: %s", assetId)
 		return nil, fmt.Errorf("asset detials not found for assetId: %s", assetId)
@@ -94,20 +104,57 @@ func (c *AssetDetailsClient) GetAssetDetails(ctx context.Context, tenantId, asse
 
 func (c *AssetDetailsClient) buildCommonFields(assetDetails map[string]interface{}) map[string]string {
 	commonFields := map[string]string{}
-	commonFields[accountId] = fmt.Sprintf("%v", assetDetails[accountId])
-	commonFields[source] = assetDetails[source].(string)
-	commonFields[sourceName] = assetDetails[sourceName].(string)
-	commonFields[targetType] = assetDetails[targetType].(string)
-	commonFields[targetTypeName] = assetDetails[targetTypeName].(string)
+
+	if v, ok := assetDetails["accountid"]; ok {
+		commonFields[accountId] = v.(string)
+	}
+	if v, ok := assetDetails["accountname"]; ok {
+		commonFields[accountName] = v.(string)
+	}
+	if v, ok := assetDetails[cloudType]; ok {
+		commonFields[source] = v.(string)
+	}
+	if v, ok := assetDetails[region]; ok {
+		commonFields[region] = v.(string)
+	}
+	if v, ok := assetDetails[sourceDisplayName]; ok {
+		commonFields[sourceName] = v.(string)
+	}
+	if v, ok := assetDetails[entitytype]; ok {
+		commonFields[targetType] = v.(string)
+	}
+	if v, ok := assetDetails["targetTypeDisplayName"]; ok {
+		commonFields[targetTypeName] = v.(string)
+	}
+
 	return commonFields
 }
 
 func (c *AssetDetailsClient) buildCommonFieldsLegacy(assetDetails map[string]interface{}) map[string]string {
 	commonFields := map[string]string{}
-	commonFields[accountId] = fmt.Sprintf("%v", assetDetails["accountid"])
-	commonFields[source] = assetDetails["_cloudType"].(string)
-	commonFields[targetType] = assetDetails["_entitytype"].(string)
-	commonFields[targetTypeName] = assetDetails["targettypedisplayname"].(string)
+
+	if v, ok := assetDetails["accountid"]; ok {
+		commonFields[accountId] = v.(string)
+	}
+	if v, ok := assetDetails["accountname"]; ok {
+		commonFields[accountName] = v.(string)
+	}
+	if v, ok := assetDetails[cloudType]; ok {
+		commonFields[source] = v.(string)
+	}
+	if v, ok := assetDetails[region]; ok {
+		commonFields[region] = v.(string)
+	}
+	if v, ok := assetDetails[cloudType]; ok {
+		commonFields[sourceName] = v.(string)
+	}
+	if v, ok := assetDetails[entitytype]; ok {
+		commonFields[targetType] = v.(string)
+	}
+	if v, ok := assetDetails["targettypedisplayname"]; ok {
+		commonFields[targetTypeName] = v.(string)
+	}
+
 	return commonFields
 }
 
