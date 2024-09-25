@@ -20,6 +20,7 @@ type PolicyViolations struct {
 	TotalViolations int            `json:"totalViolations"`
 	Compliance      int            `json:"compliance"`
 	SeverityInfos   []SeverityInfo `json:"severityInfo"`
+	Coverage        string         `json:"coverage"`
 }
 
 type AssetViolations struct {

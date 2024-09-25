@@ -39,6 +39,8 @@ const (
 	issueStatus    = "issueStatus"
 	policyId       = "policyId"
 	success        = "success"
+	managed        = "Managed"
+	unmanaged      = "Unmanaged"
 )
 
 var severities = [4]string{"low", "medium", "high", "critical"}
@@ -58,8 +60,8 @@ func (c *AssetViolationsClient) GetAssetViolations(ctx context.Context, targetTy
 		return nil, fmt.Errorf("error fetching policies from rds for target type: " + targetType)
 	}
 	if policies == nil || len(policies) == 0 {
-		c.log.Error("No policies for given target type: " + targetType)
-		return nil, fmt.Errorf("No policies for given target type: " + targetType)
+		c.log.Info("No policies for given target type: " + targetType)
+		return &models.AssetViolations{Data: models.PolicyViolations{Coverage: unmanaged}, Message: success}, nil
 	}
 	c.log.Info("got " + strconv.Itoa(len(policies)) + " policies for target type: " + targetType)
 
@@ -129,6 +131,7 @@ func (c *AssetViolationsClient) GetAssetViolations(ctx context.Context, targetTy
 		policyViolations.TotalViolations = totalViolations
 		totalSeverityWeights += severityWeights[policy.Severity]
 		policyViolations.Compliance = calculateCompliancePercent(totalSeverityWeights, severityCount)
+		policyViolations.Coverage = managed
 	}
 	return &models.AssetViolations{Data: policyViolations, Message: success}, nil
 }

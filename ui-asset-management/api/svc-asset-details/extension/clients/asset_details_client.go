@@ -12,11 +12,12 @@ import (
 type AssetDetailsClient struct {
 	dynamodbClient      *DynamodbClient
 	elasticSearchClient *ElasticSearchClient
+	rdsClient           *RdsClient
 	log                 *logger.Logger
 }
 
 func NewAssetDetailsClient(configuration *Configuration, log *logger.Logger) *AssetDetailsClient {
-	return &AssetDetailsClient{dynamodbClient: NewDynamoDBClient(configuration, log), elasticSearchClient: NewElasticSearchClient(), log: log}
+	return &AssetDetailsClient{dynamodbClient: NewDynamoDBClient(configuration, log), elasticSearchClient: NewElasticSearchClient(), rdsClient: NewRdsClient(configuration), log: log}
 }
 
 const (
@@ -34,6 +35,9 @@ const (
 	sourceDisplayName = "sourceDisplayName"
 	entitytype        = "_entitytype"
 	success           = "success"
+	unknown           = "Unknown"
+	mandatory         = "mandatory"
+	optional          = "optional"
 )
 
 var fieldsToBeSkipped = [...]string{"_cloudType", "_resourceid", "_docid", "_discoverydate", "discoverydate", "firstdiscoveredon", "_entity", "_entitytype", "_loaddate", "assetRiskScore", "targettypedisplayname", "arsLoadDate"}
@@ -59,6 +63,7 @@ func (c *AssetDetailsClient) GetAssetDetails(ctx context.Context, tenantId, asse
 	if len(sourceArr) > 0 {
 		c.log.Info("Found asset details for assetId: " + assetId)
 		assetDetails := sourceArr[0].(map[string]interface{})["_source"].(map[string]interface{})
+		mandatoryTags, _ := c.rdsClient.FetchMandatoryTags(ctx)
 		var primaryProvider string
 		var tags map[string]string
 		var commonFields map[string]string
@@ -75,6 +80,15 @@ func (c *AssetDetailsClient) GetAssetDetails(ctx context.Context, tenantId, asse
 			}
 			assetDetails["tags"] = tags
 		}
+
+		if mandatoryTags != nil {
+			for _, mandatoryTag := range mandatoryTags {
+				if _, ok := tags[mandatoryTag.TagName]; !ok {
+					tags[mandatoryTag.TagName] = unknown
+				}
+			}
+		}
+
 		if val, present := assetDetails["primaryProvider"]; present {
 			commonFields = c.buildCommonFields(assetDetails)
 			primaryProvider = fmt.Sprintf("%v", val)

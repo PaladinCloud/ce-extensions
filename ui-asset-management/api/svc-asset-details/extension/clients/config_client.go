@@ -20,6 +20,7 @@ import (
 	"context"
 	"os"
 	"strconv"
+	"svc-asset-details-layer/models"
 )
 
 type Configuration struct {
@@ -27,6 +28,11 @@ type Configuration struct {
 	TenantConfigTable        string
 	TenantConfigPartitionKey string
 	EnableExtension          bool
+	RdsHost                  string
+	RdsPort                  string
+	RdsDbName                string
+	RdsCredentials           models.RdsSecret
+	RdsSecretName            string
 }
 
 func LoadConfigurationDetails(ctx context.Context) *Configuration {
@@ -39,11 +45,23 @@ func LoadConfigurationDetails(ctx context.Context) *Configuration {
 	region := os.Getenv("REGION")
 	tenantConfigTable := os.Getenv("TENANT_CONFIG_TABLE")
 	tenantConfigPartitionKey := os.Getenv("TENANT_CONFIG_PARTITION_KEY")
+	rdsSecretName := os.Getenv("RDS_SECRET_NAME")
+	rdsHost := os.Getenv("RDS_HOST")
+	rdsPort := os.Getenv("RDS_PORT")
+	rdsDbName := os.Getenv("RDS_DB_NAME")
+
+	secretsClient := NewSecretsClient(region)
+	rdsCredentials, _ := secretsClient.GetRdsSecret(ctx, rdsSecretName)
 
 	return &Configuration{
 		EnableExtension:          enableExtension,
 		Region:                   region,
 		TenantConfigTable:        tenantConfigTable,
 		TenantConfigPartitionKey: tenantConfigPartitionKey,
+		RdsSecretName:            rdsSecretName,
+		RdsHost:                  rdsHost,
+		RdsPort:                  rdsPort,
+		RdsDbName:                rdsDbName,
+		RdsCredentials:           *rdsCredentials,
 	}
 }
