@@ -81,10 +81,14 @@ func (c *AssetDetailsClient) GetAssetDetails(ctx context.Context, tenantId, asse
 			assetDetails["tags"] = tags
 		}
 
+		mandatoryTagsWIthValues := make(map[string]string)
 		if mandatoryTags != nil {
 			for _, mandatoryTag := range mandatoryTags {
-				if _, ok := tags[mandatoryTag.TagName]; !ok {
+				if v, ok := tags[mandatoryTag.TagName]; !ok {
 					tags[mandatoryTag.TagName] = unknown
+					mandatoryTagsWIthValues[mandatoryTag.TagName] = unknown
+				} else {
+					mandatoryTagsWIthValues[mandatoryTag.TagName] = v
 				}
 			}
 		}
@@ -108,6 +112,7 @@ func (c *AssetDetailsClient) GetAssetDetails(ctx context.Context, tenantId, asse
 			TargetType:      commonFields[targetType],
 			TargetTypeName:  commonFields[targetTypeName],
 			Tags:            tags,
+			MandatoryTags:   mandatoryTagsWIthValues,
 			PrimaryProvider: primaryProvider,
 		}, Message: success}, nil
 	} else {
