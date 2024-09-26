@@ -4,6 +4,7 @@
     method: GET
     path: "/api/v2/assets/{assetId}"
     requireAuth: true
+    requireOptionsMethod: true
   serviceConfig:
     environmentalVariables:
       REGION: {REGION}
@@ -31,6 +32,7 @@
     method: GET
     path: "/api/v2/targets/{targetType}/assets/{assetId}/violations"
     requireAuth: true
+    requireOptionsMethod: true
   serviceConfig:
     environmentalVariables:
       REGION: {REGION}

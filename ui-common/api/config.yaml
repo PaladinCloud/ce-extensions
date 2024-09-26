@@ -1,0 +1,17 @@
+---
+- serviceName: svc-options-method
+  apiConfig:
+    method: OPTIONS
+    path: "*"
+    requireAuth: FALSE
+  serviceConfig:
+    lambdaConfig:
+      handler: lambda_function.lambda_handler
+      runtime: python
+      runtimeVersion: latest
+      timeout: 10
+      isArm64: true
+      permissions:
+        requireS3: false
+        requireDynamoDB: false
+        requireSecretsManager: false
