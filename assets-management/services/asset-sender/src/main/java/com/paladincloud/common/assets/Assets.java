@@ -170,12 +170,17 @@ public class Assets {
     }
 
     private boolean isCloud(String dataSource) {
+        // This needs to connect to the saas account and use the plugins table there.
+        return true;
+        /*
         var mapList = databaseHelper.executeQuery(STR."SELECT isCloud FROM plugins_new WHERE source = '\{dataSource}'");
         if (!mapList.isEmpty()) {
             return Objects.equals(mapList.getFirst().getOrDefault("isCloud", "0"), "1");
         }
         LOGGER.warn(STR."Unable to find 'plugins_new' entry for data source \{dataSource}");
         return false;
+
+         */
     }
 
     private Map<String, List<Map<String, Object>>> loadTypeErrors(String bucket,
