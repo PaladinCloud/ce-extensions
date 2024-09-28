@@ -19,6 +19,8 @@ import lombok.Getter;
 import lombok.NonNull;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Use the Builder to set properties, and {@link #createFrom(Map)} to convert from a mapped data
@@ -28,6 +30,7 @@ import org.apache.commons.lang3.StringUtils;
 public class AssetDocumentHelper {
 
     static private String MAPPER_RAW_DATA = "rawData";
+    private static final Logger LOGGER = LogManager.getLogger(AssetDocumentHelper.class);
 
     static private Map<String, String> accountIdNameMap = new HashMap<>();
     @NonNull
@@ -57,6 +60,10 @@ public class AssetDocumentHelper {
             if (docIdFields.contains(AssetDocumentFields.ACCOUNT_ID)) {
                 docId = STR."\{StringHelper.indexName(dataSource, type)}_\{docId}";
             }
+        }
+        if (StringUtils.isBlank(docId)) {
+            LOGGER.info(STR."docId is not valid: '\{docId}' docIdFields=\{docIdFields} mapper data=\{MapHelper.toJsonString(data)}");
+            throw new JobException(STR."docId is not valid: '\{docId}', mapper data & config don't match for type=\{type}");
         }
         return docId;
     }

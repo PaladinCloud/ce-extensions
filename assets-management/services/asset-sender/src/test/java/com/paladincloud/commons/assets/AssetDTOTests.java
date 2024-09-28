@@ -46,7 +46,6 @@ public class AssetDTOTests {
     @Test
     void elasticResponseDeserialized() throws JsonProcessingException {
         var sampleJson = getElasticResponse();
-//        var deserialized = JsonHelper.objectMapper.readValue(sampleJson, ElasticQueryAssetResponse.class);
         var deserialized = JsonHelper.fromString(ElasticQueryAssetResponse.class, sampleJson);
         assertNotNull(deserialized);
         assertNotNull(deserialized.hits);
@@ -177,6 +176,7 @@ public class AssetDTOTests {
                   }
                 ]
               }
-            }            """.trim();
+            }
+            """.trim();
     }
 }
