@@ -1,12 +1,14 @@
 package com.paladincloud.commons.assets;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.paladincloud.common.AssetDocumentFields;
 import com.paladincloud.common.assets.AssetDTO;
+import com.paladincloud.common.search.ElasticQueryAssetResponse;
 import com.paladincloud.common.util.JsonHelper;
 import com.paladincloud.common.util.TimeHelper;
 import java.time.ZonedDateTime;
@@ -39,6 +41,17 @@ public class AssetDTOTests {
             asMap.get(AssetDocumentFields.FIRST_DISCOVERED));
         assertEquals(TimeHelper.formatZeroSeconds(dateTime),
             asMap.get(AssetDocumentFields.DISCOVERY_DATE));
+    }
+
+    @Test
+    void elasticResponseDeserialized() throws JsonProcessingException {
+        var sampleJson = getElasticResponse();
+//        var deserialized = JsonHelper.objectMapper.readValue(sampleJson, ElasticQueryAssetResponse.class);
+        var deserialized = JsonHelper.fromString(ElasticQueryAssetResponse.class, sampleJson);
+        assertNotNull(deserialized);
+        assertNotNull(deserialized.hits);
+        assertNotNull(deserialized.hits.hits);
+        assertFalse(deserialized.hits.hits.isEmpty());
     }
 
     @Test
@@ -100,8 +113,70 @@ public class AssetDTOTests {
                 "discoverydate": "2024-09-05 14:57:00+0000",
                 "firstdiscoveredon": "2024-09-05 14:57:00+0000",
                 "ec2_relations": "ec2",
-                "tags.foo": "bar"
+                "tags": {"environment": "bar" }
             }
         """.trim();
+    }
+
+    private String getElasticResponse() {
+        return """
+            {
+              "took": 538,
+              "timed_out": false,
+              "_shards": {
+                "total": 1,
+                "successful": 1,
+                "skipped": 0,
+                "failed": 0
+              },
+              "hits": {
+                "total": {
+                  "value": 4,
+                  "relation": "eq"
+                },
+                "max_score": null,
+                "hits": [
+                  {
+                    "_index": "gcp_vminstance",
+                    "_id": "central-run-349616_us-central1-a_3228267340273394036",
+                    "_score": null,
+                    "_source": {
+                      "owner": true,
+                      "_docid": "central-run-349616_us-central1-a_3228267340273394036",
+                      "docType": "vminstance",
+                      "_cspm_source": null,
+                      "_reporting_source": "gcp",
+                      "_cloudType": "gcp",
+                      "latest": true,
+                      "_entity": "true",
+                      "_entitytype": "vminstance",
+                      "_loaddate": "2024-09-27 23:14:00+0000",
+                      "name": "paladincloud-demo-vm",
+                      "_resourcename": "3228267340273394036",
+                      "_resourceid": "3228267340273394036",
+                      "tags": {
+                        "application": "coffeeapp",
+                        "environment": "test"
+                      },
+                      "sourceDisplayName": "GCP",
+                      "primaryProvider": "{\\"auto_restart\\":true,\\"can_ip_forward\\":false,\\"confidential_computing\\":false,\\"description\\":\\"\\",\\"disks\\":[{\\"id\\":\\"0\\",\\"projectId\\":\\"central-run-349616\\",\\"projectName\\":\\"Paladin Cloud\\",\\"name\\":\\"paladincloud-demo-vm\\",\\"sizeInGb\\":10,\\"type\\":\\"PERSISTENT\\",\\"autoDelete\\":true,\\"hasSha256\\":false,\\"hasKMSKeyName\\":false,\\"labels\\":null,\\"region\\":\\"\\"}],\\"emails\\":[\\"344106022091-compute@developer.gserviceaccount.com\\"],\\"id\\":3228267340273394036,\\"item_interfaces\\":[{\\"key\\":\\"enable-oslogin\\",\\"value\\":\\"true\\"}],\\"labels\\":{\\"application\\":\\"coffeeapp\\",\\"environment\\":\\"test\\"},\\"machine_type\\":\\"https://www.googleapis.com/compute/v1/projects/central-run-349616/zones/us-central1-a/machineTypes/e2-medium\\",\\"name\\":\\"paladincloud-demo-vm\\",\\"network_interfaces\\":[{\\"id\\":\\"10.128.0.32\\",\\"name\\":\\"nic0\\",\\"network\\":\\"https://www.googleapis.com/compute/v1/projects/central-run-349616/global/networks/default\\",\\"accessConfig\\":[{\\"id\\":\\"External NAT\\",\\"name\\":\\"External NAT\\",\\"natIp\\":\\"34.31.240.178\\",\\"projectName\\":\\"Paladin Cloud\\"}]}],\\"on_host_maintainence\\":\\"MIGRATE\\",\\"project_id\\":\\"central-run-349616\\",\\"project_name\\":\\"Paladin Cloud\\",\\"project_number\\":344106022091,\\"region\\":\\"us-central1-a\\",\\"scopes\\":[\\"https://www.googleapis.com/auth/devstorage.read_only\\",\\"https://www.googleapis.com/auth/logging.write\\",\\"https://www.googleapis.com/auth/monitoring.write\\",\\"https://www.googleapis.com/auth/servicecontrol\\",\\"https://www.googleapis.com/auth/service.management.readonly\\",\\"https://www.googleapis.com/auth/trace.append\\"],\\"service_accounts\\":[{\\"email\\":\\"344106022091-compute@developer.gserviceaccount.com\\",\\"emailBytes\\":{},\\"scopeList\\":[\\"https://www.googleapis.com/auth/devstorage.read_only\\",\\"https://www.googleapis.com/auth/logging.write\\",\\"https://www.googleapis.com/auth/monitoring.write\\",\\"https://www.googleapis.com/auth/servicecontrol\\",\\"https://www.googleapis.com/auth/service.management.readonly\\",\\"https://www.googleapis.com/auth/trace.append\\"]}],\\"shielded_instance_config\\":{\\"enableVtpm\\":true,\\"enableIntegrityMonitoring\\":true},\\"status\\":\\"RUNNING\\"}",
+                      "assetIdDisplayName": null,
+                      "targettypedisplayname": "VM",
+                      "targetTypeDisplayName": "VM",
+                      "accountid": "central-run-349616",
+                      "accountname": "Paladin Cloud",
+                      "discoverydate": "2024-09-27 22:28:00+0000",
+                      "firstdiscoveredon": "2024-09-27 22:28:00+0000",
+                      "tags.Environment": "test",
+                      "tags.Application": "coffeeapp",
+                      "vminstance_relations": "vminstance"
+                    },
+                    "sort": [
+                      "2024-09-27 23:14:00+0000"
+                    ]
+                  }
+                ]
+              }
+            }            """.trim();
     }
 }

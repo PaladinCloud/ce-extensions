@@ -61,7 +61,8 @@ public class ElasticSearchHelper {
     public <T> T invokeCheckAndConvert(Class<T> clazz, HttpMethod method, String endpoint,
         String payLoad) throws IOException {
         var response = invokeAndCheck(method, endpoint, payLoad);
-        return JsonHelper.fromString(clazz, response.getBody());
+        var body = response.getBody();
+        return JsonHelper.fromString(clazz, body);
     }
 
     /**
@@ -158,11 +159,14 @@ public class ElasticSearchHelper {
         int totalDocumentCount = getDocumentCount(indexName);
         boolean scroll = totalDocumentCount > ElasticSearchHelper.MAX_RETURNED_RESULTS;
 
-        StringBuilder filterPath = new StringBuilder("&filter_path=_scroll_id,");
-        for (String _filter : filters) {
-            filterPath.append("hits.hits._source.").append(_filter).append(",");
+        var filterPath = new StringBuilder();
+        if (filters != null && !filters.isEmpty()) {
+            filterPath = new StringBuilder("&filter_path=_scroll_id,");
+            for (String _filter : filters) {
+                filterPath.append("hits.hits._source.").append(_filter).append(",");
+            }
+            filterPath.deleteCharAt(filterPath.length() - 1);
         }
-        filterPath.deleteCharAt(filterPath.length() - 1);
 
         String endPoint = STR."\{indexName}/_search?scroll=1m\{filterPath}&size=\{Math.min(totalDocumentCount,
             ElasticSearchHelper.MAX_RETURNED_RESULTS)}";

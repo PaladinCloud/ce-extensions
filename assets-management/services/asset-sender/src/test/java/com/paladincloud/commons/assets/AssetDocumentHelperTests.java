@@ -150,7 +150,7 @@ void secondaryDtoIsFullyPopulated() throws JsonProcessingException {
                 "confidentialComputing": false,
                 "canIPForward": false,
                 "_cloudType": "gcp",
-                "tags": {},
+                "tags": { "environment": "test" },
                 "networkInterfaces": [
                     {
                         "id": "10.128.0.89",
@@ -228,7 +228,6 @@ void secondaryDtoIsFullyPopulated() throws JsonProcessingException {
     private String getSamplePrimaryAssetDocument() {
         return """
             {
-                "owner": true,
                 "_docid": "us-central",
                 "docType": "ec2",
                 "_cspm_source": "Paladin Cloud",

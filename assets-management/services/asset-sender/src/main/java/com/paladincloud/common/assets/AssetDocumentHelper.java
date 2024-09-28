@@ -93,7 +93,8 @@ public class AssetDocumentHelper {
             entry(AssetDocumentFields.DISCOVERY_DATE,
                 v -> dto.setDiscoveryDate(TimeHelper.parseDiscoveryDate(v.toString()))),
             entry(AssetDocumentFields.NAME, v -> dto.setName(v.toString())),
-            entry(AssetDocumentFields.SOURCE_DISPLAY_NAME, v -> dto.setSourceDisplayName(v.toString())),
+            entry(AssetDocumentFields.SOURCE_DISPLAY_NAME,
+                v -> dto.setSourceDisplayName(v.toString())),
             entry(MAPPER_RAW_DATA, v -> dto.setPrimaryProvider(v.toString())),
             entry(AssetDocumentFields.REPORTING_SOURCE, v -> dto.setReportingSource(v.toString())));
 
@@ -115,7 +116,7 @@ public class AssetDocumentHelper {
         dto.setTargetTypeDisplayName(displayName);
         dto.setDocType(type);
 
-        if (dto.isOwner()) {
+        if (isCloud) {
             dto.addRelation(STR."\{type}\{AssetDocumentFields.RELATIONS}", type);
         }
         dto.setResourceName(data.getOrDefault(resourceNameField, idValue).toString());
@@ -149,9 +150,10 @@ public class AssetDocumentHelper {
             setMissingAccountName(dto, data);
         }
 
+        addTags(data, dto);
         if ("gcp".equalsIgnoreCase(
             data.getOrDefault(AssetDocumentFields.CLOUD_TYPE, "").toString())) {
-            addTags(data, dto);
+            addLegacyTags(data, dto);
         }
 
         if ("Azure".equalsIgnoreCase(dto.getCloudType())) {
@@ -173,13 +175,14 @@ public class AssetDocumentHelper {
         var idValue = data.getOrDefault(idField, "").toString();
 
         dto.setPrimaryProvider(data.getOrDefault(MAPPER_RAW_DATA, "").toString());
-        dto.setSourceDisplayName(data.getOrDefault(AssetDocumentFields.SOURCE_DISPLAY_NAME, "").toString());
+        dto.setSourceDisplayName(
+            data.getOrDefault(AssetDocumentFields.SOURCE_DISPLAY_NAME, "").toString());
 
         // One time only, existing assets in ElasticSearch must be updated to include new fields
-        if (StringUtils.isEmpty(dto.getCspmSource())) {
+        if (StringUtils.isBlank(dto.getCspmSource())) {
             dto.setCspmSource(data.getOrDefault(AssetDocumentFields.CSPM_SOURCE, "").toString());
         }
-        if (StringUtils.isEmpty(dto.getReportingSource())) {
+        if (StringUtils.isBlank(dto.getReportingSource())) {
             dto.setReportingSource(
                 data.getOrDefault(AssetDocumentFields.REPORTING_SOURCE, "").toString());
         }
@@ -192,6 +195,7 @@ public class AssetDocumentHelper {
         dto.setLatest(true);
 
         dto.setResourceName(data.getOrDefault(resourceNameField, idValue).toString());
+        dto.setResourceId(data.getOrDefault(AssetDocumentFields.RESOURCE_ID, idValue).toString());
         if (data.containsKey(AssetDocumentFields.ACCOUNT_NAME)) {
             dto.setAccountName(data.get(AssetDocumentFields.ACCOUNT_NAME).toString());
         }
@@ -210,9 +214,10 @@ public class AssetDocumentHelper {
             dto.setAssetIdDisplayName(getAssetIdDisplayName(data));
         }
 
+        addTags(data, dto);
         if ("gcp".equalsIgnoreCase(
             data.getOrDefault(AssetDocumentFields.CLOUD_TYPE, "").toString())) {
-            addTags(data, dto);
+            addLegacyTags(data, dto);
         }
     }
 
@@ -263,7 +268,7 @@ public class AssetDocumentHelper {
         }
     }
 
-    private void addTags(Map<String, Object> data, AssetDTO dto) {
+    private void addLegacyTags(Map<String, Object> data, AssetDTO dto) {
         var tagData = data.get(AssetDocumentFields.TAGS);
         if (tagData instanceof Map) {
             @SuppressWarnings("unchecked") var tagMap = (Map<String, Object>) tagData;
@@ -272,10 +277,16 @@ public class AssetDocumentHelper {
                     var firstChar = key.substring(0, 1).toUpperCase();
                     var remainder = key.substring(1);
                     var upperCaseStart = STR."\{firstChar}\{remainder}";
-                    dto.addType(STR."\{AssetDocumentFields.asTag(upperCaseStart)}",
-                        value);
+                    dto.addType(STR."\{AssetDocumentFields.asTag(upperCaseStart)}", value);
                 });
             }
+        }
+    }
+
+    private void addTags(Map<String, Object> data, AssetDTO dto) {
+        var tagData = data.get(AssetDocumentFields.TAGS);
+        if (tagData instanceof Map) {
+            dto.setTags((Map<String, String>) tagData);
         }
     }
 

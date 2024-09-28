@@ -20,10 +20,6 @@ public class AssetDTO {
      */
     private final Map<String, Object> additionalProperties = new HashMap<>();
 
-    public boolean isOwner() {
-        return cloudType != null && cloudType.equalsIgnoreCase(reportingSource);
-    }
-
     /**
      * This is the unique id for the asset, which depends on the source & type as well as the unique
      * id for the instance. This unique id the same for the lifetime of the asset.
@@ -92,6 +88,11 @@ public class AssetDTO {
     @Getter
     @JsonProperty(AssetDocumentFields.RESOURCE_ID)
     private String resourceId;
+
+    @Setter
+    @Getter
+    @JsonProperty(AssetDocumentFields.TAGS)
+    private Map<String, String> tags;
 
     @Setter
     @Getter
