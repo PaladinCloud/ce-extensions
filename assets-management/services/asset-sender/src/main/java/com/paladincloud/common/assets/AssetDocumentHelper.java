@@ -9,9 +9,11 @@ import com.paladincloud.common.util.StringHelper;
 import com.paladincloud.common.util.TimeHelper;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import lombok.Builder;
@@ -29,9 +31,32 @@ import org.apache.logging.log4j.Logger;
 @Builder
 public class AssetDocumentHelper {
 
-    static private String MAPPER_RAW_DATA = "rawData";
     private static final Logger LOGGER = LogManager.getLogger(AssetDocumentHelper.class);
+    static private String MAPPER_RAW_DATA = "rawData";
 
+    // These are the fields the primary Asset 2.0 document model fields. This set is to allow
+    // a hybrid model that has both the correct top-level fields and the backward compatible
+    // top-level fields necessary for some components (policies, for instance).
+    // This specific list is used as a filter of the mapper data in order to ignore common fields,
+    // which are set elsewhere.
+    // Once all components are updated, the additional mapper fields will be removed from the
+    // top-level asset document
+    static private Set<String> assetFields = new HashSet<>(
+        List.of(MAPPER_RAW_DATA, AssetDocumentFields.CSPM_SOURCE,
+            AssetDocumentFields.REPORTING_SOURCE, AssetDocumentFields.NAME,
+            AssetDocumentFields.ASSET_ID_DISPLAY_NAME,
+            AssetDocumentFields.LEGACY_TARGET_TYPE_DISPLAY_NAME,
+            AssetDocumentFields.TARGET_TYPE_DISPLAY_NAME, AssetDocumentFields.SOURCE_DISPLAY_NAME,
+            AssetDocumentFields.PRIMARY_PROVIDER, AssetDocumentFields.DOC_TYPE,
+            AssetDocumentFields.DISCOVERY_DATE, AssetDocumentFields.FIRST_DISCOVERED,
+            AssetDocumentFields.LOAD_DATE, AssetDocumentFields.ACCOUNT_ID,
+            AssetDocumentFields.ACCOUNT_NAME, AssetDocumentFields.PROJECT_ID,
+            AssetDocumentFields.PROJECT_NAME, AssetDocumentFields.SUBSCRIPTION,
+            AssetDocumentFields.SUBSCRIPTION_NAME, AssetDocumentFields.CLOUD_TYPE,
+            AssetDocumentFields.DOC_ID, AssetDocumentFields.ENTITY, AssetDocumentFields.ENTITY_TYPE,
+            AssetDocumentFields.RELATIONS, AssetDocumentFields.LATEST,
+            AssetDocumentFields.RESOURCE_GROUP_NAME, AssetDocumentFields.RESOURCE_ID,
+            AssetDocumentFields.RESOURCE_NAME, AssetDocumentFields.TAGS));
     static private Map<String, String> accountIdNameMap = new HashMap<>();
     @NonNull
     private ZonedDateTime loadDate;
@@ -62,8 +87,11 @@ public class AssetDocumentHelper {
             }
         }
         if (StringUtils.isBlank(docId)) {
-            LOGGER.info(STR."docId is not valid: '\{docId}' docIdFields=\{docIdFields} mapper data=\{MapHelper.toJsonString(data)}");
-            throw new JobException(STR."docId is not valid: '\{docId}', mapper data & config don't match for type=\{type}");
+            LOGGER.info(
+                STR."docId is not valid: '\{docId}' docIdFields=\{docIdFields} mapper data=\{MapHelper.toJsonString(
+                    data)}");
+            throw new JobException(
+                STR."docId is not valid: '\{docId}', mapper data & config don't match for type=\{type}");
         }
         return docId;
     }
@@ -167,6 +195,13 @@ public class AssetDocumentHelper {
             dto.setAssetIdDisplayName(getAssetIdDisplayName(data));
         }
 
+        // Transfer additional mapper provided fields that aren't already set
+        data.forEach((key, value) -> {
+            if (!assetFields.contains(key)) {
+                dto.getAdditionalProperties().put(key, value);
+            }
+        });
+
         dto.setLoadDate(loadDate);
         dto.setLatest(true);
         return dto;
@@ -226,6 +261,14 @@ public class AssetDocumentHelper {
             data.getOrDefault(AssetDocumentFields.CLOUD_TYPE, "").toString())) {
             addLegacyTags(data, dto);
         }
+
+        // Transfer additional mapper provided fields that aren't already set
+        data.forEach((key, value) -> {
+            if (!assetFields.contains(key)) {
+                dto.getAdditionalProperties().put(key, value);
+            }
+        });
+
     }
 
     /**

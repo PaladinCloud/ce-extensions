@@ -7,12 +7,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.paladincloud.common.AssetDocumentFields;
-import com.paladincloud.common.assets.AssetDTO;
 import com.paladincloud.common.assets.AssetDocumentHelper;
 import com.paladincloud.common.util.JsonHelper;
 import java.time.ZonedDateTime;
 import java.util.List;
-import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -37,9 +35,9 @@ public class AssetDocumentHelperTests {
     @Test
     void primaryDtoIsFullyPopulated() throws JsonProcessingException {
         AssetDocumentHelper helper = getHelper("gcp", "id");
-        var mappedAsMap = JsonHelper.mapFromString(getSampleMapperPrimaryDocument());
+        var mapperData = JsonHelper.mapFromString(getSamplePrimaryMapperDocument());
 
-        var dto = helper.createFrom(mappedAsMap);
+        var dto = helper.createFrom(mapperData);
 
         var dtoAsMap = JsonHelper.mapFromString(JsonHelper.objectMapper.writeValueAsString(dto));
         var expectedMap = JsonHelper.mapFromString(getSamplePrimaryAssetDocument());
@@ -48,7 +46,7 @@ public class AssetDocumentHelperTests {
         assertNotNull(dtoAsMap.get(AssetDocumentFields.LOAD_DATE));
         assertFalse(dtoAsMap.get(AssetDocumentFields.LOAD_DATE).toString().isBlank());
         assertNotNull(dtoAsMap.get(AssetDocumentFields.PRIMARY_PROVIDER));
-        assertEquals(mappedAsMap.get("rawData"), dtoAsMap.get(AssetDocumentFields.PRIMARY_PROVIDER));
+        assertEquals(mapperData.get("rawData"), dtoAsMap.get(AssetDocumentFields.PRIMARY_PROVIDER));
 
         // Ensure each value in the sample asset exists in the serialized/deserialized instance
         expectedMap.forEach((key, value) -> {
@@ -60,7 +58,7 @@ public class AssetDocumentHelperTests {
 
     @Test
     void dtoIsUpdated() throws JsonProcessingException {
-        var mappedAsMap = JsonHelper.mapFromString(getSampleMapperPrimaryDocument());
+        var mappedAsMap = JsonHelper.mapFromString(getSamplePrimaryMapperDocument());
         var dto = getHelper("gcp", "id").createFrom(mappedAsMap);
 
         mappedAsMap.put(AssetDocumentFields.ACCOUNT_NAME, "new account name");
@@ -78,7 +76,7 @@ public class AssetDocumentHelperTests {
      */
     @Test
     void updatedDtoHasNewFields() throws JsonProcessingException {
-        var mappedAsMap = JsonHelper.mapFromString(getSampleMapperPrimaryDocument());
+        var mappedAsMap = JsonHelper.mapFromString(getSamplePrimaryMapperDocument());
         var dto = getHelper("gcp", "id").createFrom(mappedAsMap);
 
         AssetDocumentHelper helper = getHelper("gcp", "id");
@@ -99,7 +97,7 @@ void secondaryDtoIsFullyPopulated() throws JsonProcessingException {
         assertEquals("secondary", dto.getReportingSource());
     }
 
-    private String getSampleMapperPrimaryDocument() {
+    private String getSamplePrimaryMapperDocument() {
         return """
             {
                 "_cspm_source": "Paladin Cloud",
