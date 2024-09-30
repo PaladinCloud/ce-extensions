@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
@@ -80,12 +79,6 @@ public class Assets {
             return;
         }
 
-        List<String> filters = new ArrayList<>(
-            Collections.singletonList(AssetDocumentFields.DOC_ID));
-        filters.addAll(Arrays.stream(
-            StringHelper.split(ConfigService.get(Sender.ATTRIBUTES_TO_PRESERVE), ",",
-                StringHelper.EMPTY_ARRAY)).toList());
-
         LOGGER.info("Start processing Asset info");
 
         var typeToError = loadTypeErrors(bucket, fileTypes.loadErrors);
@@ -96,7 +89,7 @@ public class Assets {
                     var startTime = ZonedDateTime.now();
                     var indexName = StringHelper.indexName(dataSource, type);
 
-                    var existingAssets = assetRepository.getLatestAssets(indexName, filters);
+                    var existingAssets = assetRepository.getLatestAssets(indexName, Collections.emptyList());
                     var latestAssets = fetchMapperFiles(bucket, filename, dataSource, type);
                     var tags = (fileTypes.tagFiles.containsKey(type)) ? fetchMapperFiles(bucket,
                         fileTypes.tagFiles.get(type), dataSource, type)
@@ -127,8 +120,8 @@ public class Assets {
                     // Each document needs to be updated, regardless of which state it is in
                     mergeResponse.getAllAssets().forEach((_, value) -> {
                         try {
-                            batchIndexer.add(BatchItem.documentEntry(indexName,
-                                STR."\{dataSource}_\{value.getDocId()}", JsonHelper.toJson(value)));
+                            batchIndexer.add(BatchItem.documentEntry(indexName, value.getDocId(),
+                                JsonHelper.toJson(value)));
                         } catch (IOException e) {
                             throw new JobException("Failed converting asset to JSON", e);
                         }
