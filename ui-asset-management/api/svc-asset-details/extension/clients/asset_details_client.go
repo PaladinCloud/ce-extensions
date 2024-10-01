@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strings"
 	logger "svc-asset-details-layer/logging"
 	"svc-asset-details-layer/models"
@@ -67,7 +68,7 @@ func (c *AssetDetailsClient) GetAssetDetails(ctx context.Context, tenantId, asse
 		var primaryProvider string
 		var tags map[string]string
 		var commonFields map[string]string
-		if val, present := assetDetails["tags"]; present {
+		if val, present := assetDetails["tags"]; present && reflect.ValueOf(assetDetails["tags"]).Kind() == reflect.Map {
 			tagsMap := val.(map[string]interface{})
 			tags = make(map[string]string)
 			for k, v := range tagsMap {
