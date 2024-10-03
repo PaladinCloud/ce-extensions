@@ -60,7 +60,7 @@ func NewRdsClient(configuration *Configuration) *RdsClient {
 	}
 }
 
-func (r *RdsClient) GetPluginsList(ctx context.Context, tenantId string) ([]models.Plugin, error) {
+func (r *RdsClient) GetPlugins(ctx context.Context, tenantId string) ([]models.Plugin, error) {
 	fmt.Println("Getting Plugins List from RDS")
 	query := `
 		SELECT 

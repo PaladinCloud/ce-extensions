@@ -16,18 +16,18 @@
 
 package models
 
-// FeatureFlags represents the feature flags for a specific service
+// FeatureFlags represents the feature flags for a specific plugin
 type FeatureFlags struct {
 	IsComingSoon                  bool `json:"isComingSoon"`
 	IsEnabled                     bool `json:"isEnabled"`
 	IsManualConfigurationRequired bool `json:"isManualConfigurationRequired"`
 }
 
-// PluginFeatureFlags represents the plugin feature flags for multiple services
-type PluginFeatureFlags map[string]FeatureFlags
+// PluginsFeatures represents the plugins and its features flags
+type PluginsFeatures map[string]FeatureFlags
 
 // TenantConfig represents the tenant configuration containing plugin feature flags
 type TenantConfig struct {
-	TenantID           string             `json:"customer_tenantId"`
-	PluginFeatureFlags PluginFeatureFlags `json:"plugin_feature_flags"`
+	TenantID        string          `json:"customer_tenantId"`
+	PluginsFeatures PluginsFeatures `json:"plugin_feature_flags"`
 }

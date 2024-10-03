@@ -49,7 +49,7 @@ func NewDynamoDBClient(configuration *Configuration) *DynamodbClient {
 	}
 }
 
-func (d *DynamodbClient) GetPluginFeatureFlags(ctx context.Context, tenant string) (*models.PluginFeatureFlags, error) {
+func (d *DynamodbClient) GetPluginsFeatureFlags(ctx context.Context, tenant string) (*models.PluginsFeatures, error) {
 	tenantId := tenant
 
 	// Define the query input
@@ -71,20 +71,20 @@ func (d *DynamodbClient) GetPluginFeatureFlags(ctx context.Context, tenant strin
 	// Retrieve the item from DynamoDB
 	result, err := d.client.QueryWithContext(ctx, input)
 	if err != nil {
-		return &models.PluginFeatureFlags{}, fmt.Errorf("failed to get item from DynamoDB: %v", err)
+		return &models.PluginsFeatures{}, fmt.Errorf("failed to get item from DynamoDB: %v", err)
 	}
 
 	// Check if the item is found
 	if len(result.Items) == 0 {
-		return &models.PluginFeatureFlags{}, fmt.Errorf("tenant_id %s not found", tenantId)
+		return &models.PluginsFeatures{}, fmt.Errorf("tenant_id %s not found", tenantId)
 	}
 
 	// Unmarshal the result into TenantConfig struct
 	var config models.TenantConfig
 	err = dynamodbattribute.UnmarshalMap(result.Items[0], &config)
 	if err != nil {
-		return &models.PluginFeatureFlags{}, fmt.Errorf("failed to unmarshal result: %v", err)
+		return &models.PluginsFeatures{}, fmt.Errorf("failed to unmarshal result: %v", err)
 	}
 
-	return &config.PluginFeatureFlags, nil
+	return &config.PluginsFeatures, nil
 }

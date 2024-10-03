@@ -42,15 +42,15 @@ func TestRdsClient_GetPluginsList(t *testing.T) {
 
 	secretsClient := NewSecretsClient(configuration.Region)
 	secrets, _ := secretsClient.GetRdsSecret(ctx, configuration.RdsSecretName)
+	configuration.RdsCredentials = *secrets
 
 	dynamoClient := NewDynamoDBClient(configuration)
-	featureFlags, _ := dynamoClient.GetPluginFeatureFlags(ctx, tests.TenantId)
-	configuration.RdsCredentials = *secrets
+	featureFlags, _ := dynamoClient.GetPluginsFeatureFlags(ctx, tests.TenantId)
 
 	rdsClient := NewRdsClient(configuration)
 	defer rdsClient.Close()
 
-	plugins, _ := rdsClient.GetPluginsList(ctx, tests.TenantId, *featureFlags)
+	plugins, _ := rdsClient.GetPlugins(ctx, tests.TenantId)
 
-	println(plugins)
+	println(featureFlags, plugins)
 }

@@ -38,9 +38,9 @@ func NewPluginsListClient(configuration *Configuration, log *logger.Logger) *Plu
 	}
 }
 
-func (c *PluginsListClient) GetPluginsList(ctx context.Context, tenantId string) (*models.Plugins, error) {
+func (c *PluginsListClient) GetPlugins(ctx context.Context, tenantId string) (*models.Plugins, error) {
 	c.log.Info("Getting Plugins List")
-	pluginsListCache, err := c.cacheClient.GetPluginsCache()
+	pluginsListCache, err := c.cacheClient.GetPlugins(tenantId)
 	if err != nil {
 		return nil, err
 	}
@@ -52,13 +52,13 @@ func (c *PluginsListClient) GetPluginsList(ctx context.Context, tenantId string)
 	// Cache is missed, populate the plugins list
 	c.log.Info("Populating Plugins List")
 	// Get plugin feature flags
-	pluginFeatureFlags, err := c.dynamodbClient.GetPluginFeatureFlags(ctx, tenantId)
+	pluginFeatureFlags, err := c.dynamodbClient.GetPluginsFeatureFlags(ctx, tenantId)
 	if err != nil {
 		return nil, err
 	}
 
 	// Get plugins list
-	pluginsList, err := c.rdsClient.GetPluginsList(ctx, tenantId)
+	pluginsList, err := c.rdsClient.GetPlugins(ctx, tenantId)
 	if err != nil {
 		return nil, err
 	}
@@ -68,12 +68,12 @@ func (c *PluginsListClient) GetPluginsList(ctx context.Context, tenantId string)
 	if err != nil {
 		return nil, err
 	}
-	c.cacheClient.SetPluginsCache(plugins)
+	c.cacheClient.SetPlugins(tenantId, plugins)
 
 	return plugins, nil
 }
 
-func AssemblePluginsList(plugins []models.Plugin, flags models.PluginFeatureFlags) (*models.Plugins, error) {
+func AssemblePluginsList(plugins []models.Plugin, flags models.PluginsFeatures) (*models.Plugins, error) {
 	var inboundPlugins []models.Plugin
 	var outboundPlugins []models.Plugin
 	for i := range plugins {

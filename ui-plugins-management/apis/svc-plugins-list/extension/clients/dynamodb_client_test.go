@@ -33,7 +33,7 @@ func TestDynamodbClient(t *testing.T) {
 
 	client := NewDynamoDBClient(configuration)
 
-	pluginFeatureFlags, err := client.GetPluginFeatureFlags(ctx, configuration.RdsSecretName)
+	pluginFeatureFlags, err := client.GetPluginsFeatureFlags(ctx, configuration.RdsSecretName)
 	if err != nil {
 		panic(err)
 	}

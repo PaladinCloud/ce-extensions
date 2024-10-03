@@ -22,35 +22,38 @@ import (
 )
 
 type PluginsCacheClient struct {
-	cache *models.Plugins
+	cache map[string]*models.Plugins // Store a list of plugins in a cache
 	mu    sync.RWMutex
 }
 
-// NewCacheClient  inits a DynamoDB session to be used throughout the services
+// NewCacheClient initializes a PluginsCacheClient with an empty map
 func NewCacheClient() *PluginsCacheClient {
 	println("Initialized Cache Client")
 	return &PluginsCacheClient{
-		cache: nil,
+		cache: make(map[string]*models.Plugins),
 	}
 }
 
-func (c *PluginsCacheClient) GetPluginsCache() (*models.Plugins, error) {
+// GetPlugins retrieves a plugin from the cache by its key
+func (c *PluginsCacheClient) GetPlugins(key string) (*models.Plugins, error) {
 	c.mu.RLock()
-	if c.cache == nil {
+	defer c.mu.RUnlock() // Ensure the lock is released after the operation
+
+	plugins, exists := c.cache[key]
+	if !exists {
 		println("Key not found in plugins cache")
 		return nil, nil
 	}
-	c.mu.RUnlock()
-
-	return c.cache, nil
+	return plugins, nil
 }
 
-func (c *PluginsCacheClient) SetPluginsCache(value *models.Plugins) (*models.Plugins, error) {
-	println("Setting plugins cache")
+// SetPlugins adds or updates a plugin in the cache
+func (c *PluginsCacheClient) SetPlugins(key string, value *models.Plugins) (*models.Plugins, error) {
+	println("Setting plugin in cache")
 
-	c.mu.RLock()
-	c.cache = value
-	c.mu.RUnlock()
+	c.mu.Lock()         // Use Write lock since we are modifying the cache
+	defer c.mu.Unlock() // Ensure the lock is released after the operation
 
+	c.cache[key] = value
 	return value, nil
 }
