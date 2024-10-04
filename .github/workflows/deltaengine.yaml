@@ -9,7 +9,7 @@ on:
     branches:
       - chore/delta-engine-installer
       - release-v*.*.*
-
+      
 permissions:
   id-token: write
   contents: read  
@@ -37,10 +37,10 @@ jobs:
       - name: Display is_release
         run: |
           is_release="${{ steps.check_branch.outputs.is_release }}"
-          echo " It is an release branch: $is_release"
+          echo " It is a release branch: $is_release"
 
   extract_version:
-    name : extract_version
+    name: extract_version
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release-v') 
     outputs:
@@ -125,7 +125,19 @@ jobs:
       # push api artifact to s3
       - name: copy API jars to S3 
         run: |
-          aws s3 cp --recursive asset-sender-1.0-SNAPSHOT.jar s3://${{ secrets.AWS_BUCKET_DEV }}/vlatest/dev/lambda
+          aws s3 cp --recursive asset-sender-1.0-SNAPSHOT.jar s3://${{ secrets.AWS_BUCKET_DEV }}/vlatest/dev/deltaengine
+      
+      # zip deltaengine installer folder
+      - name: zip deltaengine installer folder
+        run: |
+          cd installer
+          zip -r delta-engine.zip delta-engine
+
+      # push deltaengine installer zip folder to s3
+      - name: copy deltaengine installer to S3 
+        run: |
+          cd installer
+          aws s3 cp delta-engine.zip s3://${{ secrets.AWS_BUCKET_DEV }}/vlatest/dev/deltaengine/
 
   PushBuildQA:
     name: Push JAR to QA
@@ -153,4 +165,16 @@ jobs:
       # push api artifact to s3
       - name: copy API jars to S3 
         run: |
-          aws s3 cp --recursive asset-sender-1.0-SNAPSHOT.jar s3://${{ secrets.AWS_BUCKET_QA }}/${{ needs.extract_version.outputs.version }}/qa/lambda
+          aws s3 cp --recursive asset-sender-1.0-SNAPSHOT.jar s3://${{ secrets.AWS_BUCKET_QA }}/${{ needs.extract_version.outputs.version }}/qa/deltaengine
+
+      # zip deltaengine installer folder
+      - name: zip deltaengine installer folder
+        run: |
+          cd installer
+          zip -r delta-engine.zip delta-engine
+
+      # push deltaengine installer folder to s3
+      - name: copy deltaengine installer to S3 
+        run: |
+          cd installer
+          aws s3 cp delta-engine.zip s3://${{ secrets.AWS_BUCKET_QA }}/${{ needs.extract_version.outputs.version }}/qa/deltaengine/
