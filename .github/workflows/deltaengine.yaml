@@ -2,13 +2,17 @@ name: DeltaEngineJarBuild
 on:
   push:
     branches:
-      - chore/delta-engine-installer
+      - main
       - release-v*.*.*
+    paths:
+      - 'assets-management/services/asset-sender/**'
 
   pull_request:
     branches:
-      - chore/delta-engine-installer
+      - main
       - release-v*.*.*
+    paths:
+      - 'assets-management/services/asset-sender/**'
       
 permissions:
   id-token: write
@@ -101,7 +105,7 @@ jobs:
   PushBuildDev:
     name: Push JAR to Dev
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/heads/chore/delta-engine-installer') && github.event_name == 'push'
+    if: startsWith(github.ref, 'refs/heads/main') && github.event_name == 'push'
     environment: 'SaaSDEV'
     needs:
       - AssetBuild
@@ -127,18 +131,6 @@ jobs:
         run: |
           aws s3 cp --recursive asset-sender-1.0-SNAPSHOT.jar s3://${{ secrets.AWS_BUCKET_DEV }}/vlatest/dev/deltaengine
       
-      # zip deltaengine installer folder
-      - name: zip deltaengine installer folder
-        run: |
-          cd installer
-          zip -r delta-engine.zip delta-engine
-
-      # push deltaengine installer zip folder to s3
-      - name: copy deltaengine installer to S3 
-        run: |
-          cd installer
-          aws s3 cp delta-engine.zip s3://${{ secrets.AWS_BUCKET_DEV }}/vlatest/dev/deltaengine/
-
   PushBuildQA:
     name: Push JAR to QA
     runs-on: ubuntu-latest
@@ -166,15 +158,3 @@ jobs:
       - name: copy API jars to S3 
         run: |
           aws s3 cp --recursive asset-sender-1.0-SNAPSHOT.jar s3://${{ secrets.AWS_BUCKET_QA }}/${{ needs.extract_version.outputs.version }}/qa/deltaengine
-
-      # zip deltaengine installer folder
-      - name: zip deltaengine installer folder
-        run: |
-          cd installer
-          zip -r delta-engine.zip delta-engine
-
-      # push deltaengine installer folder to s3
-      - name: copy deltaengine installer to S3 
-        run: |
-          cd installer
-          aws s3 cp delta-engine.zip s3://${{ secrets.AWS_BUCKET_QA }}/${{ needs.extract_version.outputs.version }}/qa/deltaengine/
