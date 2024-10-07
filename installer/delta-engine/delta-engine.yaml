@@ -32,10 +32,10 @@ Parameters:
   S3BUCKETNAME:
     Type: String
     Description: The name of the S3 bucket where the Lambda function code is stored.
-  
-  S3BUCKETKEY:
+
+  RELEASEVERSION:
     Type: String
-    Description: The key of the S3 object where the Lambda function code is stored.
+    Description: The release version of the Lambda function code.
 
 Resources:
   # Create IAM Role
@@ -82,7 +82,7 @@ Resources:
       FunctionName: !Sub "svc-${Environment}-asset-shipper"
       CodeUri:
         Bucket: !Ref S3BUCKETNAME
-        Key: !Sub ${S3BUCKETKEY}asset-sender-1.0-SNAPSHOT.jar
+        Key: !Sub ${RELEASEVERSION}/${Environment}/deltaengine/asset-sender-1.0-SNAPSHOT.jar
       Description: Lambda function for asset shipping and delta engine.
       MemorySize: 512
       Timeout: 900

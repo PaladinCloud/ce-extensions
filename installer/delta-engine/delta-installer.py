@@ -89,7 +89,7 @@ def update_stack(stack_name, template_body, parameters, tags):
 
 def main():
     # Environment Variables
-    stack_name = "svc-dev-delta-engine"
+    stack_name = "svc-"+os.getenv("ENVIRONMENT")+"-delta-engine"
     template_body = "file://delta-engine.yaml"
     
     # Log environment variables for debugging
@@ -100,16 +100,16 @@ def main():
     print(f"VPCID: {os.getenv('VPCID')}")
     print(f"CIDRIP: {os.getenv('CIDRIP')}")
     print(f"S3BUCKETNAME: {os.getenv('S3BUCKETNAME')}")
-    print(f"S3BUCKETKEY: {os.getenv('S3BUCKETKEY')}")
+    print(f"RELEASEVERSION: {os.getenv('RELEASE_VERSION')}")
 
     parameters = [
-        {"ParameterKey": "Environment", "ParameterValue": os.getenv("ENVIRONMENT", "dev")},
-        {"ParameterKey": "Subnet1", "ParameterValue": os.getenv("SUBNET1", "subnet-0f49b019a9505f7fc")},
-        {"ParameterKey": "Subnet2", "ParameterValue": os.getenv("SUBNET2", "subnet-03d6c8d6b71327b54")},
-        {"ParameterKey": "VpcId", "ParameterValue": os.getenv("VPCID", "vpc-012335987c4c5ef8e")},
-        {"ParameterKey": "CidrIp", "ParameterValue": os.getenv("CIDRIP", "10.0.0.0/20")},
-        {"ParameterKey": "S3BUCKETNAME", "ParameterValue": os.getenv("S3BUCKETNAME","paladincloud-dev-builds")},
-        {"ParameterKey": "S3BUCKETKEY", "ParameterValue": os.getenv("S3BUCKETKEY","vlatest/dev/lambda/asset-sender-1.0-SNAPSHOT.jar")},
+        {"ParameterKey": "Environment", "ParameterValue": os.getenv("ENVIRONMENT")},
+        {"ParameterKey": "Subnet1", "ParameterValue": os.getenv("SUBNET1")},
+        {"ParameterKey": "Subnet2", "ParameterValue": os.getenv("SUBNET2")},
+        {"ParameterKey": "VpcId", "ParameterValue": os.getenv("VPCID")},
+        {"ParameterKey": "CidrIp", "ParameterValue": os.getenv("CIDRIP")},
+        {"ParameterKey": "S3BUCKETNAME", "ParameterValue": os.getenv("S3BUCKETNAME")},
+        {"ParameterKey": "RELEASEVERSION", "ParameterValue": os.getenv("RELEASE_VERSION")},
     ]
 
     # Log parameters for debugging
