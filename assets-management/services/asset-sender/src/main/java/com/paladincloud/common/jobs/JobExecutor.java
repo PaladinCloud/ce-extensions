@@ -10,11 +10,16 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import software.amazon.awssdk.services.sts.StsClient;
+import software.amazon.awssdk.services.sts.model.AssumeRoleRequest;
 
 public abstract class JobExecutor {
 
     // These are expected environment variables which are made available in
     // ConfigService under the 'environment.' section.
+//    private static final String AWS_SAAS_REGION = "AWS_SAAS_REGION";
+    private static final String SAAS_ENVIRONMENT = "SAAS_ENVIRONMENT";
+
     private static final String ASSET_SHIPPER_DONE_SQS_URL = "ASSET_SHIPPER_DONE_SQS_URL";
     private static final String AUTH_API_URL = "AUTH_API_URL";
     private static final String BASE_PALADIN_CLOUD_API_URI = "BASE_PALADIN_CLOUD_API_URI";
@@ -39,6 +44,7 @@ public abstract class JobExecutor {
 
     public void run(String jobName, String[] args) {
         LOGGER.info(STR."Starting \{jobName} \{String.join(" ", args)}");
+
         var status = "";
         long startTime = System.nanoTime();
         try {
@@ -46,6 +52,17 @@ public abstract class JobExecutor {
             var envVars = getEnvironmentVariables();
             params.putAll(parseArgs(args));
             validateRequiredFields();
+
+            try (var stsClient = StsClient.builder().build()) {
+                var roleArn = "arn:aws:iam::194626369622:role/saasdev_lambda_basic_execution";
+                LOGGER.info("sts client using {}", roleArn);
+
+                var roleRequest = AssumeRoleRequest.builder().roleArn(roleArn)
+                    .roleSessionName("asset-shipper-session").build();
+                var roleResponse = stsClient.assumeRole(roleRequest);
+                var credentials = roleResponse.credentials();
+            }
+
             ConfigService.retrieveConfigProperties(envVars.get(CONFIG_SERVICE_URL),
                 envVars.get(CONFIG_SERVICE_CREDENTIALS));
             ConfigService.setProperties("environment.", envVars);
