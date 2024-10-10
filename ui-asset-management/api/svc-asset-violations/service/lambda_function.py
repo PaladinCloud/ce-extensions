@@ -37,8 +37,9 @@ def lambda_handler(event, context):
         target_type = event['pathParameters']['targetType']
         logger.info(f"Extracted Target type: {target_type}")
 
-        # Extract asset ID from the event path parameters
-        asset_id = event['pathParameters']['assetId']
+        # Extract asset ID from the request body
+        request_body = json.loads(event['body'])
+        asset_id = request_body.get('_resourceId')
         logger.info(f"Extracted Asset ID: {asset_id}")
 
         # URL encode the asset_id to safely include it in the path

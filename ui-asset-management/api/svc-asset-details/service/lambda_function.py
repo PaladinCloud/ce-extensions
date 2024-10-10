@@ -33,8 +33,9 @@ def lambda_handler(event, context):
         tenant_id = event['requestContext']['authorizer']['lambda']['tenantId']
         logger.info(f"Extracted Tenant ID: {tenant_id}")
 
-        # Extract asset ID from the event path parameters
-        asset_id = event['pathParameters']['assetId']
+        # Extract asset ID from the request body
+        request_body = json.loads(event['body'])
+        asset_id = request_body.get('_resourceId')
         logger.info(f"Extracted Asset ID: {asset_id}")
 
         # URL encode the asset_id to safely include it in the path
@@ -51,7 +52,7 @@ def lambda_handler(event, context):
         connection.request("GET", path)
 
         # Get the response
-        response = connection.getresponse()
+        response = connection.getresponse() 
 
         # Read and decode the response data
         data = response.read().decode()
@@ -74,3 +75,4 @@ def lambda_handler(event, context):
         # Handle any exceptions (e.g., network issues, invalid response, etc.)
         logger.error(f"Error while making GET request: {e}")
         return None
+
