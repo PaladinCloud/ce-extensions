@@ -47,9 +47,11 @@ func NewSecretsClient(region string) *SecretsClient {
 	}
 }
 
-func (r *SecretsClient) GetRdsSecret(ctx context.Context, secretName string) (*models.RdsSecret, error) {
+func (r *SecretsClient) GetRdsSecret(ctx context.Context, secretNamePrefix, tenantId string) (*models.RdsSecret, error) {
+	secretId := fmt.Sprintf("{%s}{%s}", secretNamePrefix, tenantId)
+	fmt.Printf("Getting Rds Secrets from {%s}\n", secretId)
 	input := &secretsmanager.GetSecretValueInput{
-		SecretId:     aws.String(secretName),
+		SecretId:     aws.String(secretId),
 		VersionStage: aws.String(versionStage),
 	}
 

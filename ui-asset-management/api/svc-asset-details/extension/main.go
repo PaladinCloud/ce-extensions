@@ -47,19 +47,25 @@ func init() {
 }
 
 func main() {
-	ctx, cancel := context.WithCancel(context.Background())
-
 	log.Info("Loading Configuration")
-	configuration := clients.LoadConfigurationDetails(ctx)
+	configuration := clients.LoadConfigurationDetails()
 	log.Info("Configuration loaded successfully!")
 
-	log.Info("Initializing HTTP Server")
+	startMain(configuration)
+}
+
+func startMain(configuration *clients.Configuration) {
+	ctx, cancel := context.WithCancel(context.Background())
+
+	log.Info("Initializing HTTP Server Client")
 	httpServerClient = &server.HttpServer{
-		Configuration:      configuration,
 		AssetDetailsClient: clients.NewAssetDetailsClient(configuration, log),
 		Log:                log,
 	}
 	log.Info("HTTP Server initialized successfully!")
+
+	log.Info("Starting Local HTTP Server")
+	server.Start(port, httpServerClient)
 
 	if configuration.EnableExtension {
 		log.Info("Registering extension client", extensionName, lambdaRuntimeAPI)
@@ -79,13 +85,10 @@ func main() {
 		}
 
 		log.Info("Client Registered:", res)
+
+		// Will block until shutdown event is received or cancelled via the context.
+		processEvents(ctx)
 	}
-
-	log.Info("Starting Local HTTP Server")
-	server.Start(port, httpServerClient)
-
-	// Will block until shutdown event is received or cancelled via the context.
-	processEvents(ctx)
 }
 
 func processEvents(ctx context.Context) {

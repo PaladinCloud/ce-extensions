@@ -14,12 +14,19 @@
  * the License.
  */
 
-package models
+package utils
 
-type RdsSecret struct {
-	DbUsername string `json:"DB_USERNAME"`
-	DbPassword string `json:"DB_PASSWORD"`
-	DbName     string `json:"DB_NAME"`
-	DbHost     string `json:"RDS_HOST"`
-	DbPort     string `json:"RDS_PORT"`
+var FieldsToBeSkipped = [...]string{
+	"_cloudType",
+	"_resourceid",
+	"_docid",
+	"_discoverydate",
+	"discoverydate",
+	"firstdiscoveredon",
+	"_entity",
+	"_entitytype",
+	"_loaddate",
+	"assetRiskScore",
+	"targettypedisplayname",
+	"arsLoadDate",
 }

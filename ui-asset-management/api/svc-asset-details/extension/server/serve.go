@@ -30,7 +30,6 @@ import (
 )
 
 type HttpServer struct {
-	Configuration      *clients.Configuration
 	AssetDetailsClient *clients.AssetDetailsClient
 	Log                *logger.Logger
 }
@@ -61,6 +60,8 @@ func handleValue(config *HttpServer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tenantId := chi.URLParam(r, "tenantId")
 		assetId, err := url.QueryUnescape(chi.URLParam(r, "assetId"))
+
+		fmt.Printf("Fetching asset details for tenantId: %s, assetId: %s\n", tenantId, assetId)
 		if err != nil {
 			config.Log.Error("Error decoding the assetId from Url path")
 			http.Error(w, err.Error(), http.StatusBadRequest)
