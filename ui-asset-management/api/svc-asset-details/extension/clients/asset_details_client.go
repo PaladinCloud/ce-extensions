@@ -18,15 +18,14 @@ type AssetDetailsClient struct {
 	log                 *logger.Logger
 }
 
-func NewAssetDetailsClient(configuration *Configuration, log *logger.Logger) *AssetDetailsClient {
-	dynamodbClient := NewDynamoDBClient(configuration.Region, configuration.TenantConfigTable, configuration.TenantConfigTablePartitionKey)
-	secretsClient := NewSecretsClient(configuration.Region)
+func NewAssetDetailsClient(config *Configuration) *AssetDetailsClient {
+	dynamodbClient, _ := NewDynamoDBClient(config.AssumeRoleArn, config.Region, config.TenantConfigTable, config.TenantConfigTablePartitionKey)
+	secretsClient, _ := NewSecretsClient(config.AssumeRoleArn, config.Region)
 
 	return &AssetDetailsClient{
-		configuration:       configuration,
+		configuration:       config,
 		elasticSearchClient: NewElasticSearchClient(dynamodbClient),
-		rdsClient:           NewRdsClient(configuration, secretsClient),
-		log:                 log,
+		rdsClient:           NewRdsClient(secretsClient, config.SecretIdPrefix),
 	}
 }
 
@@ -52,7 +51,7 @@ func (c *AssetDetailsClient) GetAssetDetails(ctx context.Context, tenantId, asse
 		return nil, fmt.Errorf("assetId must be present")
 	}
 
-	c.log.Info("Starting to fetch asset details")
+	fmt.Println("Starting to fetch asset details")
 	result, err := c.elasticSearchClient.FetchAssetDetails(ctx, tenantId, allSources, assetId, 1)
 
 	if err != nil {
@@ -61,7 +60,7 @@ func (c *AssetDetailsClient) GetAssetDetails(ctx context.Context, tenantId, asse
 
 	sourceArr := (*result)["hits"].(map[string]interface{})["hits"].([]interface{})
 	if len(sourceArr) > 0 {
-		c.log.Info("Found asset details for assetId: " + assetId)
+		fmt.Println("Found asset details for assetId: " + assetId)
 		assetDetails := sourceArr[0].(map[string]interface{})["_source"].(map[string]interface{})
 		mandatoryTags, _ := c.rdsClient.FetchMandatoryTags(ctx, tenantId)
 
@@ -117,7 +116,7 @@ func (c *AssetDetailsClient) GetAssetDetails(ctx context.Context, tenantId, asse
 			PrimaryProvider: primaryProvider,
 		}, Message: success}, nil
 	} else {
-		c.log.Error("asset details not found for assetId: %s", assetId)
+		fmt.Printf("asset details not found for assetId: %s\n", assetId)
 		return nil, fmt.Errorf("asset detials not found for assetId: %s", assetId)
 	}
 }
@@ -185,7 +184,7 @@ func (c *AssetDetailsClient) buildPrimaryProviderForLegacyAssetModel(assetDetail
 
 	primaryProviderJson, err := json.Marshal(assetDetails)
 	if err != nil {
-		c.log.Error("Error while formatting legacy asset details to json string")
+		fmt.Println("Error while formatting legacy asset details to json string")
 		return "", err
 	}
 

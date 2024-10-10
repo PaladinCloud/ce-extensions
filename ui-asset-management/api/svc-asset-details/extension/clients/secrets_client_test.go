@@ -14,23 +14,16 @@
  * the License.
  */
 
-package main
+package clients
 
-import (
-	"svc-asset-details-layer/clients"
-	"testing"
-)
+import "testing"
 
-func TestStartMain(t *testing.T) {
-
-	t.Run("main", func(t *testing.T) {
-		config := &clients.Configuration{
-			Region:                        "us-east-1",
-			TenantConfigTable:             "Tenant-Config",
-			TenantConfigTablePartitionKey: "tenantId",
-			SecretIdPrefix:                "paladincloud/secret/",
+func TestNewSecretsClient(t *testing.T) {
+	t.Run("NewSecretsClient", func(t *testing.T) {
+		assumeRole := "arn:aws:iam::246214016629:role/PaladinCloudIntegrationRole"
+		_, err := NewSecretsClient(assumeRole, "us-east-1")
+		if err != nil {
+			t.Errorf("Error loading AWS config: %v", err)
 		}
-
-		startMain(config)
 	})
 }

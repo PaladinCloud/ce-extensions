@@ -27,16 +27,16 @@ import (
 )
 
 type RdsClient struct {
-	secretNamePrefix string
-	secretsClient    *SecretsClient
-	rdsClientCache   map[string]*sql.DB
+	secretIdPrefix string
+	secretsClient  *SecretsClient
+	rdsClientCache map[string]*sql.DB
 }
 
-func NewRdsClient(configuration *Configuration, secretsClient *SecretsClient) *RdsClient {
+func NewRdsClient(secretsClient *SecretsClient, secretIdPrefix string) *RdsClient {
 	return &RdsClient{
-		secretNamePrefix: configuration.SecretNamePrefix,
-		secretsClient:    secretsClient,
-		rdsClientCache:   make(map[string]*sql.DB),
+		secretIdPrefix: secretIdPrefix,
+		secretsClient:  secretsClient,
+		rdsClientCache: make(map[string]*sql.DB),
 	}
 }
 
@@ -46,7 +46,7 @@ func (r *RdsClient) CreateNewClient(ctx context.Context, tenantId string) *sql.D
 		return db
 	}
 
-	rdsCredentials, _ := r.secretsClient.GetRdsSecret(ctx, r.secretNamePrefix, tenantId)
+	rdsCredentials, _ := r.secretsClient.GetRdsSecret(ctx, r.secretIdPrefix, tenantId)
 	var (
 		dbUser     = rdsCredentials.DbUsername
 		dbPassword = rdsCredentials.DbPassword

@@ -19,31 +19,49 @@ package clients
 import (
 	"context"
 	"fmt"
+	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"svc-asset-details-layer/models"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 )
 
 type DynamodbClient struct {
 	region                        string
 	tenantConfigTable             string
 	tenantConfigTablePartitionKey string
-	client                        *dynamodb.DynamoDB
+	client                        *dynamodb.Client
 }
 
-// NewDynamoDBClient inits a DynamoDB session to be used throughout the services
-func NewDynamoDBClient(region, tenantConfigTable, tenantConfigTablePartitionKey string) *DynamodbClient {
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(region),
-	})
+// NewDynamoDBClient inits a DynamoDB client to be used throughout the services
+func NewDynamoDBClient(assumeRoleArn, region, tenantConfigTable, tenantConfigTablePartitionKey string) (*DynamodbClient, error) {
+	// Load default AWS config
+	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(region))
 	if err != nil {
-		fmt.Errorf("error creating dynamoDB client %v", err)
+		fmt.Printf("error loading AWS config: %v", err)
+		return nil, err
 	}
 
-	svc := dynamodb.New(sess)
+	// Create an STS client
+	stsClient := sts.NewFromConfig(cfg)
+
+	// Assume the role using STS
+	creds := stscreds.NewAssumeRoleProvider(stsClient, assumeRoleArn, func(o *stscreds.AssumeRoleOptions) {
+		o.RoleSessionName = "DynamoDBSession"
+	})
+
+	// Create a new configuration with the assumed role credentials
+	assumedCfg := aws.Config{
+		Credentials: aws.NewCredentialsCache(creds),
+		Region:      region,
+	}
+
+	// Initialize DynamoDB client
+	svc := dynamodb.NewFromConfig(assumedCfg)
 
 	fmt.Println("Initialized DynamoDB Client")
 	return &DynamodbClient{
@@ -51,7 +69,7 @@ func NewDynamoDBClient(region, tenantConfigTable, tenantConfigTablePartitionKey 
 		tenantConfigTable:             tenantConfigTable,
 		tenantConfigTablePartitionKey: tenantConfigTablePartitionKey,
 		client:                        svc,
-	}
+	}, nil
 }
 
 func (d *DynamodbClient) GetOpenSearchDomain(ctx context.Context, tenant string) (*models.OpenSearchDomainProperties, error) {
@@ -61,22 +79,16 @@ func (d *DynamodbClient) GetOpenSearchDomain(ctx context.Context, tenant string)
 
 	// Define the query input
 	input := &dynamodb.QueryInput{
-		TableName: aws.String(d.tenantConfigTable),
-		KeyConditions: map[string]*dynamodb.Condition{
-			d.tenantConfigTablePartitionKey: {
-				ComparisonOperator: aws.String("EQ"),
-				AttributeValueList: []*dynamodb.AttributeValue{
-					{
-						S: aws.String(tenantId),
-					},
-				},
-			},
+		TableName:              aws.String(d.tenantConfigTable),
+		KeyConditionExpression: aws.String(fmt.Sprintf("%s = :tenantId", d.tenantConfigTablePartitionKey)),
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":tenantId": &types.AttributeValueMemberS{Value: tenantId},
 		},
 		ProjectionExpression: aws.String("datastore_es_ESDomain"),
 	}
 
 	// Retrieve the item from DynamoDB
-	result, err := d.client.QueryWithContext(ctx, input)
+	result, err := d.client.Query(ctx, input)
 	if err != nil {
 		return &models.OpenSearchDomainProperties{}, fmt.Errorf("failed to get item from DynamoDB: %v", err)
 	}
@@ -88,7 +100,7 @@ func (d *DynamodbClient) GetOpenSearchDomain(ctx context.Context, tenant string)
 
 	// Unmarshal the result into TenantConfig struct
 	var config models.TenantConfig
-	err = dynamodbattribute.UnmarshalMap(result.Items[0], &config)
+	err = attributevalue.UnmarshalMap(result.Items[0], &config)
 	if err != nil {
 		return &models.OpenSearchDomainProperties{}, fmt.Errorf("failed to unmarshal result: %v", err)
 	}
