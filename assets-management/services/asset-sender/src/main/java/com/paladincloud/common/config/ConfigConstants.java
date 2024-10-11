@@ -2,10 +2,17 @@ package com.paladincloud.common.config;
 
 public interface ConfigConstants {
 
+    interface Tenant {
+
+        String TENANT_NAME = "config.tenant_name";
+    }
+
     interface Dev {
-        String INDEX_PREFIX = "param.index-prefix";
-        String ASSET_TYPE_OVERRIDE = "param.asset-type-override";
-        String OMIT_DONE_EVENT = "param.omit-done-event";
+
+        String INDEX_PREFIX = "param.index_prefix";
+        String ASSET_TYPE_OVERRIDE = "param.asset_type_override";
+        String OMIT_DONE_EVENT = "param.omit_done_event";
+        String SKIP_ASSET_COUNT = "param.skip_asset_count";
     }
 
     interface Config {
@@ -22,9 +29,10 @@ public interface ConfigConstants {
     }
 
     interface PaladinCloud {
+
         String API_AUTH_CREDENTIALS = "application.apiauthinfo";
         String AUTH_API_URL = "environment.AUTH_API_URL";
-        String BASE_PALADIN_CLOUD_API_URI = "environment.BASE_PALADIN_CLOUD_API_URI";
+        String BASE_PALADIN_CLOUD_API_URI = "config.base-paladincloud-api-url";
     }
 
     interface RDS {
@@ -41,12 +49,8 @@ public interface ConfigConstants {
         String DATA_PATH = "batch.s3.data";
     }
 
-    interface Sender {
-
-        String ATTRIBUTES_TO_PRESERVE = "batch.shipper.attributes.to.preserve";
-    }
-
     interface SQS {
-        String ASSET_SHIPPER_DONE_SQS_URL = "environment.ASSET_SHIPPER_DONE_SQS_URL";
+
+        String ASSET_SHIPPER_DONE_SQS_URL = "config.asset-shipper-done-sqs-url";
     }
 }

@@ -1,5 +1,9 @@
 package com.paladincloud.common;
 
-public record ProcessingDoneMessage(String jobName, String tenantId, String source) {
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+public record ProcessingDoneMessage(String jobName, String source, String enricherSource,
+                                    @JsonProperty("tenant_id") String tenantId,
+                                    @JsonProperty("tenant_name") String tenantName) {
 
 }

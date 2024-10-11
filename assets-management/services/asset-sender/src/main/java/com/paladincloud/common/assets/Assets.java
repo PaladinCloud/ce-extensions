@@ -7,7 +7,6 @@ import com.paladincloud.common.assets.FilesAndTypes.SupportingType;
 import com.paladincloud.common.aws.DatabaseHelper;
 import com.paladincloud.common.config.AssetTypes;
 import com.paladincloud.common.config.ConfigConstants;
-import com.paladincloud.common.config.ConfigConstants.Sender;
 import com.paladincloud.common.config.ConfigService;
 import com.paladincloud.common.errors.JobException;
 import com.paladincloud.common.mapper.MapperRepository;
