@@ -17,6 +17,9 @@
 package models
 
 type RdsSecret struct {
-	DbUsername string `json:"spring.datasource.username"`
-	DbPassword string `json:"spring.datasource.password"`
+	DbUsername string `json:"DB_USERNAME"`
+	DbPassword string `json:"DB_PASSWORD"`
+	DbName     string `json:"DB_NAME"`
+	DbHost     string `json:"RDS_HOST"`
+	DbPort     string `json:"RDS_PORT"`
 }
