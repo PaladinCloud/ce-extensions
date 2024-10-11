@@ -1,0 +1,305 @@
+  AWSTemplateFormatVersion: '2010-09-09'
+  Description: Dynamic number of API Gateway integrations and Lambda functions
+
+  Parameters:
+    Environment:
+      Type: String
+      Default: dev
+      AllowedValues:
+        - dev
+        - qa
+        - prod
+      Description: The environment to deploy the function to
+
+    Subnet1:
+      Type: String
+      Description: The first subnet ID for VPC configuration
+
+    Subnet2:
+      Type: String
+      Description: The second subnet ID for VPC configuration
+
+    VpcId:
+      Type: String
+      Description: VPC ID for Lambda function (e.g., vpc-012335987c4c5ef8e)
+
+    CidrIp:
+      Type: String
+      Default: 0.0.0.0/0
+      Description: CIDR IP range allowed for ingress traffic
+
+    S3BUCKETNAME:
+      Type: String
+      Description: The name of the S3 bucket where the Lambda function code and layers are stored
+
+    RELEASEVERSION:
+      Type: String
+      Description: The release version of the Lambda function code
+
+    LayerAssetDetailsKey:
+      Type: String
+      Description: S3 key (path) for the Asset Details Lambda Layer zip file
+
+    LayerAssetViolationsKey:
+      Type: String
+      Description: S3 key (path) for the Asset Violations Lambda Layer zip file
+
+    LayerRiskScoreKey:
+      Type: String
+      Description: S3 key (path) for the Risk Score Lambda Layer zip file
+
+    ApiGatewayIds:
+      Type: CommaDelimitedList
+      Description: Comma-delimited list of API Gateway IDs (for each service)
+
+    AuthorizerIds:
+      Type: CommaDelimitedList
+      Description: Comma-delimited list of API Gateway Lambda Authorizer IDs (for each service)
+
+    ApiGatewayNames:
+      Type: CommaDelimitedList
+      Description: Comma-delimited list of API Gateway names (for each service)
+
+  Resources:
+    # Security Group for Lambda Functions
+    SecurityGroup:
+      Type: AWS::EC2::SecurityGroup
+      Properties:
+        GroupDescription: Security group for Lambda VPC access
+        VpcId: !Ref VpcId
+        SecurityGroupIngress:
+          - IpProtocol: tcp
+            FromPort: 80
+            ToPort: 80
+            CidrIp: !Ref CidrIp
+          - IpProtocol: tcp
+            FromPort: 443
+            ToPort: 443
+            CidrIp: !Ref CidrIp
+        SecurityGroupEgress:
+          - IpProtocol: -1
+            CidrIp: "0.0.0.0/0"
+
+    LambdaExecutionRole:
+      Type: AWS::IAM::Role
+      Properties:
+        RoleName: !Sub "${Environment}-asset-management-lambdaexecutionRole"
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: "Allow"
+              Principal:
+                Service: "lambda.amazonaws.com"
+              Action: "sts:AssumeRole"
+        Policies:
+          - PolicyName: "LambdaExecutionPolicy"
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: "Allow"
+                  Action:
+                    - "logs:CreateLogGroup"
+                    - "logs:CreateLogStream"
+                    - "logs:PutLogEvents"
+                    - "s3:GetObject"
+                  Resource: "*"
+                - Effect: "Allow"
+                  Action:
+                    - "ec2:*"
+                  Resource: "*"
+                - Effect: "Allow"
+                  Action: "lambda:InvokeFunction"
+                  Resource: "*"
+
+    # Lambda Layer for Asset Details
+    AssetDetailsLayer:
+      Type: AWS::Lambda::LayerVersion
+      Properties:
+        LayerName: !Sub "svc-${Environment}-asset-details-layer"
+        Content:
+          S3Bucket: !Ref S3BUCKETNAME
+          S3Key: !Ref LayerAssetDetailsKey
+        CompatibleRuntimes:
+          - python3.12
+        Description: "Lambda Layer for Asset Details Function"
+
+    # Lambda Layer for Asset Violations
+    AssetViolationsLayer:
+      Type: AWS::Lambda::LayerVersion
+      Properties:
+        LayerName: !Sub "svc-${Environment}-asset-violations-layer"
+        Content:
+          S3Bucket: !Ref S3BUCKETNAME
+          S3Key: !Ref LayerAssetViolationsKey
+        CompatibleRuntimes:
+          - python3.12
+        Description: "Lambda Layer for Asset Violations Function"
+
+    # Lambda Layer for Risk Score
+    RiskScoreLayer:
+      Type: AWS::Lambda::LayerVersion
+      Properties:
+        LayerName: !Sub "svc-${Environment}-risk-score-layer"
+        Content:
+          S3Bucket: !Ref S3BUCKETNAME
+          S3Key: !Ref LayerRiskScoreKey
+        CompatibleRuntimes:
+          - python3.12
+        Description: "Lambda Layer for Risk Score Function"
+
+    # Lambda Function - Asset Details
+    svcassetdetails:
+      Type: AWS::Lambda::Function
+      Properties:
+        FunctionName: !Sub "svc-${Environment}-asset-details"
+        Code:
+          S3Bucket: !Ref S3BUCKETNAME
+          S3Key: dormant-state.zip
+        MemorySize: 128
+        Timeout: 3
+        Handler: lambda_function.lambda_handler
+        Runtime: python3.12
+        Layers:
+          - !Ref AssetDetailsLayer
+        Role: !GetAtt LambdaExecutionRole.Arn
+        VpcConfig:
+          SecurityGroupIds:
+            - !Ref SecurityGroup
+          SubnetIds:
+            - !Ref Subnet1
+            - !Ref Subnet2
+
+    # Lambda Function - Asset Violations
+    svcassetviolations:
+      Type: AWS::Lambda::Function
+      Properties:
+        FunctionName: !Sub "svc-${Environment}-asset-violations"
+        Code:
+          S3Bucket: !Ref S3BUCKETNAME
+          S3Key: dormant-state.zip
+        MemorySize: 128
+        Timeout: 3
+        Handler: lambda_function.lambda_handler
+        Runtime: python3.12
+        Layers:
+          - !Ref AssetViolationsLayer
+        Role: !GetAtt LambdaExecutionRole.Arn
+        VpcConfig:
+          SecurityGroupIds:
+            - !Ref SecurityGroup
+          SubnetIds:
+            - !Ref Subnet1
+            - !Ref Subnet2
+
+    # Lambda Function - Risk Score
+    svcriskscore:
+      Type: AWS::Lambda::Function
+      Properties:
+        FunctionName: !Sub "svc-${Environment}-risk-score"
+        Code:
+          S3Bucket: !Ref S3BUCKETNAME
+          S3Key: dormant-state.zip
+        MemorySize: 128
+        Timeout: 3
+        Handler: lambda_function.lambda_handler
+        Runtime: python3.12
+        Layers:
+          - !Ref RiskScoreLayer
+        Role: !GetAtt LambdaExecutionRole.Arn
+        VpcConfig:
+          SecurityGroupIds:
+            - !Ref SecurityGroup
+          SubnetIds:
+            - !Ref Subnet1
+            - !Ref Subnet2
+
+    ImportedApiGatewayV2:
+      Type: AWS::ApiGatewayV2::Api
+      Properties:
+        ApiId: !Select [ 0, !Ref ApiGatewayIds ]
+        Name: !Select [ 0, !Ref ApiGatewayNames ]
+        ProtocolType: HTTP  # Specify the protocol type here
+      DeletionPolicy: Retain
+
+    # API Gateway and Lambda Integration for Asset Details
+    LambdaIntegrationAssetDetails:
+      Type: AWS::ApiGatewayV2::Integration
+      Properties:
+        ApiId: !Select [ 0, !Ref ApiGatewayIds ]
+        IntegrationType: AWS_PROXY
+        IntegrationUri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${svcassetdetails.Arn}/invocations"
+        PayloadFormatVersion: "2.0"
+
+    ApiGatewayRouteAssets:
+      Type: AWS::ApiGatewayV2::Route
+      Properties:
+        ApiId: !Select [ 0, !Ref ApiGatewayIds ]
+        RouteKey: "GET /v2/assets/{assetId}"
+        AuthorizationType: CUSTOM
+        AuthorizerId: !Select [ 0, !Ref AuthorizerIds ]
+        Target: !Sub "integrations/${LambdaIntegrationAssetDetails}"
+
+    # API Gateway and Lambda Integration for Asset Violations
+    LambdaIntegrationAssetViolations:
+      Type: AWS::ApiGatewayV2::Integration
+      Properties:
+        ApiId: !Select [ 0, !Ref ApiGatewayIds ]
+        IntegrationType: AWS_PROXY
+        IntegrationUri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${svcassetviolations.Arn}/invocations"
+        PayloadFormatVersion: "2.0"
+
+    ApiGatewayRouteViolations:
+      Type: AWS::ApiGatewayV2::Route
+      Properties:
+        ApiId: !Select [ 0, !Ref ApiGatewayIds ]
+        RouteKey: "GET /v2/violations/{violationId}"
+        AuthorizationType: CUSTOM
+        AuthorizerId: !Select [ 0, !Ref AuthorizerIds ]
+        Target: !Sub "integrations/${LambdaIntegrationAssetViolations}"
+
+    # API Gateway and Lambda Integration for Risk Score
+    LambdaIntegrationRiskScore:
+      Type: AWS::ApiGatewayV2::Integration
+      Properties:
+        ApiId: !Select [ 0, !Ref ApiGatewayIds ]
+        IntegrationType: AWS_PROXY
+        IntegrationUri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${svcriskscore.Arn}/invocations"
+        PayloadFormatVersion: "2.0"
+
+    ApiGatewayRouteRiskScore:
+      Type: AWS::ApiGatewayV2::Route
+      Properties:
+        ApiId: !Select [ 0, !Ref ApiGatewayIds ]
+        RouteKey: "GET /v2/risk-score/{scoreId}"
+        AuthorizationType: CUSTOM
+        AuthorizerId: !Select [ 0, !Ref AuthorizerIds ]
+        Target: !Sub "integrations/${LambdaIntegrationRiskScore}"
+
+  Outputs:
+    LambdaFunctionNameAssetDetails:
+      Description: "Name of the Asset Details Lambda Function"
+      Value: !Ref svcassetdetails
+
+    LambdaFunctionNameAssetViolations:
+      Description: "Name of the Asset Violations Lambda Function"
+      Value: !Ref svcassetviolations
+
+    LambdaFunctionNameRiskScore:
+      Description: "Name of the Risk Score Lambda Function"
+      Value: !Ref svcriskscore
+
+    SecurityGroupId:
+      Description: "ID of the Security Group created"
+      Value: !Ref SecurityGroup
+
+    ApiGatewayUrlAssets:
+      Description: "URL of the API Gateway for Assets"
+      Value: !Sub "https://${!Select [ 0, !Ref ApiGatewayIds ]}.execute-api.${AWS::Region}.amazonaws.com/"
+
+    ApiGatewayUrlViolations:
+      Description: "URL of the API Gateway for Violations"
+      Value: !Sub "https://${!Select [ 1, !Ref ApiGatewayIds ]}.execute-api.${AWS::Region}.amazonaws.com/"
+
+    ApiGatewayUrlRiskScore:
+      Description: "URL of the API Gateway for Risk Score"
+      Value: !Sub "https://${!Select [ 2, !Ref ApiGatewayIds ]}.execute-api.${AWS::Region}.amazonaws.com/"
