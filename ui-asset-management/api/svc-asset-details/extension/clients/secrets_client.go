@@ -77,7 +77,7 @@ func (r *SecretsClient) GetRdsSecret(ctx context.Context, secretIdPrefix, tenant
 
 	// Prepare the input for retrieving the secret
 	input := &secretsmanager.GetSecretValueInput{
-		SecretId:     aws.String("paladincloud/secret/98c28482-9bae-46bd-bd4e-58fa132e72c0"),
+		SecretId:     aws.String(secretId),
 		VersionStage: aws.String(versionStage),
 	}
 

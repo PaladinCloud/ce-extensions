@@ -91,7 +91,7 @@ func (r *RdsClient) FetchMandatoryTags(ctx context.Context, tenantId string) ([]
 	return tags, nil
 }
 
-func (r *RdsClient) closeClient(db *sql.DB) {
+func (r *RdsClient) Close(db *sql.DB) {
 	// Close all connections in the cache
 	for s := range r.rdsClientCache {
 		r.rdsClientCache[s].Close()
