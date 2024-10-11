@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"svc-asset-details-layer/models"
 
@@ -37,13 +36,12 @@ type DynamodbClient struct {
 	client                        *dynamodb.Client
 }
 
-// NewDynamoDBClient inits a DynamoDB client to be used throughout the services
+// NewDynamoDBClient initializes a DynamoDB client with an assumed role
 func NewDynamoDBClient(assumeRoleArn, region, tenantConfigTable, tenantConfigTablePartitionKey string) (*DynamodbClient, error) {
-	// Load default AWS config
+	// Load the default AWS configuration
 	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(region))
 	if err != nil {
-		fmt.Printf("error loading AWS config: %v", err)
-		return nil, err
+		return nil, fmt.Errorf("error loading AWS config: %v", err)
 	}
 
 	// Create an STS client
@@ -54,16 +52,16 @@ func NewDynamoDBClient(assumeRoleArn, region, tenantConfigTable, tenantConfigTab
 		o.RoleSessionName = "DynamoDBSession"
 	})
 
-	// Create a new configuration with the assumed role credentials
+	// Create a new AWS configuration with the assumed role credentials
 	assumedCfg := aws.Config{
 		Credentials: aws.NewCredentialsCache(creds),
 		Region:      region,
 	}
 
-	// Initialize DynamoDB client
+	// Initialize the DynamoDB client with the assumed role credentials
 	svc := dynamodb.NewFromConfig(assumedCfg)
 
-	fmt.Println("Initialized DynamoDB Client")
+	fmt.Println("Initialized DynamoDB Client with assumed role")
 	return &DynamodbClient{
 		region:                        region,
 		tenantConfigTable:             tenantConfigTable,
@@ -72,37 +70,43 @@ func NewDynamoDBClient(assumeRoleArn, region, tenantConfigTable, tenantConfigTab
 	}, nil
 }
 
-func (d *DynamodbClient) GetOpenSearchDomain(ctx context.Context, tenant string) (*models.OpenSearchDomainProperties, error) {
-	tenantId := tenant
-
+// GetOpenSearchDomain fetches the domain information for a given tenant
+func (d *DynamodbClient) GetOpenSearchDomain(ctx context.Context, tenantId string) (*models.OpenSearchDomainProperties, error) {
 	fmt.Printf("Fetching tenant configs for tenantId: %s\n", tenantId)
 
-	// Define the query input
-	input := &dynamodb.QueryInput{
-		TableName:              aws.String(d.tenantConfigTable),
-		KeyConditionExpression: aws.String(fmt.Sprintf("%s = :tenantId", d.tenantConfigTablePartitionKey)),
-		ExpressionAttributeValues: map[string]types.AttributeValue{
-			":tenantId": &types.AttributeValueMemberS{Value: tenantId},
-		},
-		ProjectionExpression: aws.String("datastore_es_ESDomain"),
-	}
-
-	// Retrieve the item from DynamoDB
-	result, err := d.client.Query(ctx, input)
+	key := struct {
+		TenantId string `dynamodbav:"tenant_id" json:"tenant_id"`
+	}{TenantId: tenantId}
+	avs, err := attributevalue.MarshalMap(key)
 	if err != nil {
-		return &models.OpenSearchDomainProperties{}, fmt.Errorf("failed to get item from DynamoDB: %v", err)
+		return nil, fmt.Errorf("failed to get item from DynamoDB: %v", err)
 	}
 
-	// Check if the item is found
-	if len(result.Items) == 0 {
-		return &models.OpenSearchDomainProperties{}, fmt.Errorf("tenant_id %s not found", tenantId)
+	// Prepare the GetItemInput with the correct table name and key
+	input := &dynamodb.GetItemInput{
+		TableName:            aws.String(d.tenantConfigTable),     // DynamoDB table name
+		Key:                  avs,                                 // Key to fetch the item
+		ProjectionExpression: aws.String("datastore_es_ESDomain"), // Only fetch the required attribute
 	}
 
-	// Unmarshal the result into TenantConfig struct
-	var config models.TenantConfig
-	err = attributevalue.UnmarshalMap(result.Items[0], &config)
+	fmt.Printf("DynamoDB Client: %+v\n", d.client)
+	fmt.Printf("DynamoDB input: %+v\n", input)
+
+	// Query DynamoDB to get the item
+	result, err := d.client.GetItem(ctx, input)
 	if err != nil {
-		return &models.OpenSearchDomainProperties{}, fmt.Errorf("failed to unmarshal result: %v", err)
+		return nil, fmt.Errorf("failed to get item from DynamoDB: %v", err)
+	}
+
+	// Check if the item exists
+	if result.Item == nil {
+		return nil, fmt.Errorf("tenant_id %s not found", tenantId)
+	}
+
+	// Unmarshal the datastore_es_ESDomain field into the struct
+	var config models.TenantOutput
+	if err := attributevalue.UnmarshalMap(result.Item, &config); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal OpenSearchDomain: %v", err)
 	}
 	fmt.Printf("esDomain endpoint fetched from tenant config: %s\n", config.EsDomain.Endpoint)
 

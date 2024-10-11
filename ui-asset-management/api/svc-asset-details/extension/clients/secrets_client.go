@@ -51,7 +51,7 @@ func NewSecretsClient(assumeRoleArn, region string) (*SecretsClient, error) {
 
 	// Assume the role using STS
 	creds := stscreds.NewAssumeRoleProvider(stsClient, assumeRoleArn, func(o *stscreds.AssumeRoleOptions) {
-		o.RoleSessionName = "DynamoDBSession"
+		o.RoleSessionName = "SecretsSession"
 	})
 
 	// Create a new configuration with the assumed role credentials

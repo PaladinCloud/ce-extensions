@@ -30,14 +30,12 @@ import (
 )
 
 var (
-	//log              *logger.Logger
 	httpServerClient *server.HttpServer
 	port             = "4567"
 
 	extensionName    = filepath.Base(os.Args[0]) // extension name has to match the filename
 	lambdaRuntimeAPI = os.Getenv("AWS_LAMBDA_RUNTIME_API")
 	extensionClient  = extension.NewClient(lambdaRuntimeAPI)
-	printPrefix      = fmt.Sprintf("[%s]", extensionName)
 )
 
 func init() {
@@ -45,12 +43,11 @@ func init() {
 }
 
 func main() {
-	//log = logger.NewLogger(printPrefix)
-	fmt.Println("Starting Asset Details Extension", extensionName)
+	fmt.Printf("Starting Asset Details Extension - %s\n", extensionName)
 
 	fmt.Println("Loading Configuration")
 	configuration := clients.LoadConfigurationDetails()
-	fmt.Println("Configuration loaded successfully!")
+	fmt.Println("Configuration loaded successfully")
 
 	startMain(configuration)
 }
@@ -61,31 +58,30 @@ func startMain(configuration *clients.Configuration) {
 	fmt.Println("Initializing HTTP Server Client")
 	httpServerClient = &server.HttpServer{
 		AssetDetailsClient: clients.NewAssetDetailsClient(configuration),
-		//Log:                log,
 	}
-	fmt.Println("HTTP Server initialized successfully!")
+	fmt.Println("HTTP Server initialized successfully")
 
 	fmt.Println("Starting Local HTTP Server")
-	server.Start(port, httpServerClient)
+	server.Start(port, httpServerClient, configuration.EnableExtension)
 
 	if configuration.EnableExtension {
-		fmt.Println("Registering extension client", extensionName, lambdaRuntimeAPI)
+		fmt.Printf("Registering extension client - %s | %s\n", extensionName, lambdaRuntimeAPI)
 		sigs := make(chan os.Signal, 1)
 		signal.Notify(sigs, syscall.SIGTERM, syscall.SIGINT)
 		go func() {
 			s := <-sigs
 			cancel()
-			fmt.Println("Received", s)
+			fmt.Printf("Received | %v\n", s)
 			fmt.Println("Exiting")
 		}()
 
 		// Register the extension client with the Lambda runtime
 		res, err := extensionClient.Register(ctx, extensionName)
 		if err != nil {
-			fmt.Println("Unable to register extension:", err)
+			fmt.Printf("Unable to register extension: %v\n", err)
 		}
 
-		fmt.Println("Client Registered:", res)
+		fmt.Printf("Client Registered: %v\n", res)
 
 		// Will block until shutdown event is received or cancelled via the context.
 		processEvents(ctx)
@@ -104,7 +100,7 @@ func processEvents(ctx context.Context) {
 			// Fetch the next event and check for errors.
 			_, err := extensionClient.NextEvent(ctx)
 			if err != nil {
-				fmt.Println("Error fetching next event:", err)
+				fmt.Printf("Error fetching next event: %v\n", err)
 				return
 			}
 		}

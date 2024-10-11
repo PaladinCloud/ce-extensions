@@ -19,14 +19,13 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"net/http"
 	"net/url"
 	"os"
 	"svc-asset-details-layer/clients"
 	logger "svc-asset-details-layer/logging"
-
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 )
 
 type HttpServer struct {
@@ -35,9 +34,13 @@ type HttpServer struct {
 }
 
 // Start begins running the sidecar
-func Start(port string, server *HttpServer) {
+func Start(port string, server *HttpServer, enableExtension bool) {
 	println("Starting the server in background")
-	go startHTTPServer(port, server)
+	if enableExtension {
+		go startHTTPServer(port, server)
+	} else {
+		startHTTPServer(port, server)
+	}
 }
 
 // Method that responds back with the cached values

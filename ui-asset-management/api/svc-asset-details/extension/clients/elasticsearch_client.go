@@ -52,6 +52,10 @@ func (c *ElasticSearchClient) FetchAssetDetails(ctx context.Context, tenantId, a
 	json.NewEncoder(&buffer).Encode(esRequest)
 
 	client, err := c.CreateNewElasticSearchClient(ctx, tenantId)
+	if err != nil {
+		return nil, err
+	}
+
 	response, err := client.Search(client.Search.WithIndex(ag), client.Search.WithBody(&buffer))
 
 	if err != nil {
