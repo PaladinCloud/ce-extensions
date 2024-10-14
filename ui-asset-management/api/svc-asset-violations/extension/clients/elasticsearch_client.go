@@ -76,8 +76,16 @@ func (c *ElasticSearchClient) FetchAssetViolations(ctx context.Context, tenantId
 	var result map[string]interface{}
 	json.NewDecoder(response.Body).Decode(&result)
 
+	hits, ok := (result)["hits"].(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("unexpected result structure: missing or invalid 'hits'")
+	}
+	sourceArr, ok := hits["hits"].([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("unexpected result structure: missing or invalid 'hits.hits'")
+	}
+
 	var policyViolations = models.PolicyViolationsMap{}
-	sourceArr := (result)["hits"].(map[string]interface{})["hits"].([]interface{})
 	if len(sourceArr) > 0 {
 		fmt.Println("found " + strconv.Itoa(len(sourceArr)) + " violations for assetId: " + assetId)
 
