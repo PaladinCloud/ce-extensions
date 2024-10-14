@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2024 Paladin Cloud, Inc. or its affiliates. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy
+ * of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 package clients
 
 import (
@@ -6,21 +22,49 @@ import (
 	"encoding/json"
 	"fmt"
 	"svc-asset-violations-layer/models"
+	"sync"
 
 	elasticsearch "github.com/elastic/go-elasticsearch/v7"
 )
 
 type ElasticSearchClient struct {
+	dynamodbClient           *DynamodbClient
+	elasticsearchClientCache sync.Map // Replaced with sync.Map
 }
 
-func NewElasticSearchClient() *ElasticSearchClient {
-	return &ElasticSearchClient{}
+func NewElasticSearchClient(dynamodbClient *DynamodbClient) *ElasticSearchClient {
+	fmt.Println("initialized opensearch client")
+	return &ElasticSearchClient{
+		dynamodbClient: dynamodbClient,
+	}
 }
 
-func (c *ElasticSearchClient) FetchAssetViolations(ctx context.Context, esDomainProperties *models.EsDomainProperties, ag string, assetId string) (*map[string]interface{}, error) {
+func (c *ElasticSearchClient) CreateNewElasticSearchClient(ctx context.Context, tenantId string) (*elasticsearch.Client, error) {
+	// Check if the client is already in the cache
+	if client, ok := c.elasticsearchClientCache.Load(tenantId); ok {
+		return client.(*elasticsearch.Client), nil // Type assert the value to *elasticsearch.Client
+	}
 
+	// If not found, proceed to create a new client
+	esDomainProperties, err := c.dynamodbClient.GetOpenSearchDomain(ctx, tenantId)
+	if err != nil {
+		return nil, err
+	}
+
+	client, err := elasticsearch.NewClient(elasticsearch.Config{Addresses: []string{"https://" + esDomainProperties.Endpoint}})
+	if err != nil {
+		return nil, fmt.Errorf("error creating opensearch client for tenant id: %s. err: %+v", tenantId, err)
+	}
+
+	// Store the new client in the cache
+	c.elasticsearchClientCache.Store(tenantId, client)
+	return client, nil
+}
+
+func (c *ElasticSearchClient) FetchAssetViolations(ctx context.Context, tenantId, ag, assetId string) (*models.PolicyViolationsMap, error) {
 	query := buildQuery(assetId)
-	fmt.Println("query: ", query)
+	fmt.Printf("Query: %+v\n", query)
+
 	esRequest := map[string]interface{}{
 		"size":    1000,
 		"query":   query,
@@ -28,32 +72,69 @@ func (c *ElasticSearchClient) FetchAssetViolations(ctx context.Context, esDomain
 	}
 
 	var buffer bytes.Buffer
-	json.NewEncoder(&buffer).Encode(esRequest)
-	fmt.Println("esRequest: ", string(buffer.Bytes()))
+	err := json.NewEncoder(&buffer).Encode(esRequest)
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode opensearch client request: %+v", err)
+	}
+	fmt.Printf("opensearch client request: %s\n", buffer.String())
 
-	client, _ := elasticsearch.NewClient(elasticsearch.Config{Addresses: []string{"https://" + esDomainProperties.Endpoint}})
+	client, err := c.CreateNewElasticSearchClient(ctx, tenantId)
+	if err != nil {
+		return nil, err
+	}
 	response, err := client.Search(client.Search.WithIndex(ag), client.Search.WithBody(&buffer))
 
 	if err != nil {
-		return nil, fmt.Errorf("error getting response from ES for assetId: %s. err: %s", assetId, err)
+		return nil, fmt.Errorf("error getting response from opensearch client for asset id: %s. err: %+v", assetId, err)
 	}
 	defer response.Body.Close()
 
 	if response.StatusCode != 200 {
-		return nil, fmt.Errorf("error while fetching asset detials from ES for assetId: %s", assetId)
+		return nil, fmt.Errorf("error while fetching asset details from opensearch client for asset id: %s", assetId)
 	}
+
 	var result map[string]interface{}
-	json.NewDecoder(response.Body).Decode(&result)
-	return &result, nil
+	err = json.NewDecoder(response.Body).Decode(&result)
+	if err != nil {
+		return nil, fmt.Errorf("error decoding response body: %+v", err)
+	}
+
+	hits, ok := result["hits"].(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("unexpected result structure: missing or invalid 'hits'")
+	}
+	sourceArr, ok := hits["hits"].([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("unexpected result structure: missing or invalid 'hits.hits'")
+	}
+
+	var policyViolations = models.PolicyViolationsMap{}
+	if len(sourceArr) > 0 {
+		fmt.Printf("found %d violations for asset id: %s\n", len(sourceArr), assetId)
+
+		policyViolations.PolicyViolationsMap = make(map[string]interface{}, len(sourceArr))
+		// Put the violations in map with policyId as key
+		for i := 0; i < len(sourceArr); i++ {
+			violationDetail := sourceArr[i].(map[string]interface{})["_source"].(map[string]interface{})
+			violationDetail["_id"] = sourceArr[i].(map[string]interface{})["_id"]
+			policyViolations.PolicyViolationsMap[violationDetail["policyId"].(string)] = violationDetail
+		}
+	}
+
+	return &policyViolations, nil
 }
 
 func buildQuery(assetId string) map[string]interface{} {
-
 	query := map[string]interface{}{
 		"bool": map[string]interface{}{
-			"must": [3]map[string]interface{}{buildTermQuery("_docid.keyword", assetId), buildTermQuery("type", "issue"), buildTermQuery("issueStatus", []string{"open", "exempted"})},
+			"must": [3]map[string]interface{}{
+				buildTermQuery("_docid.keyword", assetId),
+				buildTermQuery("type", "issue"),
+				buildTermQuery("issueStatus", []string{"open", "exempted"}),
+			},
 		},
 	}
+
 	return query
 }
 

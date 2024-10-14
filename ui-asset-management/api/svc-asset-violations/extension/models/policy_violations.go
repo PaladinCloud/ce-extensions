@@ -16,10 +16,6 @@
 
 package models
 
-type RdsSecret struct {
-	DbUsername string `json:"DB_USERNAME"`
-	DbPassword string `json:"DB_PASSWORD"`
-	DbName     string `json:"DB_NAME"`
-	DbHost     string `json:"RDS_HOST"`
-	DbPort     string `json:"RDS_PORT"`
+type PolicyViolationsMap struct {
+	PolicyViolationsMap map[string]interface{}
 }

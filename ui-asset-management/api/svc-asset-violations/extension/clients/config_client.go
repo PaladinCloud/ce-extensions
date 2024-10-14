@@ -17,54 +17,51 @@
 package clients
 
 import (
-	"context"
+	"fmt"
+	"log"
 	"os"
 	"strconv"
-	"svc-asset-violations-layer/models"
 )
 
 type Configuration struct {
-	Region                   string
-	TenantId                 string
-	EnableExtension          bool
-	RdsSecretName            string
-	RdsHost                  string
-	RdsPort                  string
-	RdsDbName                string
-	RdsCredentials           models.RdsSecret
-	TenantConfigTable        string
-	TenantConfigPartitionKey string
+	EnableExtension         bool
+	AssumeRoleArn           string
+	Region                  string
+	TenantConfigOutputTable string
+	tenantTablePartitionKey string
+	SecretIdPrefix          string
 }
 
-func LoadConfigurationDetails(ctx context.Context) *Configuration {
+func LoadConfigurationDetails() *Configuration {
 	enableExtensionStr := os.Getenv("ENABLE_EXTENSION")
 	enableExtension, err := strconv.ParseBool(enableExtensionStr)
 	if err != nil {
 		// When we deploy the lambda + extension, set the default runtime to enable extension
+		fmt.Println("ENABLE_EXTENSION environment variable not set, defaulting to true")
 		enableExtension = true
 	}
-	region := os.Getenv("REGION")
-	tenantId := os.Getenv("TENANT_ID")
-	rdsSecretName := os.Getenv("RDS_SECRET_NAME")
-	rdsHost := os.Getenv("RDS_HOST")
-	rdsPort := os.Getenv("RDS_PORT")
-	rdsDbName := os.Getenv("RDS_DB_NAME")
-	tenantConfigTable := os.Getenv("TENANT_CONFIG_TABLE")
-	tenantConfigPartitionKey := os.Getenv("TENANT_CONFIG_PARTITION_KEY")
 
-	secretsClient := NewSecretsClient(region)
-	rdsCredentials, _ := secretsClient.GetRdsSecret(ctx, rdsSecretName)
+	region := getEnvVariable("REGION")
+	assumeRoleArn := getEnvVariable("ASSUME_ROLE_ARN")
+	tenantConfigOutputTable := getEnvVariable("TENANT_CONFIG_OUTPUT_TABLE")
+	tenantTablePartitionKey := getEnvVariable("TENANT_TABLE_PARTITION_KEY")
+	secretIdPrefix := getEnvVariable("SECRET_NAME_PREFIX")
 
 	return &Configuration{
-		EnableExtension:          enableExtension,
-		Region:                   region,
-		TenantId:                 tenantId,
-		RdsSecretName:            rdsSecretName,
-		RdsHost:                  rdsHost,
-		RdsPort:                  rdsPort,
-		RdsDbName:                rdsDbName,
-		RdsCredentials:           *rdsCredentials,
-		TenantConfigTable:        tenantConfigTable,
-		TenantConfigPartitionKey: tenantConfigPartitionKey,
+		EnableExtension:         enableExtension,
+		AssumeRoleArn:           assumeRoleArn,
+		Region:                  region,
+		TenantConfigOutputTable: tenantConfigOutputTable,
+		tenantTablePartitionKey: tenantTablePartitionKey,
+		SecretIdPrefix:          secretIdPrefix,
 	}
+}
+
+func getEnvVariable(name string) string {
+	value := os.Getenv(name)
+	if value == "" {
+		log.Fatalf("environment variable %s must be set", name)
+	}
+
+	return value
 }

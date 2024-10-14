@@ -23,7 +23,6 @@ import (
 	"net/url"
 	"os"
 	"svc-asset-violations-layer/clients"
-	logger "svc-asset-violations-layer/logging"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -32,13 +31,17 @@ import (
 type HttpServer struct {
 	Configuration         *clients.Configuration
 	AssetViolationsClient *clients.AssetViolationsClient
-	Log                   *logger.Logger
 }
 
 // Start begins running the sidecar
-func Start(port string, server *HttpServer) {
-	println("Starting the server in background")
-	go startHTTPServer(port, server)
+func Start(port string, server *HttpServer, enableExtension bool) {
+	if enableExtension {
+		println("starting the server in background")
+		go startHTTPServer(port, server)
+	} else {
+		println("starting the server")
+		startHTTPServer(port, server)
+	}
 }
 
 // Method that responds back with the cached values
@@ -50,11 +53,11 @@ func startHTTPServer(port string, httpConfig *HttpServer) {
 
 	err := http.ListenAndServe(fmt.Sprintf(":%s", port), r)
 	if err != nil {
-		httpConfig.Log.Error("error starting the server", err)
+		fmt.Errorf("error starting the server: %+v", err)
 		os.Exit(0)
 	}
 
-	httpConfig.Log.Info("Server started on %s", port)
+	fmt.Printf("server started on %s\n", port)
 }
 
 func handleValue(config *HttpServer) http.HandlerFunc {
@@ -63,10 +66,11 @@ func handleValue(config *HttpServer) http.HandlerFunc {
 		targetType := chi.URLParam(r, "targetType")
 		assetId, err := url.QueryUnescape(chi.URLParam(r, "assetId"))
 		if err != nil {
-			config.Log.Error("Error decoding the assetId from Url path")
+			fmt.Errorf("error decoding the assetId from url path")
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
+
 		assetDetails, err := config.AssetViolationsClient.GetAssetViolations(r.Context(), targetType, tenantId, assetId)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
