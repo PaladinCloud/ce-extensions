@@ -17,26 +17,20 @@
 package clients
 
 import (
-	"context"
 	"os"
 	"strconv"
-	"svc-asset-violations-layer/models"
 )
 
 type Configuration struct {
-	Region                   string
-	TenantId                 string
-	EnableExtension          bool
-	RdsSecretName            string
-	RdsHost                  string
-	RdsPort                  string
-	RdsDbName                string
-	RdsCredentials           models.RdsSecret
-	TenantConfigTable        string
-	TenantConfigPartitionKey string
+	EnableExtension               bool
+	AssumeRoleArn                 string
+	Region                        string
+	TenantConfigTable             string
+	TenantConfigTablePartitionKey string
+	SecretIdPrefix                string
 }
 
-func LoadConfigurationDetails(ctx context.Context) *Configuration {
+func LoadConfigurationDetails() *Configuration {
 	enableExtensionStr := os.Getenv("ENABLE_EXTENSION")
 	enableExtension, err := strconv.ParseBool(enableExtensionStr)
 	if err != nil {
@@ -44,27 +38,17 @@ func LoadConfigurationDetails(ctx context.Context) *Configuration {
 		enableExtension = true
 	}
 	region := os.Getenv("REGION")
-	tenantId := os.Getenv("TENANT_ID")
-	rdsSecretName := os.Getenv("RDS_SECRET_NAME")
-	rdsHost := os.Getenv("RDS_HOST")
-	rdsPort := os.Getenv("RDS_PORT")
-	rdsDbName := os.Getenv("RDS_DB_NAME")
 	tenantConfigTable := os.Getenv("TENANT_CONFIG_TABLE")
-	tenantConfigPartitionKey := os.Getenv("TENANT_CONFIG_PARTITION_KEY")
-
-	secretsClient := NewSecretsClient(region)
-	rdsCredentials, _ := secretsClient.GetRdsSecret(ctx, rdsSecretName)
+	tenantConfigTablePartitionKey := os.Getenv("TENANT_CONFIG_TABLE_PARTITION_KEY")
+	assumeRoleArn := os.Getenv("ASSUME_ROLE_ARN")
+	secretIdPrefix := os.Getenv("SECRET_NAME_PREFIX")
 
 	return &Configuration{
-		EnableExtension:          enableExtension,
-		Region:                   region,
-		TenantId:                 tenantId,
-		RdsSecretName:            rdsSecretName,
-		RdsHost:                  rdsHost,
-		RdsPort:                  rdsPort,
-		RdsDbName:                rdsDbName,
-		RdsCredentials:           *rdsCredentials,
-		TenantConfigTable:        tenantConfigTable,
-		TenantConfigPartitionKey: tenantConfigPartitionKey,
+		EnableExtension:               enableExtension,
+		AssumeRoleArn:                 assumeRoleArn,
+		Region:                        region,
+		TenantConfigTable:             tenantConfigTable,
+		TenantConfigTablePartitionKey: tenantConfigTablePartitionKey,
+		SecretIdPrefix:                secretIdPrefix,
 	}
 }

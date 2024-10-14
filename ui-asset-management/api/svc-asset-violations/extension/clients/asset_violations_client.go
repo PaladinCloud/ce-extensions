@@ -6,19 +6,24 @@ import (
 	"math"
 	"strconv"
 	"strings"
-	logger "svc-asset-violations-layer/logging"
 	"svc-asset-violations-layer/models"
 )
 
 type AssetViolationsClient struct {
-	dynamodbClient      *DynamodbClient
+	configuration       *Configuration
 	elasticSearchClient *ElasticSearchClient
 	rdsClient           *RdsClient
-	log                 *logger.Logger
 }
 
-func NewAssetViolationsClient(configuration *Configuration, log *logger.Logger) *AssetViolationsClient {
-	return &AssetViolationsClient{dynamodbClient: NewDynamoDBClient(configuration, log), elasticSearchClient: NewElasticSearchClient(), rdsClient: NewRdsClient(configuration), log: log}
+func NewAssetViolationsClient(config *Configuration) *AssetViolationsClient {
+	dynamodbClient, _ := NewDynamoDBClient(config)
+	secretsClient, _ := NewSecretsClient(config.AssumeRoleArn, config.Region)
+
+	return &AssetViolationsClient{
+		configuration:       config,
+		elasticSearchClient: NewElasticSearchClient(dynamodbClient),
+		rdsClient:           NewRdsClient(secretsClient, config.SecretIdPrefix),
+	}
 }
 
 const (
@@ -46,7 +51,7 @@ const (
 var severities = [4]string{"low", "medium", "high", "critical"}
 var severityWeights = map[string]int{"low": 1, "medium": 3, "high": 5, "critical": 10}
 
-func (c *AssetViolationsClient) GetAssetViolations(ctx context.Context, targetType string, tenantId, assetId string) (*models.AssetViolations, error) {
+func (c *AssetViolationsClient) GetAssetViolations(ctx context.Context, targetType, tenantId, assetId string) (*models.AssetViolations, error) {
 	if len(strings.TrimSpace(assetId)) == 0 {
 		return nil, fmt.Errorf("assetId must be present")
 	}
@@ -54,24 +59,22 @@ func (c *AssetViolationsClient) GetAssetViolations(ctx context.Context, targetTy
 		return nil, fmt.Errorf("targetType must be present")
 	}
 	// fetch all the relevant policies for the target type
-	policies, err := c.rdsClient.GetPolicies(ctx, targetType)
+	policies, err := c.rdsClient.GetPolicies(ctx, tenantId, targetType)
 	if err != nil {
-		c.log.Error("error fetching policies from rds for target type: " + targetType)
 		return nil, fmt.Errorf("error fetching policies from rds for target type: " + targetType)
 	}
 	if policies == nil || len(policies) == 0 {
-		c.log.Info("No policies for given target type: " + targetType)
+		fmt.Println("No policies for given target type: " + targetType)
 		return &models.AssetViolations{Data: models.PolicyViolations{Coverage: unmanaged}, Message: success}, nil
 	}
-	c.log.Info("got " + strconv.Itoa(len(policies)) + " policies for target type: " + targetType)
+	fmt.Println("got " + strconv.Itoa(len(policies)) + " policies for target type: " + targetType)
 
-	esDomainProperties, err := c.dynamodbClient.GetEsDomain(ctx, tenantId)
 	if err != nil {
 		return nil, err
 	}
 
 	// fetch violations for the asset
-	result, err := c.elasticSearchClient.FetchAssetViolations(ctx, esDomainProperties, allSources, assetId)
+	result, err := c.elasticSearchClient.FetchAssetViolations(ctx, tenantId, allSources, assetId)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +82,7 @@ func (c *AssetViolationsClient) GetAssetViolations(ctx context.Context, targetTy
 	sourceArr := (*result)["hits"].(map[string]interface{})["hits"].([]interface{})
 	var policyViolation map[string]interface{}
 	if len(sourceArr) > 0 {
-		c.log.Info("found " + strconv.Itoa(len(sourceArr)) + " violations for assetId: " + assetId)
+		fmt.Println("found " + strconv.Itoa(len(sourceArr)) + " violations for assetId: " + assetId)
 
 		policyViolation = make(map[string]interface{}, len(sourceArr))
 		// put the violations in map with policyId as key, so that they can be retrieved at constant time when building response with all policies

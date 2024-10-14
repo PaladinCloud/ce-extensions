@@ -27,16 +27,33 @@ import (
 )
 
 type RdsClient struct {
-	db *sql.DB
+	secretIdPrefix string
+	secretsClient  *SecretsClient
+	rdsClientCache map[string]*sql.DB
 }
 
-func NewRdsClient(configuration *Configuration) *RdsClient {
+func NewRdsClient(secretsClient *SecretsClient, secretIdPrefix string) *RdsClient {
+	return &RdsClient{
+		secretIdPrefix: secretIdPrefix,
+		secretsClient:  secretsClient,
+		rdsClientCache: make(map[string]*sql.DB),
+	}
+}
+
+func (r *RdsClient) CreateNewClient(ctx context.Context, tenantId string) *sql.DB {
+	// check if the client is already created
+	if db, ok := r.rdsClientCache[tenantId]; ok {
+		return db
+	}
+
+	rdsCredentials, _ := r.secretsClient.GetRdsSecret(ctx, r.secretIdPrefix, tenantId)
+
 	var (
-		dbUser     = configuration.RdsCredentials.DbUsername
-		dbPassword = configuration.RdsCredentials.DbPassword
-		dbHost     = configuration.RdsHost
-		dbPort     = configuration.RdsPort
-		dbName     = configuration.RdsDbName
+		dbUser     = rdsCredentials.DbUsername
+		dbPassword = rdsCredentials.DbPassword
+		dbHost     = rdsCredentials.DbHost
+		dbPort     = rdsCredentials.DbPort
+		dbName     = rdsCredentials.DbName
 	)
 
 	// Data Plugin Name (DSN)
@@ -47,7 +64,6 @@ func NewRdsClient(configuration *Configuration) *RdsClient {
 	if err != nil {
 		return nil
 	}
-	//defer db.Close()
 
 	// Check if the database is reachable
 	err = db.Ping()
@@ -56,12 +72,11 @@ func NewRdsClient(configuration *Configuration) *RdsClient {
 	}
 
 	fmt.Println("Connected to the database successfully!")
-	return &RdsClient{
-		db: db,
-	}
+	return db
 }
 
-func (r *RdsClient) GetPolicies(ctx context.Context, targetType string) ([]models.Policy, error) {
+func (r *RdsClient) GetPolicies(ctx context.Context, tenantId, targetType string) ([]models.Policy, error) {
+	dbClient := r.CreateNewClient(ctx, tenantId)
 	fmt.Println("Getting Plugins List from RDS")
 	query := `
 		SELECT 
@@ -87,13 +102,17 @@ func (r *RdsClient) GetPolicies(ctx context.Context, targetType string) ([]model
 	formattedQuery := fmt.Sprintf(query, targetType)
 
 	var policies []models.Policy
-	if err := sqlscan.Select(ctx, r.db, &policies, formattedQuery); err != nil {
+	if err := sqlscan.Select(ctx, dbClient, &policies, formattedQuery); err != nil {
 		return nil, err
 	}
 
 	return policies, nil
 }
 
-func (r *RdsClient) Close() error {
-	return r.db.Close()
+func (r *RdsClient) closeClient(db *sql.DB) {
+	// Close all connections in the cache
+	for s := range r.rdsClientCache {
+		r.rdsClientCache[s].Close()
+		delete(r.rdsClientCache, s)
+	}
 }
