@@ -1,8 +1,8 @@
 ---
 - serviceName: svc-asset-details
   apiConfig:
-    method: GET
-    path: "/api/v2/assets/{assetId}"
+    method: POST
+    path: "/api/v2/assets"
     requireAuth: true
     requireOptionsMethod: true
   serviceConfig:
@@ -29,8 +29,8 @@
         - name: svc-asset-details-layer
 - serviceName: svc-asset-violations
   apiConfig:
-    method: GET
-    path: "/api/v2/targets/{targetType}/assets/{assetId}/violations"
+    method: POST
+    path: "/api/v2/targets/{targetType}/assets/violations"
     requireAuth: true
     requireOptionsMethod: true
   serviceConfig:
@@ -55,3 +55,27 @@
         requireSecretsManager: true
       layers:
         - name: svc-asset-vioaltions-layer
+- serviceName: svc-network-rules
+  apiConfig:
+    method: POST
+    path: "/api/v2/targets/{targetType}/assets/network-rules"
+    requireAuth: true
+    requireOptionsMethod: true
+  serviceConfig:
+    environmentalVariables:
+      REGION: {REGION}
+      TENANT_CONFIG_TABLE: {TENANT_CONFIG_TABLE}
+      TENANT_CONFIG_PARTITION_KEY: {TENANT_CONFIG_PARTITION_KEY}
+      ENABLE_EXTENSION: {ENABLE_EXTENSION}
+    lambdaConfig:
+      handler: lambda_function.lambda_handler
+      runtime: python
+      runtimeVersion: latest
+      timeout: 10
+      isArm64: true
+      permissions:
+        requireS3: false
+        requireDynamoDB: true
+        requireSecretsManager: false
+      layers:
+        - name: svc-network-rules-layer        
