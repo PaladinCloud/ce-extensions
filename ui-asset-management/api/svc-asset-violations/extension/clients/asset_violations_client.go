@@ -56,36 +56,47 @@ func (c *AssetViolationsClient) GetAssetViolations(ctx context.Context, targetTy
 	}
 
 	if policies == nil || len(policies) == 0 {
-		fmt.Println("No policies for given target type: " + targetType)
+		fmt.Printf("no policies for given target type: %s\n", targetType)
 		return &models.AssetViolations{Data: models.PolicyViolations{Coverage: unmanaged}, Message: success}, nil
 	}
 
-	fmt.Println("got " + strconv.Itoa(len(policies)) + " policies for target type: " + targetType)
+	fmt.Printf("got %s policies for target type: %s\n", strconv.Itoa(len(policies)), targetType)
 
 	if err != nil {
 		return nil, err
 	}
 
 	// fetch violations for the asset
-	result, err := c.elasticSearchClient.FetchAssetViolations(ctx, tenantId, allSources, assetId)
+	policyViolationMap, err := c.elasticSearchClient.FetchAssetViolations(ctx, tenantId, allSources, assetId)
 	if err != nil {
 		return nil, err
 	}
 
-	sourceArr := (*result)["hits"].(map[string]interface{})["hits"].([]interface{})
-	var policyViolation map[string]interface{}
-	if len(sourceArr) > 0 {
-		fmt.Println("found " + strconv.Itoa(len(sourceArr)) + " violations for assetId: " + assetId)
+	policyViolations := assemblePolicyViolations(policies, *policyViolationMap)
 
-		policyViolation = make(map[string]interface{}, len(sourceArr))
-		// put the violations in map with policyId as key, so that they can be retrieved at constant time when building response with all policies
-		for i := 0; i < len(sourceArr); i++ {
-			violationDetail := sourceArr[i].(map[string]interface{})["_source"].(map[string]interface{})
-			violationDetail["_id"] = sourceArr[i].(map[string]interface{})["_id"]
-			policyViolation[violationDetail[policyId].(string)] = violationDetail
-		}
+	return &models.AssetViolations{Data: *policyViolations, Message: success}, nil
+}
+
+func buildSeverityInfo(severityCounts map[string]int) []models.SeverityInfo {
+	severityInfoArr := make([]models.SeverityInfo, 0, len(severities))
+	for k, v := range severityCounts {
+		severityInfo := models.SeverityInfo{Severity: k, Count: v}
+		severityInfoArr = append(severityInfoArr, severityInfo)
 	}
+	return severityInfoArr
+}
 
+func calculateCompliancePercent(totalPolicySeverityWeights int, severityCounts map[string]int) int {
+	violatedPolicySeverityWeights := severityCounts["critical"]*severityWeights["critical"] + severityCounts["high"]*severityWeights["high"] + severityCounts["medium"]*severityWeights["medium"] + severityCounts["low"]*severityWeights["low"]
+	if totalPolicySeverityWeights > 0 {
+		compliance := 100 - (violatedPolicySeverityWeights * 100 / totalPolicySeverityWeights)
+		return int(math.Floor(float64(compliance)))
+	} else {
+		return 100
+	}
+}
+
+func assemblePolicyViolations(policies []models.Policy, policyViolationsMap models.PolicyViolationsMap) *models.PolicyViolations {
 	policyViolations := models.PolicyViolations{Violations: []models.Violation{}}
 	severityCount := make(map[string]int, len(severities))
 	for _, severity := range severities {
@@ -99,8 +110,8 @@ func (c *AssetViolationsClient) GetAssetViolations(ctx context.Context, targetTy
 		var issueId string
 		var evaluationStatus string
 
-		if policyViolation[policy.PolicyId] != nil {
-			violationInfo := policyViolation[policy.PolicyId].(map[string]interface{})
+		if policyViolationsMap.PolicyViolationsMap[policy.PolicyId] != nil {
+			violationInfo := policyViolationsMap.PolicyViolationsMap[policy.PolicyId].(map[string]interface{})
 			lastScanStatus = violationInfo[issueStatus].(string)
 			issueId = violationInfo["_id"].(string)
 		}
@@ -129,24 +140,6 @@ func (c *AssetViolationsClient) GetAssetViolations(ctx context.Context, targetTy
 		policyViolations.Compliance = calculateCompliancePercent(totalSeverityWeights, severityCount)
 		policyViolations.Coverage = managed
 	}
-	return &models.AssetViolations{Data: policyViolations, Message: success}, nil
-}
 
-func buildSeverityInfo(severityCounts map[string]int) []models.SeverityInfo {
-	severityInfoArr := make([]models.SeverityInfo, 0, len(severities))
-	for k, v := range severityCounts {
-		severityInfo := models.SeverityInfo{Severity: k, Count: v}
-		severityInfoArr = append(severityInfoArr, severityInfo)
-	}
-	return severityInfoArr
-}
-
-func calculateCompliancePercent(totalPolicySeverityWeights int, severityCounts map[string]int) int {
-	violatedPolicySeverityWeights := severityCounts["critical"]*severityWeights["critical"] + severityCounts["high"]*severityWeights["high"] + severityCounts["medium"]*severityWeights["medium"] + severityCounts["low"]*severityWeights["low"]
-	if totalPolicySeverityWeights > 0 {
-		compliance := 100 - (violatedPolicySeverityWeights * 100 / totalPolicySeverityWeights)
-		return int(math.Floor(float64(compliance)))
-	} else {
-		return 100
-	}
+	return &policyViolations
 }

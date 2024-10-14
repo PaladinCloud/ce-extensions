@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"svc-asset-violations-layer/models"
 
 	elasticsearch "github.com/elastic/go-elasticsearch/v7"
 )
@@ -42,7 +44,7 @@ func (c *ElasticSearchClient) CreateNewElasticSearchClient(ctx context.Context, 
 	return client, nil
 }
 
-func (c *ElasticSearchClient) FetchAssetViolations(ctx context.Context, tenantId, ag, assetId string) (*map[string]interface{}, error) {
+func (c *ElasticSearchClient) FetchAssetViolations(ctx context.Context, tenantId, ag, assetId string) (*models.PolicyViolationsMap, error) {
 
 	query := buildQuery(assetId)
 	fmt.Println("query: ", query)
@@ -70,9 +72,25 @@ func (c *ElasticSearchClient) FetchAssetViolations(ctx context.Context, tenantId
 	if response.StatusCode != 200 {
 		return nil, fmt.Errorf("error while fetching asset detials from opensearch client for asset id: %s", assetId)
 	}
+
 	var result map[string]interface{}
 	json.NewDecoder(response.Body).Decode(&result)
-	return &result, nil
+
+	var policyViolations = models.PolicyViolationsMap{}
+	sourceArr := (result)["hits"].(map[string]interface{})["hits"].([]interface{})
+	if len(sourceArr) > 0 {
+		fmt.Println("found " + strconv.Itoa(len(sourceArr)) + " violations for assetId: " + assetId)
+
+		policyViolations.PolicyViolationsMap = make(map[string]interface{}, len(sourceArr))
+		// put the violations in map with policyId as key, so that they can be retrieved at constant time when building response with all policies
+		for i := 0; i < len(sourceArr); i++ {
+			violationDetail := sourceArr[i].(map[string]interface{})["_source"].(map[string]interface{})
+			violationDetail["_id"] = sourceArr[i].(map[string]interface{})["_id"]
+			policyViolations.PolicyViolationsMap[violationDetail[policyId].(string)] = violationDetail
+		}
+	}
+
+	return &policyViolations, nil
 }
 
 func buildQuery(assetId string) map[string]interface{} {
