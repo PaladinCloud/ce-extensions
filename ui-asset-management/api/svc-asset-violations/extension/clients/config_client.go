@@ -24,12 +24,12 @@ import (
 )
 
 type Configuration struct {
-	EnableExtension               bool
-	AssumeRoleArn                 string
-	Region                        string
-	TenantConfigTable             string
-	TenantConfigTablePartitionKey string
-	SecretIdPrefix                string
+	EnableExtension         bool
+	AssumeRoleArn           string
+	Region                  string
+	TenantConfigOutputTable string
+	tenantTablePartitionKey string
+	SecretIdPrefix          string
 }
 
 func LoadConfigurationDetails() *Configuration {
@@ -43,17 +43,17 @@ func LoadConfigurationDetails() *Configuration {
 
 	region := getEnvVariable("REGION")
 	assumeRoleArn := getEnvVariable("ASSUME_ROLE_ARN")
-	tenantConfigTable := getEnvVariable("TENANT_CONFIG_TABLE")
-	tenantConfigTablePartitionKey := getEnvVariable("TENANT_CONFIG_TABLE_PARTITION_KEY")
+	tenantConfigOutputTable := getEnvVariable("TENANT_CONFIG_OUTPUT_TABLE")
+	tenantTablePartitionKey := getEnvVariable("TENANT_TABLE_PARTITION_KEY")
 	secretIdPrefix := getEnvVariable("SECRET_NAME_PREFIX")
 
 	return &Configuration{
-		EnableExtension:               enableExtension,
-		AssumeRoleArn:                 assumeRoleArn,
-		Region:                        region,
-		TenantConfigTable:             tenantConfigTable,
-		TenantConfigTablePartitionKey: tenantConfigTablePartitionKey,
-		SecretIdPrefix:                secretIdPrefix,
+		EnableExtension:         enableExtension,
+		AssumeRoleArn:           assumeRoleArn,
+		Region:                  region,
+		TenantConfigOutputTable: tenantConfigOutputTable,
+		tenantTablePartitionKey: tenantTablePartitionKey,
+		SecretIdPrefix:          secretIdPrefix,
 	}
 }
 

@@ -30,10 +30,10 @@ import (
 )
 
 type DynamodbClient struct {
-	region                        string
-	tenantConfigTable             string
-	tenantConfigTablePartitionKey string
-	client                        *dynamodb.Client
+	region                  string
+	tenantConfigOutputTable string
+	tenantTablePartitionKey string
+	client                  *dynamodb.Client
 }
 
 // NewDynamoDBClient inits a DynamoDB session to be used throughout the services
@@ -68,10 +68,10 @@ func NewDynamoDBClient(ctx context.Context, configuration *Configuration) (*Dyna
 
 	fmt.Println("initialized dynamodb client with assumed role")
 	return &DynamodbClient{
-		region:                        configuration.Region,
-		client:                        svc,
-		tenantConfigTable:             configuration.TenantConfigTable,
-		tenantConfigTablePartitionKey: configuration.TenantConfigTablePartitionKey,
+		region:                  configuration.Region,
+		client:                  svc,
+		tenantConfigOutputTable: configuration.TenantConfigOutputTable,
+		tenantTablePartitionKey: configuration.tenantTablePartitionKey,
 	}, nil
 }
 
@@ -90,9 +90,9 @@ func (d *DynamodbClient) GetOpenSearchDomain(ctx context.Context, tenantId strin
 
 	// Prepare the GetItemInput with the correct table name and key
 	input := &dynamodb.GetItemInput{
-		TableName:            aws.String(d.tenantConfigTable),  // DynamoDB table name
-		Key:                  avs,                              // Key to fetch the item
-		ProjectionExpression: aws.String(projectionExpression), // Only fetch the required attribute
+		TableName:            aws.String(d.tenantConfigOutputTable), // DynamoDB table name
+		Key:                  avs,                                   // Key to fetch the item
+		ProjectionExpression: aws.String(projectionExpression),      // Only fetch the required attribute
 	}
 
 	// Query DynamoDB to get the item
