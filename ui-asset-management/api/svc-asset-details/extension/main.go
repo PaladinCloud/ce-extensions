@@ -39,7 +39,7 @@ var (
 )
 
 func main() {
-	fmt.Printf("starting asset details extension - %s\n", extensionName)
+	fmt.Printf("starting extension - %s\n", extensionName)
 
 	fmt.Println("loading configuration")
 	configuration := clients.LoadConfigurationDetails()

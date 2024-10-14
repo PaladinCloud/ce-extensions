@@ -26,7 +26,7 @@ func TestStartMain(t *testing.T) {
 	t.Run("main", func(t *testing.T) {
 		config := &clients.Configuration{
 			Region:                        "us-east-1",
-			TenantConfigTable:             "Tenant-Config",
+			TenantConfigTable:             "tenant-output",
 			TenantConfigTablePartitionKey: "tenantId",
 			SecretIdPrefix:                "paladincloud/secret/",
 		}

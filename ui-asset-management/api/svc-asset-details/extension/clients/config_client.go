@@ -54,7 +54,7 @@ func LoadConfigurationDetails() *Configuration {
 		SecretIdPrefix:                secretIdPrefix,
 	}
 
-	fmt.Printf("Configuration: %v\n", *configuration)
+	fmt.Printf("Configuration: %+v\n", *configuration)
 
 	return configuration
 }

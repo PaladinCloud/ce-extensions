@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
-	logger "svc-asset-details-layer/logging"
 	"svc-asset-details-layer/models"
 	"svc-asset-details-layer/utils"
 )
@@ -15,7 +14,6 @@ type AssetDetailsClient struct {
 	configuration       *Configuration
 	elasticSearchClient *ElasticSearchClient
 	rdsClient           *RdsClient
-	log                 *logger.Logger
 }
 
 func NewAssetDetailsClient(config *Configuration) *AssetDetailsClient {
