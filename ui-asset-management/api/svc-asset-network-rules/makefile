@@ -1,7 +1,7 @@
 # Constants for directories
 SERVICE_BIN_DIR := bin/service
 EXTENSIONS_BIN_DIR := bin/extensions
-LAMBDA_LAYER_NAME := svc-asset-details-layer
+LAMBDA_LAYER_NAME := svc-asset-network-rules-layer
 
 # Build the extension for Lambda
 build-ext: dependencies

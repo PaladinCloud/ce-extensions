@@ -51,7 +51,7 @@
         requireSecretsManager: true
       layers:
         - name: svc-asset-violations-layer
-- serviceName: svc-network-rules
+- serviceName: svc-asset-network-rules
   apiConfig:
     method: POST
     path: "/api/v2/targets/{targetType}/assets/network-rules"
