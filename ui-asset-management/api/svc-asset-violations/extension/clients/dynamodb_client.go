@@ -37,10 +37,10 @@ type DynamodbClient struct {
 }
 
 // NewDynamoDBClient inits a DynamoDB session to be used throughout the services
-func NewDynamoDBClient(configuration *Configuration) (*DynamodbClient, error) {
+func NewDynamoDBClient(ctx context.Context, configuration *Configuration) (*DynamodbClient, error) {
 
 	// Load the default AWS configuration
-	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(configuration.Region))
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(configuration.Region))
 	if err != nil {
 		return nil, fmt.Errorf("error loading AWS config: %v", err)
 	}

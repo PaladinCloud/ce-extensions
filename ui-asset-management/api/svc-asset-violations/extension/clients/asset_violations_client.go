@@ -14,9 +14,9 @@ type AssetViolationsClient struct {
 	rdsClient           *RdsClient
 }
 
-func NewAssetViolationsClient(config *Configuration) *AssetViolationsClient {
-	dynamodbClient, _ := NewDynamoDBClient(config)
-	secretsClient, _ := NewSecretsClient(config.AssumeRoleArn, config.Region)
+func NewAssetViolationsClient(ctx context.Context, config *Configuration) *AssetViolationsClient {
+	dynamodbClient, _ := NewDynamoDBClient(ctx, config)
+	secretsClient, _ := NewSecretsClient(ctx, config.AssumeRoleArn, config.Region)
 
 	return &AssetViolationsClient{
 		elasticSearchClient: NewElasticSearchClient(dynamodbClient),

@@ -39,9 +39,9 @@ var (
 )
 
 // NewSecretsClient initializes the SecretsManager client
-func NewSecretsClient(assumeRoleArn, region string) (*SecretsClient, error) {
+func NewSecretsClient(ctx context.Context, assumeRoleArn, region string) (*SecretsClient, error) {
 	// Load the default configuration with region
-	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(region))
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(region))
 	if err != nil {
 		fmt.Printf("error loading aws config: %v", err)
 		return nil, err
