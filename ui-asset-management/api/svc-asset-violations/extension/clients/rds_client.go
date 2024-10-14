@@ -109,7 +109,7 @@ func (r *RdsClient) GetPolicies(ctx context.Context, tenantId, targetType string
 	return policies, nil
 }
 
-func (r *RdsClient) closeClient(db *sql.DB) {
+func (r *RdsClient) closeClient() {
 	// Close all connections in the cache
 	for s := range r.rdsClientCache {
 		r.rdsClientCache[s].Close()
