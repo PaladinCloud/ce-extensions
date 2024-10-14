@@ -21,6 +21,7 @@ import (
 	"database/sql"
 	"fmt"
 	"svc-asset-violations-layer/models"
+	"sync"
 
 	"github.com/georgysavva/scany/sqlscan"
 	_ "github.com/go-sql-driver/mysql"
@@ -29,21 +30,20 @@ import (
 type RdsClient struct {
 	secretIdPrefix string
 	secretsClient  *SecretsClient
-	rdsClientCache map[string]*sql.DB
+	rdsClientCache sync.Map // Replaced with sync.Map
 }
 
 func NewRdsClient(secretsClient *SecretsClient, secretIdPrefix string) *RdsClient {
 	return &RdsClient{
 		secretIdPrefix: secretIdPrefix,
 		secretsClient:  secretsClient,
-		rdsClientCache: make(map[string]*sql.DB),
 	}
 }
 
 func (r *RdsClient) CreateNewClient(ctx context.Context, tenantId string) *sql.DB {
 	// check if the client is already created
-	if db, ok := r.rdsClientCache[tenantId]; ok {
-		return db
+	if db, ok := r.rdsClientCache.Load(tenantId); ok {
+		return db.(*sql.DB) // type assert to *sql.DB
 	}
 
 	rdsCredentials, _ := r.secretsClient.GetRdsSecret(ctx, r.secretIdPrefix, tenantId)
@@ -56,28 +56,30 @@ func (r *RdsClient) CreateNewClient(ctx context.Context, tenantId string) *sql.D
 		dbName     = rdsCredentials.DbName
 	)
 
-	// Data Plugin Name (DSN)
+	// Data Source Name (DSN)
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", dbUser, dbPassword, dbHost, dbPort, dbName)
 
-	// Open a connection to the database
+	// open a connection to the database
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		return nil
 	}
 
-	// Check if the database is reachable
+	// check if the database is reachable
 	err = db.Ping()
 	if err != nil {
 		return nil
 	}
 
 	fmt.Println("connected to rds successfully!")
+	r.rdsClientCache.Store(tenantId, db) // store db in cache
 	return db
 }
 
 func (r *RdsClient) GetPolicies(ctx context.Context, tenantId, targetType string) ([]models.Policy, error) {
 	dbClient := r.CreateNewClient(ctx, tenantId)
 	fmt.Println("getting policies from rds")
+
 	query := `
 		SELECT 
 			p.policyId,
@@ -109,10 +111,12 @@ func (r *RdsClient) GetPolicies(ctx context.Context, tenantId, targetType string
 	return policies, nil
 }
 
-func (r *RdsClient) closeClient() {
-	// Close all connections in the cache
-	for s := range r.rdsClientCache {
-		r.rdsClientCache[s].Close()
-		delete(r.rdsClientCache, s)
-	}
+func (r *RdsClient) CloseClient() {
+	// close all connections in the cache
+	r.rdsClientCache.Range(func(key, value interface{}) bool {
+		db := value.(*sql.DB)
+		db.Close()
+		r.rdsClientCache.Delete(key)
+		return true
+	})
 }
