@@ -35,7 +35,7 @@ public class DynamoDBHelper {
 
         var request = GetItemRequest.builder().key(keyMap).tableName(tableName).build();
         try (var client = getClient(region, credentialsProvider)) {
-            System.out.println(STR."Querying '\{tableName}' for item: \{request} (\{client})");
+            LOGGER.info(STR."Querying '\{tableName}' for item: \{request} (\{client})");
             var item = client.getItem(request).item();
             return getFieldsFromRow(item, fieldMap);
         }
