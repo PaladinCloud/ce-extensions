@@ -25,7 +25,21 @@ func TestNewSecretsClient(t *testing.T) {
 	t.Run("NewSecretsClient", func(t *testing.T) {
 		ctx := context.Background()
 
-		assumeRole := "arn:aws:iam::246214016629:role/PaladinCloudIntegrationRole"
+import "testing"
+import "os"
+
+func TestNewSecretsClient(t *testing.T) {
+	t.Run("NewSecretsClient", func(t *testing.T) {
+		assumeRole := os.Getenv("AWS_ASSUME_ROLE_ARN")
+		if assumeRole == "" {
+			t.Fatal("AWS_ASSUME_ROLE_ARN environment variable not set")
+		}
+		_, err := NewSecretsClient(assumeRole, "us-east-1")
+		if err != nil {
+			t.Errorf("Error loading AWS config: %v", err)
+		}
+	})
+}
 		_, err := NewSecretsClient(ctx, assumeRole, "us-east-1")
 		if err != nil {
 			t.Errorf("Error loading AWS config: %v", err)
