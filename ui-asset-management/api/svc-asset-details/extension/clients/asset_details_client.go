@@ -60,7 +60,10 @@ func (c *AssetDetailsClient) GetAssetDetails(ctx context.Context, tenantId, asse
 	if len(sourceArr) > 0 {
 		fmt.Printf("found asset details for asset id: %s\n", assetId)
 		assetDetails := sourceArr[0].(map[string]interface{})["_source"].(map[string]interface{})
-		mandatoryTags, _ := c.rdsClient.FetchMandatoryTags(ctx, tenantId)
+		mandatoryTags, err := c.rdsClient.FetchMandatoryTags(ctx, tenantId)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch mandatory tags: %v", err)
+		}
 
 		var primaryProvider string
 		var tags map[string]string
