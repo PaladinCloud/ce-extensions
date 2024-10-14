@@ -20,6 +20,7 @@ var FieldsToBeSkipped = [...]string{
 	"_cloudType",
 	"_resourceid",
 	"_docid",
+	"docId",
 	"_discoverydate",
 	"discoverydate",
 	"firstdiscoveredon",

@@ -25,10 +25,11 @@ func TestStartMain(t *testing.T) {
 
 	t.Run("main", func(t *testing.T) {
 		config := &clients.Configuration{
-			Region:                        "us-east-1",
-			TenantConfigTable:             "tenant-output",
-			TenantConfigTablePartitionKey: "tenantId",
-			SecretIdPrefix:                "paladincloud/secret/",
+			EnableExtension:         false,
+			Region:                  "us-east-1",
+			TenantConfigOutputTable: "tenant-output",
+			TenantTablePartitionKey: "tenant_id",
+			SecretIdPrefix:          "paladincloud/secret/",
 		}
 
 		startMain(config)

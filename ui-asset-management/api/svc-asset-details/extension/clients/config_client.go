@@ -18,17 +18,18 @@ package clients
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 )
 
 type Configuration struct {
-	EnableExtension               bool
-	AssumeRoleArn                 string
-	Region                        string
-	TenantConfigTable             string
-	TenantConfigTablePartitionKey string
-	SecretIdPrefix                string
+	EnableExtension         bool
+	AssumeRoleArn           string
+	Region                  string
+	TenantConfigOutputTable string
+	TenantTablePartitionKey string
+	SecretIdPrefix          string
 }
 
 func LoadConfigurationDetails() *Configuration {
@@ -36,25 +37,31 @@ func LoadConfigurationDetails() *Configuration {
 	enableExtension, err := strconv.ParseBool(enableExtensionStr)
 	if err != nil {
 		// When we deploy the lambda + extension, set the default runtime to enable extension
+		fmt.Println("ENABLE_EXTENSION environment variable not set, defaulting to true")
 		enableExtension = true
 	}
 
-	assumeRoleArn := os.Getenv("ASSUME_ROLE_ARN")
-	region := os.Getenv("REGION")
-	tenantConfigTable := os.Getenv("TENANT_CONFIG_TABLE")
-	tenantConfigTablePartitionKey := os.Getenv("TENANT_CONFIG_TABLE_PARTITION_KEY")
-	secretIdPrefix := os.Getenv("SECRET_NAME_PREFIX")
+	region := getEnvVariable("REGION")
+	assumeRoleArn := getEnvVariable("ASSUME_ROLE_ARN")
+	tenantConfigOutputTable := getEnvVariable("TENANT_CONFIG_OUTPUT_TABLE")
+	tenantTablePartitionKey := getEnvVariable("TENANT_TABLE_PARTITION_KEY")
+	secretIdPrefix := getEnvVariable("SECRET_NAME_PREFIX")
 
-	configuration := &Configuration{
-		EnableExtension:               enableExtension,
-		AssumeRoleArn:                 assumeRoleArn,
-		Region:                        region,
-		TenantConfigTable:             tenantConfigTable,
-		TenantConfigTablePartitionKey: tenantConfigTablePartitionKey,
-		SecretIdPrefix:                secretIdPrefix,
+	return &Configuration{
+		EnableExtension:         enableExtension,
+		AssumeRoleArn:           assumeRoleArn,
+		Region:                  region,
+		TenantConfigOutputTable: tenantConfigOutputTable,
+		TenantTablePartitionKey: tenantTablePartitionKey,
+		SecretIdPrefix:          secretIdPrefix,
+	}
+}
+
+func getEnvVariable(name string) string {
+	value := os.Getenv(name)
+	if value == "" {
+		log.Fatalf("environment variable %s must be set", name)
 	}
 
-	fmt.Printf("Configuration: %+v\n", *configuration)
-
-	return configuration
+	return value
 }

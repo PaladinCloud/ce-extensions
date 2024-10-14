@@ -16,9 +16,9 @@ type AssetDetailsClient struct {
 	rdsClient           *RdsClient
 }
 
-func NewAssetDetailsClient(config *Configuration) *AssetDetailsClient {
-	dynamodbClient, _ := NewDynamoDBClient(config.AssumeRoleArn, config.Region, config.TenantConfigTable, config.TenantConfigTablePartitionKey)
-	secretsClient, _ := NewSecretsClient(config.AssumeRoleArn, config.Region)
+func NewAssetDetailsClient(ctx context.Context, config *Configuration) *AssetDetailsClient {
+	dynamodbClient, _ := NewDynamoDBClient(ctx, config.AssumeRoleArn, config.Region, config.TenantConfigOutputTable, config.TenantTablePartitionKey)
+	secretsClient, _ := NewSecretsClient(ctx, config.AssumeRoleArn, config.Region)
 
 	return &AssetDetailsClient{
 		configuration:       config,
@@ -49,7 +49,7 @@ func (c *AssetDetailsClient) GetAssetDetails(ctx context.Context, tenantId, asse
 		return nil, fmt.Errorf("assetId must be present")
 	}
 
-	fmt.Println("Starting to fetch asset details")
+	fmt.Println("starting to fetch asset details")
 	result, err := c.elasticSearchClient.FetchAssetDetails(ctx, tenantId, allSources, assetId, 1)
 
 	if err != nil {
@@ -58,7 +58,7 @@ func (c *AssetDetailsClient) GetAssetDetails(ctx context.Context, tenantId, asse
 
 	sourceArr := (*result)["hits"].(map[string]interface{})["hits"].([]interface{})
 	if len(sourceArr) > 0 {
-		fmt.Println("Found asset details for assetId: " + assetId)
+		fmt.Printf("found asset details for asset id: %s\n", assetId)
 		assetDetails := sourceArr[0].(map[string]interface{})["_source"].(map[string]interface{})
 		mandatoryTags, _ := c.rdsClient.FetchMandatoryTags(ctx, tenantId)
 
@@ -114,8 +114,7 @@ func (c *AssetDetailsClient) GetAssetDetails(ctx context.Context, tenantId, asse
 			PrimaryProvider: primaryProvider,
 		}, Message: success}, nil
 	} else {
-		fmt.Printf("asset details not found for assetId: %s\n", assetId)
-		return nil, fmt.Errorf("asset detials not found for assetId: %s", assetId)
+		return nil, fmt.Errorf("asset detials not found for asset id: %s", assetId)
 	}
 }
 
@@ -182,7 +181,7 @@ func (c *AssetDetailsClient) buildPrimaryProviderForLegacyAssetModel(assetDetail
 
 	primaryProviderJson, err := json.Marshal(assetDetails)
 	if err != nil {
-		fmt.Println("Error while formatting legacy asset details to json string")
+		fmt.Errorf("error while formatting legacy asset details to json string: %+v", err)
 		return "", err
 	}
 

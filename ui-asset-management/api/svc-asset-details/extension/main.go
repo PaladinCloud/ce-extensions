@@ -51,37 +51,37 @@ func main() {
 func startMain(configuration *clients.Configuration) {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	fmt.Println("initializing http server client")
+	fmt.Println("initializing http server")
 	httpServerClient = &server.HttpServer{
-		AssetDetailsClient: clients.NewAssetDetailsClient(configuration),
+		AssetDetailsClient: clients.NewAssetDetailsClient(ctx, configuration),
 	}
 	fmt.Println("http server initialized successfully")
 
+	fmt.Printf("starting http server on port: %s\n", port)
+	server.Start(port, httpServerClient, configuration.EnableExtension)
+
 	if configuration.EnableExtension {
-		fmt.Printf("registering extension client - %s | %s\n", extensionName, lambdaRuntimeAPI)
+		fmt.Println("registering extension client", extensionName, lambdaRuntimeAPI)
 		sigs := make(chan os.Signal, 1)
 		signal.Notify(sigs, syscall.SIGTERM, syscall.SIGINT)
 		go func() {
 			s := <-sigs
 			cancel()
-			fmt.Printf("received | %+v\n", s)
+			fmt.Println("received", s)
 			fmt.Println("exiting")
 		}()
 
 		// Register the extension client with the Lambda runtime
 		res, err := extensionClient.Register(ctx, extensionName)
 		if err != nil {
-			fmt.Errorf("unable to register extension: %+v\n", err)
+			fmt.Errorf("unable to register extension: %+v", err)
 		}
 
-		fmt.Printf("client registered: %+v\n", res)
+		fmt.Println("client registered:", res)
 
 		// Will block until shutdown event is received or cancelled via the context.
 		processEvents(ctx)
 	}
-
-	fmt.Printf("starting local http server on port: %s\n", port)
-	server.Start(port, httpServerClient, configuration.EnableExtension)
 }
 
 func processEvents(ctx context.Context) {
@@ -96,7 +96,7 @@ func processEvents(ctx context.Context) {
 			// Fetch the next event and check for errors.
 			_, err := extensionClient.NextEvent(ctx)
 			if err != nil {
-				fmt.Errorf("error fetching next event: %v\n", err)
+				fmt.Errorf("error fetching next event: %+v", err)
 				return
 			}
 		}
