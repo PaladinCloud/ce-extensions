@@ -18,7 +18,6 @@ package clients
 
 import (
 	"context"
-	"fmt"
 	"testing"
 )
 
@@ -31,15 +30,22 @@ func TestNewDynamoDBClient(t *testing.T) {
 	tenantConfigTable := "tenant-output"
 	tenantConfigTablePartitionKey := "tenant_id"
 
-	client, _ := NewDynamoDBClient(assumeRole, region, tenantConfigTable, tenantConfigTablePartitionKey)
+	client, err := NewDynamoDBClient(ctx, assumeRole, region, tenantConfigTable, tenantConfigTablePartitionKey)
+	if err != nil {
+		t.Fatalf("Failed to create DynamoDB client: %v", err)
+	}
+
 	response, err := client.GetOpenSearchDomain(ctx, tenantId)
 	if err != nil {
-		t.Errorf("Error while fetching OpenSearch Domain: %v", err)
+		t.Fatalf("Error while fetching OpenSearch Domain: %v", err)
 	}
 
 	if response == nil {
-		t.Errorf("Expected response to be not nil")
+		t.Fatal("Expected response to be not nil")
 	}
 
-	fmt.Printf("Successfully fetched OpenSearch Domain %+v\n", response)
+	// Add more specific assertions here, e.g.:
+	// assert.Equal(t, expectedDomain, response.Domain)
+	// assert.NotEmpty(t, response.Endpoint)
+	t.Logf("Successfully fetched OpenSearch Domain %+v", response)
 }

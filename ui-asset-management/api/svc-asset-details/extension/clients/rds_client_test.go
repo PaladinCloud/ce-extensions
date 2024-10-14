@@ -30,7 +30,7 @@ func TestNewRDSClient(t *testing.T) {
 	region := "us-east-1"
 	secretIdPrefix := "paladincloud/secret/`"
 
-	secretsClient, _ := NewSecretsClient(assumeRole, region)
+	secretsClient, _ := NewSecretsClient(ctx, assumeRole, region)
 
 	client := NewRdsClient(secretsClient, secretIdPrefix)
 	response, err := client.FetchMandatoryTags(ctx, tenantId)

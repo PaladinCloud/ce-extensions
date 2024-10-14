@@ -16,12 +16,17 @@
 
 package clients
 
-import "testing"
+import (
+	"context"
+	"testing"
+)
 
 func TestNewSecretsClient(t *testing.T) {
 	t.Run("NewSecretsClient", func(t *testing.T) {
+		ctx := context.Background()
+
 		assumeRole := "arn:aws:iam::246214016629:role/PaladinCloudIntegrationRole"
-		_, err := NewSecretsClient(assumeRole, "us-east-1")
+		_, err := NewSecretsClient(ctx, assumeRole, "us-east-1")
 		if err != nil {
 			t.Errorf("Error loading AWS config: %v", err)
 		}
