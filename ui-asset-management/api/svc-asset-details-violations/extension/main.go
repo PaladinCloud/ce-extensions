@@ -39,15 +39,20 @@ var (
 )
 
 func main() {
-	ctx, cancel := context.WithCancel(context.Background())
+	fmt.Printf("starting extension - %s\n", extensionName)
 
 	fmt.Println("loading configuration")
 	configuration := clients.LoadConfigurationDetails()
 	fmt.Println("configuration loaded successfully")
 
+	startMain(configuration)
+}
+
+func startMain(configuration *clients.Configuration) {
+	ctx, cancel := context.WithCancel(context.Background())
+
 	fmt.Println("initializing http server")
 	httpServerClient = &server.HttpServer{
-		Configuration:         configuration,
 		AssetViolationsClient: clients.NewAssetViolationsClient(configuration),
 	}
 	fmt.Println("http server initialized successfully")
@@ -69,15 +74,16 @@ func main() {
 			fmt.Errorf("unable to register extension: %+v", err)
 			panic(err)
 		}
-
 		fmt.Printf("Client Registered: %s\n", res)
 
 		// Will block until shutdown event is received or cancelled via the context.
 		processEvents(ctx)
+	} else {
+		fmt.Printf("bypassing extension registeration, running as independent service")
 	}
 
 	fmt.Println("starting local http server")
-	server.Start(port, httpServerClient)
+	server.Start(port, httpServerClient, configuration.EnableExtension)
 }
 
 func processEvents(ctx context.Context) {

@@ -26,7 +26,6 @@ import (
 )
 
 type AssetViolationsClient struct {
-	dynamodbClient      *DynamodbClient
 	elasticSearchClient *ElasticSearchClient
 	rdsClient           *RdsClient
 }

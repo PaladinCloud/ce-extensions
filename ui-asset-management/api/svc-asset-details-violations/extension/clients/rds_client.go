@@ -70,14 +70,14 @@ func (r *RdsClient) CreateNewClient(ctx context.Context, tenantId string) *sql.D
 		return nil
 	}
 
-	fmt.Println("Connected to the database successfully!")
+	fmt.Println("connected to the rds successfully!")
 	return db
 }
 
 func (r *RdsClient) GetPolicies(ctx context.Context, tenantId, targetType string) ([]models.Policy, error) {
 	dbClient := r.CreateNewClient(ctx, tenantId)
 
-	fmt.Println("Getting Plugins List from RDS")
+	fmt.Println("getting plugins list from rds")
 	query := `
 		SELECT 
 			p.policyId,

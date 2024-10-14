@@ -19,24 +19,28 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/go-chi/chi/v5/middleware"
 	"net/http"
 	"net/url"
 	"os"
 	"svc-asset-violations-layer/clients"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 )
 
 type HttpServer struct {
-	Configuration         *clients.Configuration
 	AssetViolationsClient *clients.AssetViolationsClient
 }
 
 // Start begins running the sidecar
-func Start(port string, server *HttpServer) {
-	println("Starting the server in background")
-	go startHTTPServer(port, server)
+func Start(port string, server *HttpServer, enableExtension bool) {
+	if enableExtension {
+		fmt.Println("starting the server in background")
+		go startHTTPServer(port, server)
+	} else {
+		fmt.Println("starting the server")
+		startHTTPServer(port, server)
+	}
 }
 
 // Method that responds back with the cached values
@@ -73,5 +77,7 @@ func handleValue(config *HttpServer) http.HandlerFunc {
 
 		b, _ := json.Marshal(assetDetails)
 		w.Write(b)
+
+		//w.Write([]byte(fmt.Sprintf("tenantId: %s, targetType: %s, assetId: %s", tenantId, targetType, assetId)))
 	}
 }

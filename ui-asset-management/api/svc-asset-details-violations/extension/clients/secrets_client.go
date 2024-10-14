@@ -72,7 +72,7 @@ func NewSecretsClient(assumeRoleArn, region string) (*SecretsClient, error) {
 // GetRdsSecret retrieves the RDS secret from AWS Secrets Manager
 func (r *SecretsClient) GetRdsSecret(ctx context.Context, secretIdPrefix, tenantId string) (*models.RdsSecret, error) {
 	// Create the secretId using the prefix and tenantId
-	secretId := fmt.Sprintf("{%s}{%s}", secretIdPrefix, tenantId)
+	secretId := fmt.Sprintf("%s%s", secretIdPrefix, tenantId)
 	fmt.Printf("Getting Rds Secrets from {%s}\n", secretId)
 
 	// Prepare the input for retrieving the secret
