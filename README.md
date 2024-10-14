@@ -18,9 +18,9 @@ To run the projects locally using your personal AWS account, follow the steps be
 
     - Open a terminal.
     - Run the following AWS CLI command to retrieve your AWS account ARN:
-      '''bash
+      ```bash
       aws sts get-caller-identity
-      '''
+      ```
       This will return your account details, including the ARN you’ll need for the next steps.
 
 2. **Modify the Trust Policy in the SaaS Account**
@@ -31,7 +31,7 @@ To run the projects locally using your personal AWS account, follow the steps be
         1. Click on the **Trust relationships** tab.
         2. Click on **Edit trust policy**.
         3. In the `Statement` array, add the following entry, replacing `<your personal account arn>` with the ARN you retrieved earlier:
-           '''json
+           ```json
            {
            "Effect": "Allow",
            "Principal": {
@@ -39,7 +39,7 @@ To run the projects locally using your personal AWS account, follow the steps be
            },
            "Action": "sts:AssumeRole"
            }
-           '''
+           ```
         4. Click **Update policy** to save the changes.
 
 3. **Run the Project Locally**
