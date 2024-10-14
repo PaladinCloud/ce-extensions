@@ -21,47 +21,64 @@ import (
 	"database/sql"
 	"fmt"
 	"svc-asset-details-layer/models"
+	"sync"
 
 	"github.com/georgysavva/scany/sqlscan"
 	_ "github.com/go-sql-driver/mysql"
 )
 
 type RdsClient struct {
-	db *sql.DB
+	secretIdPrefix string
+	secretsClient  *SecretsClient
+	rdsClientCache sync.Map // Replaced with sync.Map
 }
 
-func NewRdsClient(configuration *Configuration) *RdsClient {
+func NewRdsClient(secretsClient *SecretsClient, secretIdPrefix string) *RdsClient {
+	return &RdsClient{
+		secretIdPrefix: secretIdPrefix,
+		secretsClient:  secretsClient,
+	}
+}
+
+func (r *RdsClient) CreateNewClient(ctx context.Context, tenantId string) *sql.DB {
+	// check if the client is already created
+	if db, ok := r.rdsClientCache.Load(tenantId); ok {
+		return db.(*sql.DB) // type assert to *sql.DB
+	}
+
+	rdsCredentials, _ := r.secretsClient.GetRdsSecret(ctx, r.secretIdPrefix, tenantId)
+
 	var (
-		dbUser     = configuration.RdsCredentials.DbUsername
-		dbPassword = configuration.RdsCredentials.DbPassword
-		dbHost     = configuration.RdsHost
-		dbPort     = configuration.RdsPort
-		dbName     = configuration.RdsDbName
+		dbUser     = rdsCredentials.DbUsername
+		dbPassword = rdsCredentials.DbPassword
+		dbHost     = rdsCredentials.DbHost
+		dbPort     = rdsCredentials.DbPort
+		dbName     = rdsCredentials.DbName
 	)
 
-	// Data Plugin Name (DSN)
+	// Data Source Name (DSN)
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", dbUser, dbPassword, dbHost, dbPort, dbName)
 
-	// Open a connection to the database
+	// open a connection to the database
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		return nil
 	}
-	//defer db.Close()
 
-	// Check if the database is reachable
+	// check if the database is reachable
 	err = db.Ping()
 	if err != nil {
 		return nil
 	}
 
-	fmt.Println("Connected to the database successfully!")
-	return &RdsClient{
-		db: db,
-	}
+	fmt.Println("connected to rds successfully!")
+	r.rdsClientCache.Store(tenantId, db) // store db in cache
+	return db
 }
 
-func (r *RdsClient) FetchMandatoryTags(ctx context.Context) ([]models.Tag, error) {
+func (r *RdsClient) FetchMandatoryTags(ctx context.Context, tenantId string) ([]models.Tag, error) {
+	dbClient := r.CreateNewClient(ctx, tenantId)
+
 	fmt.Println("Getting Plugins List from RDS")
 	query := `
 		select opt.optionName as tagName
@@ -69,13 +86,19 @@ func (r *RdsClient) FetchMandatoryTags(ctx context.Context) ([]models.Tag, error
                 and opt.optionValue like '%tags%' and fil.filterName='AssetListing';
 	`
 	var tags []models.Tag
-	if err := sqlscan.Select(ctx, r.db, &tags, query); err != nil {
+	if err := sqlscan.Select(ctx, dbClient, &tags, query); err != nil {
 		return nil, err
 	}
 
 	return tags, nil
 }
 
-func (r *RdsClient) Close() error {
-	return r.db.Close()
+func (r *RdsClient) CloseClient() {
+	// close all connections in the cache
+	r.rdsClientCache.Range(func(key, value interface{}) bool {
+		db := value.(*sql.DB)
+		db.Close()
+		r.rdsClientCache.Delete(key)
+		return true
+	})
 }

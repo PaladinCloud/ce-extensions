@@ -14,12 +14,26 @@
  * the License.
  */
 
-package models
+package clients
 
-type RdsSecret struct {
-	DbUsername string `json:"DB_USERNAME"`
-	DbPassword string `json:"DB_PASSWORD"`
-	DbName     string `json:"DB_NAME"`
-	DbHost     string `json:"RDS_HOST"`
-	DbPort     string `json:"RDS_PORT"`
+import (
+	"context"
+	"os"
+	"testing"
+)
+
+func TestNewSecretsClient(t *testing.T) {
+	t.Run("NewSecretsClient", func(t *testing.T) {
+		ctx := context.Background()
+
+		assumeRole := os.Getenv("AWS_ASSUME_ROLE_ARN")
+		if assumeRole == "" {
+			t.Fatal("AWS_ASSUME_ROLE_ARN environment variable not set")
+		}
+
+		_, err := NewSecretsClient(ctx, assumeRole, "us-east-1")
+		if err != nil {
+			t.Errorf("Error loading AWS config: %v", err)
+		}
+	})
 }

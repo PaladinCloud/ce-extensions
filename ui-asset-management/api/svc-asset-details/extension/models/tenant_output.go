@@ -16,14 +16,14 @@
 
 package models
 
-// EsDomainProperties represents the properties of elasticsearch configs
-type EsDomainProperties struct {
-	Endpoint       string `json:"endpoint"`
-	Id             string `json:"id"`
-	KibanaEndpoint string `json:"kibana_endpoint"`
+// OpenSearchDomainProperties represents the properties of the OpenSearch domain
+type OpenSearchDomainProperties struct {
+	Endpoint       string `dynamodbav:"endpoint" json:"endpoint"`
+	ID             string `dynamodbav:"id" json:"id"`
+	KibanaEndpoint string `dynamodbav:"kibana_endpoint" json:"kibana_endpoint"`
 }
 
-// TenantConfig represents the tenant configuration containing ES domain configs
-type TenantConfig struct {
-	EsDomain EsDomainProperties `json:"datastore_es_ESDomain"`
+// TenantOutput represents the output structure for tenant configurations
+type TenantOutput struct {
+	EsDomain OpenSearchDomainProperties `dynamodbav:"datastore_es_ESDomain" json:"datastore_es_ESDomain"`
 }
