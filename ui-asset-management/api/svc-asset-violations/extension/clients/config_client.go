@@ -17,6 +17,8 @@
 package clients
 
 import (
+	"fmt"
+	"log"
 	"os"
 	"strconv"
 )
@@ -35,22 +37,33 @@ func LoadConfigurationDetails() *Configuration {
 	enableExtension, err := strconv.ParseBool(enableExtensionStr)
 	if err != nil {
 		// When we deploy the lambda + extension, set the default runtime to enable extension
+		fmt.Println("ENABLE_EXTENSION environment variable not set, defaulting to true")
 		enableExtension = true
 	}
 
 	region := os.Getenv("REGION")
-	tenantConfigTable := os.Getenv("TENANT_CONFIG_TABLE")
-	tenantConfigTablePartitionKey := os.Getenv("TENANT_CONFIG_TABLE_PARTITION_KEY")
-	if tenantConfigTablePartitionKey == "" {
-		log.Fatalf("Environment variable TENANT_CONFIG_TABLE_PARTITION_KEY must be set")
+	if region == "" {
+		log.Fatalf("environment variable REGION must be set")
 	}
+
 	assumeRoleArn := os.Getenv("ASSUME_ROLE_ARN")
 	if assumeRoleArn == "" {
-		log.Fatalf("Environment variable ASSUME_ROLE_ARN must be set")
+		log.Fatalf("environment variable ASSUME_ROLE_ARN must be set")
 	}
+
+	tenantConfigTable := os.Getenv("TENANT_CONFIG_TABLE")
+	if tenantConfigTable == "" {
+		log.Fatalf("environment variable TENANT_CONFIG_TABLE must be set")
+	}
+
+	tenantConfigTablePartitionKey := os.Getenv("TENANT_CONFIG_TABLE_PARTITION_KEY")
+	if tenantConfigTablePartitionKey == "" {
+		log.Fatalf("environment variable TENANT_CONFIG_TABLE_PARTITION_KEY must be set")
+	}
+
 	secretIdPrefix := os.Getenv("SECRET_NAME_PREFIX")
 	if secretIdPrefix == "" {
-		log.Fatalf("Environment variable SECRET_NAME_PREFIX must be set")
+		log.Fatalf("environment variable SECRET_NAME_PREFIX must be set")
 	}
 
 	return &Configuration{
