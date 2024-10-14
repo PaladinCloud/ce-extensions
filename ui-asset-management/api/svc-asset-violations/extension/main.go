@@ -36,7 +36,6 @@ var (
 	extensionName    = filepath.Base(os.Args[0]) // extension name has to match the filename
 	lambdaRuntimeAPI = os.Getenv("AWS_LAMBDA_RUNTIME_API")
 	extensionClient  = extension.NewClient(lambdaRuntimeAPI)
-	printPrefix      = fmt.Sprintf("[%s]", extensionName)
 )
 
 func main() {
