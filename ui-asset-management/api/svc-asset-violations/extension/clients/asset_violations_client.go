@@ -10,50 +10,32 @@ import (
 )
 
 type AssetViolationsClient struct {
-	configuration       *Configuration
 	elasticSearchClient *ElasticSearchClient
 	rdsClient           *RdsClient
 }
 
 func NewAssetViolationsClient(config *Configuration) *AssetViolationsClient {
-func NewAssetViolationsClient(config *Configuration) (*AssetViolationsClient, error) {
-	dynamodbClient, err := NewDynamoDBClient(config)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create DynamoDB client: %w", err)
-	}
-
-	secretsClient, err := NewSecretsClient(config.AssumeRoleArn, config.Region)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create Secrets client: %w", err)
-	}
+	dynamodbClient, _ := NewDynamoDBClient(config)
+	secretsClient, _ := NewSecretsClient(config.AssumeRoleArn, config.Region)
 
 	return &AssetViolationsClient{
-		configuration:       config,
 		elasticSearchClient: NewElasticSearchClient(dynamodbClient),
 		rdsClient:           NewRdsClient(secretsClient, config.SecretIdPrefix),
 	}
 }
 
 const (
-	docIDKeyword   = "_docid.keyword"
-	docTypeKeyword = "docType.keyword"
-	cloudType      = "_cloudType"
-	source         = "source"
-	sourceName     = "sourceName"
-	targetType     = "targetType"
-	targetTypeName = "targetTypeName"
-	accountId      = "accountId"
-	allSources     = "all-sources"
-	open           = "open"
-	fail           = "Fail"
-	exempted       = "exempted"
-	exempt         = "Exempt"
-	pass           = "Pass"
-	issueStatus    = "issueStatus"
-	policyId       = "policyId"
-	success        = "success"
-	managed        = "Managed"
-	unmanaged      = "Unmanaged"
+	allSources  = "all-sources"
+	open        = "open"
+	fail        = "Fail"
+	exempted    = "exempted"
+	exempt      = "Exempt"
+	pass        = "Pass"
+	issueStatus = "issueStatus"
+	policyId    = "policyId"
+	success     = "success"
+	managed     = "Managed"
+	unmanaged   = "Unmanaged"
 )
 
 var severities = [4]string{"low", "medium", "high", "critical"}
@@ -66,15 +48,18 @@ func (c *AssetViolationsClient) GetAssetViolations(ctx context.Context, targetTy
 	if len(strings.TrimSpace(targetType)) == 0 {
 		return nil, fmt.Errorf("targetType must be present")
 	}
+
 	// fetch all the relevant policies for the target type
 	policies, err := c.rdsClient.GetPolicies(ctx, tenantId, targetType)
 	if err != nil {
 		return nil, fmt.Errorf("error fetching policies from rds for target type: " + targetType)
 	}
+
 	if policies == nil || len(policies) == 0 {
 		fmt.Println("No policies for given target type: " + targetType)
 		return &models.AssetViolations{Data: models.PolicyViolations{Coverage: unmanaged}, Message: success}, nil
 	}
+
 	fmt.Println("got " + strconv.Itoa(len(policies)) + " policies for target type: " + targetType)
 
 	if err != nil {

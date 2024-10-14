@@ -43,7 +43,7 @@ func NewSecretsClient(assumeRoleArn, region string) (*SecretsClient, error) {
 	// Load the default configuration with region
 	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(region))
 	if err != nil {
-		fmt.Printf("error loading AWS config: %v", err)
+		fmt.Printf("error loading aws config: %v", err)
 		return nil, err
 	}
 
@@ -64,7 +64,7 @@ func NewSecretsClient(assumeRoleArn, region string) (*SecretsClient, error) {
 	// Initialize the Secrets Manager client
 	svc := secretsmanager.NewFromConfig(assumedCfg)
 
-	fmt.Println("Initialized Secrets Client")
+	fmt.Println("initialized secrets client")
 	return &SecretsClient{
 		secretsClient: svc,
 	}, nil
@@ -74,7 +74,7 @@ func NewSecretsClient(assumeRoleArn, region string) (*SecretsClient, error) {
 func (r *SecretsClient) GetRdsSecret(ctx context.Context, secretIdPrefix, tenantId string) (*models.RdsSecret, error) {
 	// Create the secretId using the prefix and tenantId
 	secretId := fmt.Sprintf("%s%s", secretIdPrefix, tenantId)
-	fmt.Printf("Getting Rds Secrets from {%s}\n", secretId)
+	fmt.Printf("getting rds secrets from {%s}\n", secretId)
 
 	// Prepare the input for retrieving the secret
 	input := &secretsmanager.GetSecretValueInput{

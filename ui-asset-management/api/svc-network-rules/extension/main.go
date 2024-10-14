@@ -39,7 +39,7 @@ var (
 )
 
 func main() {
-	fmt.Printf("starting network rules extension - %s\n", extensionName)
+	fmt.Printf("starting extension - %s\n", extensionName)
 
 	fmt.Println("loading configuration")
 	configuration := clients.LoadConfigurationDetails()
@@ -51,34 +51,34 @@ func main() {
 func startMain(configuration *clients.Configuration) {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	fmt.Println("Initializing HTTP Server")
+	fmt.Println("initializing http server")
 	httpServerClient = &server.HttpServer{
 		Configuration:   configuration,
 		PortRulesClient: clients.NewNetworkRulesClient(configuration),
 	}
-	fmt.Println("HTTP Server initialized successfully!")
+	fmt.Println("http server initialized successfully!")
 
-	fmt.Println("Starting Local HTTP Server on port: %s\n", port)
+	fmt.Printf("starting http server on port: %s\n", port)
 	server.Start(port, httpServerClient, configuration.EnableExtension)
 
 	if configuration.EnableExtension {
-		fmt.Println("Registering extension client", extensionName, lambdaRuntimeAPI)
+		fmt.Println("registering extension client", extensionName, lambdaRuntimeAPI)
 		sigs := make(chan os.Signal, 1)
 		signal.Notify(sigs, syscall.SIGTERM, syscall.SIGINT)
 		go func() {
 			s := <-sigs
 			cancel()
-			fmt.Println("Received", s)
-			fmt.Println("Exiting")
+			fmt.Println("received", s)
+			fmt.Println("exiting")
 		}()
 
 		// Register the extension client with the Lambda runtime
 		res, err := extensionClient.Register(ctx, extensionName)
 		if err != nil {
-			fmt.Errorf("Unable to register extension:", err)
+			fmt.Errorf("unable to register extension: %+v", err)
 		}
 
-		fmt.Println("Client Registered:", res)
+		fmt.Println("client registered:", res)
 
 		// Will block until shutdown event is received or cancelled via the context.
 		processEvents(ctx)
@@ -86,18 +86,18 @@ func startMain(configuration *clients.Configuration) {
 }
 
 func processEvents(ctx context.Context) {
-	fmt.Println("Starting Processing events")
+	fmt.Println("starting processing events")
 	for {
 		select {
 		case <-ctx.Done():
-			fmt.Println("Context done, exiting event loop")
+			fmt.Println("context done, exiting event loop")
 			return
 		default:
-			fmt.Println("Waiting for next event...")
+			fmt.Println("waiting for next event...")
 			// Fetch the next event and check for errors.
 			_, err := extensionClient.NextEvent(ctx)
 			if err != nil {
-				fmt.Errorf("Error fetching next event:", err)
+				fmt.Errorf("error fetching next event: %+v", err)
 				return
 			}
 		}

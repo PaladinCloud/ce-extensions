@@ -37,6 +37,7 @@ func LoadConfigurationDetails() *Configuration {
 		// When we deploy the lambda + extension, set the default runtime to enable extension
 		enableExtension = true
 	}
+
 	region := os.Getenv("REGION")
 	tenantConfigTable := os.Getenv("TENANT_CONFIG_TABLE")
 	tenantConfigTablePartitionKey := os.Getenv("TENANT_CONFIG_TABLE_PARTITION_KEY")
