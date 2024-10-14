@@ -1,0 +1,35 @@
+---
+- serviceName: svc-delta-engine
+  serviceConfig:
+    environmentalVariables:
+      JAVA_TOOL_OPTIONS: '--enable-preview'
+      SUBSYSTEM_NAME: ASSET_SHIPPER
+      ASSUME_ROLE_ARN: {ASSUME_ROLE_ARN}
+      REGION: {REGION}
+      SECRET_NAME_PREFIX: {SECRET_NAME_PREFIX}
+      TENANT_CONFIG_TABLE: {TENANT_CONFIG_TABLE}
+      TENANT_CONFIG_TABLE_PARTITION_KEY: {TENANT_CONFIG_PARTITION_KEY}
+    lambdaConfig:
+      handler: com.paladincloud.assetsender.AssetDoneHandler
+      runtime: java
+      runtimeVersion: 21
+      timeout: 900
+      isArm64: true
+      permissions:
+        requiresAssumeRole: true
+        requireS3: true
+        requireDynamoDB: true
+        requireSecretsManager: true
+  sqsQueue:
+    - name: SQSAssetShippingDone
+      visibilityTimeout: 300
+      maxReceiveCount: 5
+      deadLetterQueue:
+        name: AssetShippingDone
+        maxReceiveCount: 5
+    - name: SQSAssetMappingDone
+      visibilityTimeout: 300
+      maxReceiveCount: 5
+      deadLetterQueue:
+        name: AssetMappingDone
+        maxReceiveCount: 5

@@ -79,6 +79,8 @@ public abstract class JobExecutor {
 
             tenantName = ConfigService.get(Tenant.TENANT_NAME);
 
+            ConfigService.setProperties("environment.", Map.of(AUTH_API_URL, envVars.get(AUTH_API_URL)));
+
             execute();
             status = "Succeeded";
         } catch (Throwable t) {
