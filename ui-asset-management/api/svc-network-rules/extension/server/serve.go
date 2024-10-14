@@ -22,7 +22,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"svc-network-rules-layer/clients"
+	"svc-asset-network-rules-layer/clients"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"

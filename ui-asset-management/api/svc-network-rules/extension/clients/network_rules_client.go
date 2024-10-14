@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
-	"svc-network-rules-layer/models"
+	"svc-asset-network-rules-layer/models"
 )
 
 type NetworkRulesClient struct {

@@ -19,7 +19,7 @@ package clients
 import (
 	"context"
 	"fmt"
-	"svc-network-rules-layer/models"
+	"svc-asset-network-rules-layer/models"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
