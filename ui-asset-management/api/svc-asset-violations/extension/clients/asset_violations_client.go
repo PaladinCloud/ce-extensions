@@ -16,8 +16,16 @@ type AssetViolationsClient struct {
 }
 
 func NewAssetViolationsClient(config *Configuration) *AssetViolationsClient {
-	dynamodbClient, _ := NewDynamoDBClient(config)
-	secretsClient, _ := NewSecretsClient(config.AssumeRoleArn, config.Region)
+func NewAssetViolationsClient(config *Configuration) (*AssetViolationsClient, error) {
+	dynamodbClient, err := NewDynamoDBClient(config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create DynamoDB client: %w", err)
+	}
+
+	secretsClient, err := NewSecretsClient(config.AssumeRoleArn, config.Region)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Secrets client: %w", err)
+	}
 
 	return &AssetViolationsClient{
 		configuration:       config,
