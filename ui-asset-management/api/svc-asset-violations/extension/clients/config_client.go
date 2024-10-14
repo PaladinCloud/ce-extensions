@@ -41,8 +41,17 @@ func LoadConfigurationDetails() *Configuration {
 	region := os.Getenv("REGION")
 	tenantConfigTable := os.Getenv("TENANT_CONFIG_TABLE")
 	tenantConfigTablePartitionKey := os.Getenv("TENANT_CONFIG_TABLE_PARTITION_KEY")
+	if tenantConfigTablePartitionKey == "" {
+		log.Fatalf("Environment variable TENANT_CONFIG_TABLE_PARTITION_KEY must be set")
+	}
 	assumeRoleArn := os.Getenv("ASSUME_ROLE_ARN")
+	if assumeRoleArn == "" {
+		log.Fatalf("Environment variable ASSUME_ROLE_ARN must be set")
+	}
 	secretIdPrefix := os.Getenv("SECRET_NAME_PREFIX")
+	if secretIdPrefix == "" {
+		log.Fatalf("Environment variable SECRET_NAME_PREFIX must be set")
+	}
 
 	return &Configuration{
 		EnableExtension:               enableExtension,
