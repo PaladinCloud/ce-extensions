@@ -1,5 +1,7 @@
 package com.paladincloud.common.jobs;
 
+import com.paladincloud.common.config.ConfigConstants;
+import com.paladincloud.common.config.ConfigConstants.PaladinCloud;
 import com.paladincloud.common.config.ConfigConstants.Tenant;
 import com.paladincloud.common.config.ConfigParams;
 import com.paladincloud.common.config.ConfigService;
@@ -25,11 +27,8 @@ public abstract class JobExecutor {
     private static final String TENANT_CONFIG_OUTPUT_TABLE = "TENANT_CONFIG_OUTPUT_TABLE";
     private static final String TENANT_TABLE_PARTITION_KEY = "TENANT_TABLE_PARTITION_KEY";
 
-    // This need to be removed (try a different auth)
-    private static final String AUTH_API_URL = "AUTH_API_URL";
-
-    private static final List<String> requiredEnvironmentVariables = List.of(AUTH_API_URL,
-        ASSUME_ROLE_ARN, REGION, SECRET_NAME_PREFIX, TENANT_CONFIG_OUTPUT_TABLE,
+    private static final List<String> requiredEnvironmentVariables = List.of(ASSUME_ROLE_ARN,
+        REGION, SECRET_NAME_PREFIX, TENANT_CONFIG_OUTPUT_TABLE,
         TENANT_TABLE_PARTITION_KEY);
 
     private static final List<String> requiredExecutorFields = List.of(TENANT_ID_JOB_ARGUMENT);
@@ -66,7 +65,8 @@ public abstract class JobExecutor {
 
             var dynamoConfigMap = Map.of("lambda_rule_engine_function_ShipperdoneSQS",
                 "asset-shipper-done-sqs-url", "paladincloud_app_gateway_CustomDomain",
-                "base-paladincloud-domain", "tenant_name", "tenant_name");
+                "base-paladincloud-domain", "tenant_name", "tenant_name",
+                "cognito_userpool_PoolDomain", "cognito-url-prefix");
 
             ConfigService.retrieveConfigProperties(
                 ConfigParams.builder().assumeRoleArn(assumeRoleArn).tenantId(tenantId)
@@ -79,7 +79,9 @@ public abstract class JobExecutor {
 
             tenantName = ConfigService.get(Tenant.TENANT_NAME);
 
-            ConfigService.setProperties("environment.", Map.of(AUTH_API_URL, envVars.get(AUTH_API_URL)));
+            var cognitoUrlPrefix = ConfigService.get(PaladinCloud.COGNITO_URL_PREFIX);
+            ConfigService.setProperties("", Map.of(PaladinCloud.AUTH_API_URL,
+                STR."https://\{cognitoUrlPrefix}.auth.us-east-1.amazoncognito.com"));
 
             execute();
             status = "Succeeded";

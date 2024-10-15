@@ -30,8 +30,9 @@ public interface ConfigConstants {
 
     interface PaladinCloud {
 
+        String COGNITO_URL_PREFIX = "config.cognito-url-prefix";
         String API_AUTH_CREDENTIALS = "application.apiauthinfo";
-        String AUTH_API_URL = "environment.AUTH_API_URL";
+        String AUTH_API_URL = "config.auth-api-url";
         String BASE_PALADIN_CLOUD_API_URI = "config.base-paladincloud-api-url";
     }
 
