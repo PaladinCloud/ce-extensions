@@ -1,4 +1,4 @@
-module svc-network-rules-layer
+module svc-asset-network-rules-layer
 
 go 1.23.1
 

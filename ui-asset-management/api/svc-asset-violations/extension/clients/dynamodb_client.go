@@ -37,41 +37,37 @@ type DynamodbClient struct {
 }
 
 // NewDynamoDBClient inits a DynamoDB session to be used throughout the services
-func NewDynamoDBClient(ctx context.Context, configuration *Configuration) (*DynamodbClient, error) {
+func NewDynamoDBClient(ctx context.Context, assumeRoleArn, region, tenantConfigOutputTable, tenantTablePartitionKey string) (*DynamodbClient, error) {
 
 	// Load the default AWS configuration
-	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(configuration.Region))
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(region))
 	if err != nil {
-		return nil, fmt.Errorf("error loading AWS config: %v", err)
+		return nil, fmt.Errorf("error loading AWS config: %+v", err)
 	}
 
 	// Create an STS client
 	stsClient := sts.NewFromConfig(cfg)
 
 	// Assume the role using STS
-	creds := stscreds.NewAssumeRoleProvider(stsClient, configuration.AssumeRoleArn, func(o *stscreds.AssumeRoleOptions) {
+	creds := stscreds.NewAssumeRoleProvider(stsClient, assumeRoleArn, func(o *stscreds.AssumeRoleOptions) {
 		o.RoleSessionName = "DynamoDBSession"
 	})
 
 	// Create a new AWS configuration with the assumed role credentials
 	assumedCfg := aws.Config{
 		Credentials: aws.NewCredentialsCache(creds),
-		Region:      configuration.Region,
+		Region:      region,
 	}
 
 	// Initialize the DynamoDB client with the assumed role credentials
 	svc := dynamodb.NewFromConfig(assumedCfg)
 
-	if err != nil {
-		fmt.Errorf("error creating dynamodb client %v", err)
-	}
-
 	fmt.Println("initialized dynamodb client with assumed role")
 	return &DynamodbClient{
-		region:                  configuration.Region,
+		region:                  region,
 		client:                  svc,
-		tenantConfigOutputTable: configuration.TenantConfigOutputTable,
-		tenantTablePartitionKey: configuration.tenantTablePartitionKey,
+		tenantConfigOutputTable: tenantConfigOutputTable,
+		tenantTablePartitionKey: tenantTablePartitionKey,
 	}, nil
 }
 
@@ -107,12 +103,14 @@ func (d *DynamodbClient) GetOpenSearchDomain(ctx context.Context, tenantId strin
 		return nil, fmt.Errorf("tenant_id %s not found", tenantId)
 	}
 
-	// Unmarshal the datastore_es_ESDomain field into the struct
-	var config models.TenantOutput
-	if err := attributevalue.UnmarshalMap(result.Item, &config); err != nil {
+	var (
+		// Unmarshal the datastore_es_ESDomain field into the struct
+		output models.TenantOutput
+	)
+	if err := attributevalue.UnmarshalMap(result.Item, &output); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal %s: %+v", projectionExpression, err)
 	}
 
-	fmt.Printf("%s endpoint fetched from tenant config: %s\n", projectionExpression, config.EsDomain.Endpoint)
-	return &config.EsDomain, nil
+	fmt.Printf("%s endpoint fetched from tenant config: %s\n", projectionExpression, output.EsDomain.Endpoint)
+	return &output.EsDomain, nil
 }

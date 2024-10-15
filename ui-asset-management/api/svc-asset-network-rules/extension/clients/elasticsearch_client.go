@@ -5,29 +5,30 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sync"
 
-	elasticsearch "github.com/elastic/go-elasticsearch/v7"
+	"github.com/elastic/go-elasticsearch/v7"
 )
 
 type ElasticSearchClient struct {
 	dynamodbClient           *DynamodbClient
-	elasticsearchClientCache map[string]*elasticsearch.Client
+	elasticsearchClientCache sync.Map // Replaced with sync.Map
 }
 
 func NewElasticSearchClient(dynamodbClient *DynamodbClient) *ElasticSearchClient {
-	fmt.Println("Initialized Elastic Search Client")
+	fmt.Println("initialized opensearch client")
 	return &ElasticSearchClient{
-		dynamodbClient:           dynamodbClient,
-		elasticsearchClientCache: make(map[string]*elasticsearch.Client),
+		dynamodbClient: dynamodbClient,
 	}
 }
 
 func (c *ElasticSearchClient) CreateNewElasticSearchClient(ctx context.Context, tenantId string) (*elasticsearch.Client, error) {
-	// check if the client is already created
-	if client, ok := c.elasticsearchClientCache[tenantId]; ok {
-		return client, nil
+	// Check if the client is already in the cache
+	if client, ok := c.elasticsearchClientCache.Load(tenantId); ok {
+		return client.(*elasticsearch.Client), nil // Type assert the value to *elasticsearch.Client
 	}
 
+	// If not found, proceed to create a new client
 	esDomainProperties, err := c.dynamodbClient.GetOpenSearchDomain(ctx, tenantId)
 	if err != nil {
 		return nil, err
@@ -35,10 +36,11 @@ func (c *ElasticSearchClient) CreateNewElasticSearchClient(ctx context.Context, 
 
 	client, err := elasticsearch.NewClient(elasticsearch.Config{Addresses: []string{"https://" + esDomainProperties.Endpoint}})
 	if err != nil {
-		return nil, fmt.Errorf("error creating ES client for tenantId: %s. err: %s", tenantId, err)
+		return nil, fmt.Errorf("error creating opensearch client for tenant id: %s. err: %+v", tenantId, err)
 	}
 
-	c.elasticsearchClientCache[tenantId] = client
+	// Store the new client in the cache
+	c.elasticsearchClientCache.Store(tenantId, client)
 	return client, nil
 }
 

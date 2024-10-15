@@ -28,7 +28,7 @@ type Configuration struct {
 	AssumeRoleArn           string
 	Region                  string
 	TenantConfigOutputTable string
-	tenantTablePartitionKey string
+	TenantTablePartitionKey string
 	SecretIdPrefix          string
 }
 
@@ -52,7 +52,7 @@ func LoadConfigurationDetails() *Configuration {
 		AssumeRoleArn:           assumeRoleArn,
 		Region:                  region,
 		TenantConfigOutputTable: tenantConfigOutputTable,
-		tenantTablePartitionKey: tenantTablePartitionKey,
+		TenantTablePartitionKey: tenantTablePartitionKey,
 		SecretIdPrefix:          secretIdPrefix,
 	}
 }

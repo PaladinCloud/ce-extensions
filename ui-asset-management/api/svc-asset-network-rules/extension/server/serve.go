@@ -22,23 +22,24 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"svc-network-rules-layer/clients"
+	"svc-asset-network-rules-layer/clients"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
 
 type HttpServer struct {
-	Configuration   *clients.Configuration
-	PortRulesClient *clients.NetworkRulesClient
+	Configuration           *clients.Configuration
+	AssetNetworkRulesClient *clients.AssetNetworkRulesClient
 }
 
 // Start begins running the sidecar
 func Start(port string, server *HttpServer, enableExtension bool) {
-	println("Starting the server in background")
 	if enableExtension {
+		println("starting the server in background")
 		go startHTTPServer(port, server)
 	} else {
+		println("starting the server")
 		startHTTPServer(port, server)
 	}
 }
@@ -52,11 +53,11 @@ func startHTTPServer(port string, httpConfig *HttpServer) {
 
 	err := http.ListenAndServe(fmt.Sprintf(":%s", port), r)
 	if err != nil {
-		fmt.Errorf("error starting the server", err)
+		fmt.Errorf("error starting the server: %+v", err)
 		os.Exit(0)
 	}
 
-	fmt.Println("Server started on %s", port)
+	fmt.Printf("server started on %s\n", port)
 }
 
 func handleValue(config *HttpServer) http.HandlerFunc {
@@ -65,12 +66,12 @@ func handleValue(config *HttpServer) http.HandlerFunc {
 		targetType := chi.URLParam(r, "targetType")
 		assetId, err := url.QueryUnescape(chi.URLParam(r, "assetId"))
 		if err != nil {
-			fmt.Errorf("Error decoding the assetId from Url path")
+			fmt.Errorf("error decoding the asset id from url path")
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
-		assetDetails, err := config.PortRulesClient.GetPortRuleDetails(r.Context(), tenantId, targetType, assetId)
+		assetDetails, err := config.AssetNetworkRulesClient.GetPortRuleDetails(r.Context(), tenantId, targetType, assetId)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
