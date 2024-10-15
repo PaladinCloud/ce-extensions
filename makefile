@@ -22,12 +22,15 @@ package-ui-common:
 	$(MAKE) -C $(UI_COMMON) package-all
 
 # Move zip files to the dist directory after packaging is complete
-move-zips: 
-	# Copy assets-management artifacts
-	cp -r $(ASSET_MANAGEMENT)/$(DIST_DIR)/* $(DIST_DIR)/
-	
+move-zips: create-dist-dir
 	# Copy ui-asset-management artifacts
 	cp -r $(UI_ASSET_MANAGEMENT)/$(DIST_DIR)/* $(DIST_DIR)/
 	
 	# Copy ui-common artifacts
 	cp -r $(UI_COMMON)/$(DIST_DIR)/* $(DIST_DIR)/
+
+	# Copy assets-management artifacts
+	cp -r $(ASSET_MANAGEMENT)/$(DIST_DIR)/* $(DIST_DIR)/
+
+create-dist-dir:
+	mkdir -p $(DIST_DIR)
