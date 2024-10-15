@@ -1,0 +1,32 @@
+---
+- serviceName: svc-delta-engine
+  serviceConfig:
+    environmentalVariables:
+     ASSET_SHIPPER_DONE_SQS_URL: ${SQSAssetShippingDone}
+     JAVA_TOOL_OPTIONS: '--enable-preview'
+     SUBSYSTEM_NAME: ASSET_SHIPPER
+     ENABLED_DELTA_ENGINE_PLUGINS: gcp
+     ASSET_MAPPING_DONE_QUEUE_URL: ${SQSAssetMappingDone}
+    lambdaConfig:
+      handler: com.paladincloud.assetsender.AssetDoneHandler
+      runtime: java21
+      runtimeVersion: 21
+      timeout: 900
+      isArm64: true
+      permissions:
+        requireS3: false
+        requireDynamoDB: true
+        requireSecretsManager: false
+  sqsQueue: 
+    - name: SQSAssetShippingDone
+      visibilityTimeout: 300
+      maxReceiveCount: 5
+      deadLetterQueue: 
+        name: AssetShippingDone
+        maxReceiveCount: 5
+    - name: SQSAssetMappingDone
+      visibilityTimeout: 300
+      maxReceiveCount: 5
+      deadLetterQueue: 
+        name: AssetMappingDone
+        maxReceiveCount: 5

@@ -1,0 +1,19 @@
+---
+- serviceName: svc-options-method
+  apiConfig:
+    method: OPTIONS
+    path: ["/api/v2/assets/{assetId}","/api/v2/targets/{targetType}/assets/{assetId}/violations"]
+    requireAuth: FALSE
+  serviceConfig:
+      environmentalVariables:
+        JAVA_TOOL_OPTIONS: 'false'
+      lambdaConfig:
+        handler: lambda_function.lambda_handler
+        runtime: python
+        runtimeVersion: latest
+        timeout: 10
+        isArm64: true
+      permissions:
+        requireS3: false
+        requireDynamoDB: false
+        requireSecretsManager: false

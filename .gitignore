@@ -387,3 +387,9 @@ pyrightconfig.json
 
 */dist/*
 dist/*
+
+
+ui-asset-management/api/svc-asset-details/bin/*
+ui-asset-management/api/svc-asset-network-rules/bin/*
+ui-asset-management/api/svc-asset-violations/bin/*
+ui-common/api/svc-options-method/service/svc-options-method.zip
