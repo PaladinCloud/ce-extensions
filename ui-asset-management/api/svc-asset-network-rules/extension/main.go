@@ -53,8 +53,8 @@ func startMain(configuration *clients.Configuration) {
 
 	fmt.Println("initializing http server")
 	httpServerClient = &server.HttpServer{
-		Configuration:   configuration,
-		PortRulesClient: clients.NewNetworkRulesClient(configuration),
+		Configuration:           configuration,
+		AssetNetworkRulesClient: clients.NewAssetNetworkRulesClient(ctx, configuration),
 	}
 	fmt.Println("http server initialized successfully!")
 

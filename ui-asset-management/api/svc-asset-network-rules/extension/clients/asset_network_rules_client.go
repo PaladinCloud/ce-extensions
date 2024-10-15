@@ -8,13 +8,13 @@ import (
 	"svc-asset-network-rules-layer/models"
 )
 
-type NetworkRulesClient struct {
+type AssetNetworkRulesClient struct {
 	elasticSearchClient *ElasticSearchClient
 }
 
-func NewNetworkRulesClient(config *Configuration) *NetworkRulesClient {
-	dynamodbClient, _ := NewDynamoDBClient(config)
-	return &NetworkRulesClient{elasticSearchClient: NewElasticSearchClient(dynamodbClient)}
+func NewAssetNetworkRulesClient(ctx context.Context, config *Configuration) *AssetNetworkRulesClient {
+	dynamodbClient, _ := NewDynamoDBClient(ctx, config.AssumeRoleArn, config.Region, config.TenantConfigOutputTable, config.TenantTablePartitionKey)
+	return &AssetNetworkRulesClient{elasticSearchClient: NewElasticSearchClient(dynamodbClient)}
 }
 
 const (
@@ -28,11 +28,11 @@ const (
 	allow      = "Allow"
 )
 
-var tagetTypesWithPortRules = []string{sg, nsg}
+var targetTypesWithPortRules = []string{sg, nsg}
 
-func (c *NetworkRulesClient) GetPortRuleDetails(ctx context.Context, tenantId, targetType string, assetId string) (*models.Response, error) {
-	if !slices.Contains(tagetTypesWithPortRules, targetType) {
-		return nil, fmt.Errorf("Asset type does not have port rules feature")
+func (c *AssetNetworkRulesClient) GetPortRuleDetails(ctx context.Context, tenantId, targetType string, assetId string) (*models.Response, error) {
+	if !slices.Contains(targetTypesWithPortRules, targetType) {
+		return nil, fmt.Errorf("asset type does not have port rules feature")
 	}
 
 	if len(strings.TrimSpace(assetId)) == 0 {
@@ -40,16 +40,17 @@ func (c *NetworkRulesClient) GetPortRuleDetails(ctx context.Context, tenantId, t
 	}
 
 	fmt.Println("Starting to fetch port rules")
-	outboundRules := []models.OutboundNetworkRule{}
-	inboundRules := []models.InboundNetworkRule{}
+	var outboundRules []models.OutboundNetworkRule
+	var inboundRules []models.InboundNetworkRule
 	if targetType == nsg {
 		result, err := c.elasticSearchClient.FetchAssetDetails(ctx, tenantId, allSources, assetId)
 		if err != nil {
 			return nil, err
 		}
+
 		assetDetails := getResults(result)
 		if len(assetDetails) == 0 {
-			return nil, fmt.Errorf("asset detials not found for assetId: %s", assetId)
+			return nil, fmt.Errorf("asset detials not found for asset id: %s", assetId)
 		}
 
 		assetDetail := assetDetails[0].(map[string]interface{})["_source"].(map[string]interface{})
@@ -62,6 +63,7 @@ func (c *NetworkRulesClient) GetPortRuleDetails(ctx context.Context, tenantId, t
 				if protocol == "*" {
 					protocol = all
 				}
+
 				priority := fmt.Sprintf("%v", ruleObj["priority"])
 				access := ruleObj["access"].(string)
 
@@ -86,6 +88,7 @@ func (c *NetworkRulesClient) GetPortRuleDetails(ctx context.Context, tenantId, t
 				if protocol == "*" {
 					protocol = all
 				}
+
 				priority := fmt.Sprintf("%v", ruleObj["priority"])
 				access := ruleObj["access"].(string)
 
@@ -101,13 +104,14 @@ func (c *NetworkRulesClient) GetPortRuleDetails(ctx context.Context, tenantId, t
 				outboundRules = append(outboundRules, models.OutboundNetworkRule{FromPort: fromPort, ToPort: toPort, Protocol: protocol, Destination: destination, Priority: priority, Access: access})
 			}
 		}
-		return &models.Response{Data: &models.NetworkRulesResponse{InboundRules: inboundRules, OutboundRules: outboundRules}, Message: success}, nil
 
+		return &models.Response{Data: &models.NetworkRulesResponse{InboundRules: inboundRules, OutboundRules: outboundRules}, Message: success}, nil
 	} else if targetType == sg {
 		result, err := c.elasticSearchClient.FetchChildResourcesDetails(ctx, tenantId, allSources, targetType, assetId)
 		if err != nil {
 			return nil, err
 		}
+
 		sgRules := getResults(result)
 		if len(sgRules) == 0 {
 			return &models.Response{Data: &models.NetworkRulesResponse{InboundRules: []models.InboundNetworkRule{}, OutboundRules: []models.OutboundNetworkRule{}}, Message: success}, nil
@@ -131,10 +135,12 @@ func (c *NetworkRulesClient) GetPortRuleDetails(ctx context.Context, tenantId, t
 					inboundRules = append(inboundRules, models.InboundNetworkRule{FromPort: fromPort, ToPort: toPort, Protocol: protocol, Source: cidrip, Access: allow})
 				}
 			}
+
 			return &models.Response{Data: &models.NetworkRulesResponse{InboundRules: inboundRules, OutboundRules: outboundRules}, Message: success}, nil
 		}
 
 	}
+
 	return &models.Response{Data: nil, Message: "success"}, nil
 }
 
@@ -155,5 +161,6 @@ func concatAsString(arr []interface{}) string {
 		}
 		return strings.Join(ports, ",")
 	}
+
 	return ""
 }

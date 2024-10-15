@@ -1,19 +1,21 @@
 # Constants for directories
 SERVICE_BIN_DIR := bin/service
-EXTENSIONS_BIN_DIR := bin/extensions
+EXTENSIONS_BIN_DIR := bin/layers/bin/extensions
+EXTENSIONS_ZIP_DIR := bin/layers/bin/
+
 LAMBDA_LAYER_NAME := svc-asset-details-layer
 
 # Build the extension for Lambda
 build-ext: dependencies
-	cd extension;GOOS=linux GOARCH=arm64 go build -tags lambda.norpc -o $(EXTENSIONS_BIN_DIR)/$(LAMBDA_LAYER_NAME) main.go
+	cd extension; GOOS=linux GOARCH=arm64 go build -tags lambda.norpc -o ../$(EXTENSIONS_BIN_DIR)/$(LAMBDA_LAYER_NAME) main.go
 
 # Package the extension
 package-ext: build-ext
-	zip -r $(EXTENSIONS_BIN_DIR)/extension.zip $(EXTENSIONS_BIN_DIR)/ -x '**/.*' -x '**/__MACOSX'
+	cd $(EXTENSIONS_ZIP_DIR); zip -r extension.zip extensions/ -x '**/.*' -x '**/__MACOSX'
 
 # Deploy the extension to AWS Lambda
 deploy-ext: build-ext package-ext
-	cd $(EXTENSIONS_BIN_DIR); aws lambda publish-layer-version --layer-name '$(LAMBDA_LAYER_NAME)' --region us-east-1 --zip-file 'fileb://extension.zip'
+	cd $(EXTENSIONS_ZIP_DIR); aws lambda publish-layer-version --layer-name '$(LAMBDA_LAYER_NAME)' --region us-east-1 --zip-file 'fileb://extension.zip'
 
 # Package the Lambda function
 package: dependencies
