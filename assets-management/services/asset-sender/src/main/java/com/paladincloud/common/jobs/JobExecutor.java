@@ -22,15 +22,15 @@ public abstract class JobExecutor {
     private static final String ASSUME_ROLE_ARN = "ASSUME_ROLE_ARN";
     private static final String REGION = "REGION";
     private static final String SECRET_NAME_PREFIX = "SECRET_NAME_PREFIX";
-    private static final String TENANT_CONFIG_TABLE = "TENANT_CONFIG_TABLE";
-    private static final String TENANT_CONFIG_TABLE_PARTITION_KEY = "TENANT_CONFIG_TABLE_PARTITION_KEY";
+    private static final String TENANT_CONFIG_OUTPUT_TABLE = "TENANT_CONFIG_OUTPUT_TABLE";
+    private static final String TENANT_TABLE_PARTITION_KEY = "TENANT_TABLE_PARTITION_KEY";
 
     // This need to be removed (try a different auth)
     private static final String AUTH_API_URL = "AUTH_API_URL";
 
     private static final List<String> requiredEnvironmentVariables = List.of(AUTH_API_URL,
-        ASSUME_ROLE_ARN, REGION, SECRET_NAME_PREFIX, TENANT_CONFIG_TABLE,
-        TENANT_CONFIG_TABLE_PARTITION_KEY);
+        ASSUME_ROLE_ARN, REGION, SECRET_NAME_PREFIX, TENANT_CONFIG_OUTPUT_TABLE,
+        TENANT_TABLE_PARTITION_KEY);
 
     private static final List<String> requiredExecutorFields = List.of(TENANT_ID_JOB_ARGUMENT);
 
@@ -72,8 +72,8 @@ public abstract class JobExecutor {
                 ConfigParams.builder().assumeRoleArn(assumeRoleArn).tenantId(tenantId)
                     .awsRegion(envVars.get(REGION))
                     .secretNamePrefix(envVars.get(SECRET_NAME_PREFIX))
-                    .tenantConfigTable(envVars.get(TENANT_CONFIG_TABLE))
-                    .tenantConfigTablePartitionKey(envVars.get(TENANT_CONFIG_TABLE_PARTITION_KEY))
+                    .tenantConfigTable(envVars.get(TENANT_CONFIG_OUTPUT_TABLE))
+                    .tenantConfigTablePartitionKey(envVars.get(TENANT_TABLE_PARTITION_KEY))
                     .dynamoConfigMap(dynamoConfigMap).build());
             ConfigService.setProperties("param.", params);
 
