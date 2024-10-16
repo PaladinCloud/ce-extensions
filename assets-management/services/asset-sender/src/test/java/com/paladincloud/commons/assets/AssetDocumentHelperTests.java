@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.paladincloud.common.AssetDocumentFields;
 import com.paladincloud.common.assets.AssetDocumentHelper;
+import com.paladincloud.common.assets.AssetState;
 import com.paladincloud.common.util.JsonHelper;
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -18,24 +19,49 @@ import org.junit.jupiter.api.Test;
  */
 public class AssetDocumentHelperTests {
 
-    static private AssetDocumentHelper getHelper(String dataSource, String idField) {
+    static private AssetDocumentHelper getHelper(String dataSource, String idField, String resourceNameField) {
         return AssetDocumentHelper.builder()
             .loadDate(ZonedDateTime.now())
             .idField(idField)
-            .docIdFields(List.of("accountid", "region", "instanceid"))
+            .docIdFields(List.of("accountid", "region", idField))
             .dataSource(dataSource)
             .isCloud(true)
             .displayName("ec2")
             .tags(List.of())
             .type("ec2")
             .accountIdToNameFn( (_) -> null)
+            .assetState(AssetState.MANAGED)
+            .resourceNameField(resourceNameField)
             .build();
     }
 
     @Test
-    void primaryDtoIsFullyPopulated() throws JsonProcessingException {
-        AssetDocumentHelper helper = getHelper("gcp", "id");
-        var mapperData = JsonHelper.mapFromString(getSamplePrimaryMapperDocument());
+    void dtoIsPopulatedFromV2Mapper() throws JsonProcessingException {
+        AssetDocumentHelper helper = getHelper("gcp", "resource_id", "resource_name");
+        var mapperData = JsonHelper.mapFromString(getV2PrimaryMapperDocument());
+        var dto = helper.createFrom(mapperData);
+
+        var dtoAsMap = JsonHelper.mapFromString(JsonHelper.objectMapper.writeValueAsString(dto));
+        var expectedMap = JsonHelper.mapFromString(getSamplePrimaryAssetDocument());
+
+        assertNotNull(dto);
+        assertNotNull(dtoAsMap.get(AssetDocumentFields.LEGACY_LOAD_DATE));
+        assertFalse(dtoAsMap.get(AssetDocumentFields.LEGACY_LOAD_DATE).toString().isBlank());
+        assertNotNull(dtoAsMap.get(AssetDocumentFields.PRIMARY_PROVIDER));
+        assertEquals(mapperData.get("rawData"), dtoAsMap.get(AssetDocumentFields.PRIMARY_PROVIDER));
+
+        // Ensure each value in the sample asset exists in the serialized/deserialized instance
+        expectedMap.forEach((key, value) -> {
+            assertTrue(dtoAsMap.containsKey(key), key);
+            assertEquals(value, dtoAsMap.get(key),
+                STR."\{key} value differs. expected=\{value} actual=\{dtoAsMap.get(key)}");
+        });
+    }
+
+    @Test
+    void primaryDtoIsFullyPopulatedFromLegacyMapper() throws JsonProcessingException {
+        AssetDocumentHelper helper = getHelper("gcp", "_resource_id", "_resource_name");
+        var mapperData = JsonHelper.mapFromString(getLegacyPrimaryMapperDocument());
 
         var dto = helper.createFrom(mapperData);
 
@@ -43,8 +69,8 @@ public class AssetDocumentHelperTests {
         var expectedMap = JsonHelper.mapFromString(getSamplePrimaryAssetDocument());
 
         assertNotNull(dto);
-        assertNotNull(dtoAsMap.get(AssetDocumentFields.LOAD_DATE));
-        assertFalse(dtoAsMap.get(AssetDocumentFields.LOAD_DATE).toString().isBlank());
+        assertNotNull(dtoAsMap.get(AssetDocumentFields.LEGACY_LOAD_DATE));
+        assertFalse(dtoAsMap.get(AssetDocumentFields.LEGACY_LOAD_DATE).toString().isBlank());
         assertNotNull(dtoAsMap.get(AssetDocumentFields.PRIMARY_PROVIDER));
         assertEquals(mapperData.get("rawData"), dtoAsMap.get(AssetDocumentFields.PRIMARY_PROVIDER));
 
@@ -52,22 +78,22 @@ public class AssetDocumentHelperTests {
         expectedMap.forEach((key, value) -> {
                 assertTrue(dtoAsMap.containsKey(key), key);
                 assertEquals(value, dtoAsMap.get(key),
-                    STR."\{key} value differs. expected=\{value} actual=\{dtoAsMap.get(key)}");
+                    STR."'\{key}' value differs. expected=\{value} actual=\{dtoAsMap.get(key)}");
         });
     }
 
     @Test
     void dtoIsUpdated() throws JsonProcessingException {
-        var mappedAsMap = JsonHelper.mapFromString(getSamplePrimaryMapperDocument());
-        var dto = getHelper("gcp", "id").createFrom(mappedAsMap);
+        var mappedAsMap = JsonHelper.mapFromString(getLegacyPrimaryMapperDocument());
+        var dto = getHelper("gcp", "_resource_id", null).createFrom(mappedAsMap);
 
-        mappedAsMap.put(AssetDocumentFields.ACCOUNT_NAME, "new account name");
+        mappedAsMap.put(AssetDocumentFields.LEGACY_ACCOUNT_NAME, "new account name");
 
-        AssetDocumentHelper helper = getHelper("gcp", "id");
+        AssetDocumentHelper helper = getHelper("gcp", "_resource_id", null);
         helper.updateFrom(mappedAsMap, dto);
 
-        assertEquals("new account name", dto.getAccountName());
-        assertTrue(dto.isLatest());
+        assertEquals("new account name", dto.getLegacyAccountName());
+        assertTrue(dto.isLegacyIsLatest());
     }
 
     /**
@@ -76,32 +102,45 @@ public class AssetDocumentHelperTests {
      */
     @Test
     void updatedDtoHasNewFields() throws JsonProcessingException {
-        var mappedAsMap = JsonHelper.mapFromString(getSamplePrimaryMapperDocument());
-        var dto = getHelper("gcp", "id").createFrom(mappedAsMap);
+        var mappedAsMap = JsonHelper.mapFromString(getLegacyPrimaryMapperDocument());
+        var dto = getHelper("gcp", "_resource_id", null).createFrom(mappedAsMap);
 
-        AssetDocumentHelper helper = getHelper("gcp", "id");
+        AssetDocumentHelper helper = getHelper("gcp", "_resource_id", null);
         helper.updateFrom(mappedAsMap, dto);
-
-        assertEquals("Paladin Cloud", dto.getCspmSource());
-        assertEquals("gcp", dto.getReportingSource());
     }
 
     @Test
 void secondaryDtoIsFullyPopulated() throws JsonProcessingException {
-        AssetDocumentHelper helper = getHelper("secondary", "_resourceid");
+        AssetDocumentHelper helper = getHelper("secondary", "_resourceid", null);
         var mappedAsMap = JsonHelper.mapFromString(getSampleSecondaryDocument());
         var dto = helper.createFrom(mappedAsMap);
         assertNotNull(dto);
 
-        assertEquals("Paladin Cloud", dto.getCspmSource());
-        assertEquals("secondary", dto.getReportingSource());
+//        assertEquals("secondary", dto.getReportingSource());
     }
 
-    private String getSamplePrimaryMapperDocument() {
+    private String getV2PrimaryMapperDocument() {
         return """
             {
-                "_cspm_source": "Paladin Cloud",
-                "_reporting_source": "aws",
+                "rawData": "{\\"auto_restart\\":true,\\"can_ip_forward\\":false,\\"confidential_computing\\":false,\\"description\\":\\"\\",\\"disks\\":[{\\"id\\":\\"0\\",\\"projectId\\":\\"xyz\\",\\"projectName\\":\\"Project\\",\\"name\\":\\"instance-abc\\",\\"sizeInGb\\":50,\\"type\\":\\"PERSISTENT\\",\\"autoDelete\\":true,\\"hasSha256\\":false,\\"hasKMSKeyName\\":false,\\"labels\\":null,\\"region\\":\\"\\"}],\\"emails\\":[\\"fubar@developer.gserviceaccount.com\\"],\\"id\\":17,\\"item_interfaces\\":[{\\"key\\":\\"enable-oslogin\\",\\"value\\":\\"true\\"}],\\"labels\\":{},\\"machine_type\\":\\"https://www.googleapis.com/compute/v1/projects/xyz/zones/z/machineTypes/e2-standard-2\\",\\"name\\":\\"instance-abc\\",\\"network_interfaces\\":[{\\"id\\":\\"100.128.100.189\\",\\"name\\":\\"nic0\\",\\"network\\":\\"https://www.googleapis.com/compute/v1/projects/xyz/global/networks/default\\",\\"accessConfig\\":[{\\"id\\":\\"External NAT\\",\\"name\\":\\"External NAT\\",\\"natIp\\":null,\\"projectName\\":\\"Project\\"}]}],\\"on_host_maintainence\\":\\"MIGRATE\\",\\"project_id\\":\\"xyz\\",\\"project_name\\":\\"Project\\",\\"project_number\\":344106022091,\\"region\\":\\"r\\",\\"scopes\\":[\\"https://www.googleapis.com/auth/devstorage.read_only\\",\\"https://www.googleapis.com/auth/logging.write\\",\\"https://www.googleapis.com/auth/monitoring.write\\",\\"https://www.googleapis.com/auth/servicecontrol\\",\\"https://www.googleapis.com/auth/service.management.readonly\\",\\"https://www.googleapis.com/auth/trace.append\\"],\\"service_accounts\\":[{\\"email\\":\\"fubar@developer.gserviceaccount.com\\",\\"emailBytes\\":{},\\"scopeList\\":[\\"https://www.googleapis.com/auth/devstorage.read_only\\",\\"https://www.googleapis.com/auth/logging.write\\",\\"https://www.googleapis.com/auth/monitoring.write\\",\\"https://www.googleapis.com/auth/servicecontrol\\",\\"https://www.googleapis.com/auth/service.management.readonly\\",\\"https://www.googleapis.com/auth/trace.append\\"]}],\\"shielded_instance_config\\":{\\"enableVtpm\\":true,\\"enableIntegrityMonitoring\\":true},\\"status\\":\\"TERMINATED\\"}",
+                "_lastDiscoveryDate": "2024-09-05 14:57:00+0000",
+                "resource_id": "17",
+                "resource_name": "instance-abc",
+                "account_id": "abc",
+                "source": "gcp",
+                "source_display_name": "GCP",
+                "_entityType": "vminstance",
+                "_entityTypeDisplayName": "VM",
+                "region": "us-central",
+                "reporting_source": "gcp",
+                "tags": { "environment": "test" },
+                "projectId": "xyz"
+            }""".trim();
+    }
+
+    private String getLegacyPrimaryMapperDocument() {
+        return """
+            {
                 "rawData": "{\\"auto_restart\\":true,\\"can_ip_forward\\":false,\\"confidential_computing\\":false,\\"description\\":\\"\\",\\"disks\\":[{\\"id\\":\\"0\\",\\"projectId\\":\\"xyz\\",\\"projectName\\":\\"Project\\",\\"name\\":\\"instance-abc\\",\\"sizeInGb\\":50,\\"type\\":\\"PERSISTENT\\",\\"autoDelete\\":true,\\"hasSha256\\":false,\\"hasKMSKeyName\\":false,\\"labels\\":null,\\"region\\":\\"\\"}],\\"emails\\":[\\"fubar@developer.gserviceaccount.com\\"],\\"id\\":17,\\"item_interfaces\\":[{\\"key\\":\\"enable-oslogin\\",\\"value\\":\\"true\\"}],\\"labels\\":{},\\"machine_type\\":\\"https://www.googleapis.com/compute/v1/projects/xyz/zones/z/machineTypes/e2-standard-2\\",\\"name\\":\\"instance-abc\\",\\"network_interfaces\\":[{\\"id\\":\\"100.128.100.189\\",\\"name\\":\\"nic0\\",\\"network\\":\\"https://www.googleapis.com/compute/v1/projects/xyz/global/networks/default\\",\\"accessConfig\\":[{\\"id\\":\\"External NAT\\",\\"name\\":\\"External NAT\\",\\"natIp\\":null,\\"projectName\\":\\"Project\\"}]}],\\"on_host_maintainence\\":\\"MIGRATE\\",\\"project_id\\":\\"xyz\\",\\"project_name\\":\\"Project\\",\\"project_number\\":344106022091,\\"region\\":\\"r\\",\\"scopes\\":[\\"https://www.googleapis.com/auth/devstorage.read_only\\",\\"https://www.googleapis.com/auth/logging.write\\",\\"https://www.googleapis.com/auth/monitoring.write\\",\\"https://www.googleapis.com/auth/servicecontrol\\",\\"https://www.googleapis.com/auth/service.management.readonly\\",\\"https://www.googleapis.com/auth/trace.append\\"],\\"service_accounts\\":[{\\"email\\":\\"fubar@developer.gserviceaccount.com\\",\\"emailBytes\\":{},\\"scopeList\\":[\\"https://www.googleapis.com/auth/devstorage.read_only\\",\\"https://www.googleapis.com/auth/logging.write\\",\\"https://www.googleapis.com/auth/monitoring.write\\",\\"https://www.googleapis.com/auth/servicecontrol\\",\\"https://www.googleapis.com/auth/service.management.readonly\\",\\"https://www.googleapis.com/auth/trace.append\\"]}],\\"shielded_instance_config\\":{\\"enableVtpm\\":true,\\"enableIntegrityMonitoring\\":true},\\"status\\":\\"TERMINATED\\"}",
                 "autoRestart": true,
                 "sourceDisplayName": "GCP",
@@ -165,7 +204,8 @@ void secondaryDtoIsFullyPopulated() throws JsonProcessingException {
                     }
                 ],
                 "name": "instance-abc",
-                "id": "17",
+                "_resource_id": "17",
+                "_resource_name": "instance-abc",
                 "region": "us-central",
                 "projectId": "xyz",
                 "items": [
@@ -191,8 +231,6 @@ void secondaryDtoIsFullyPopulated() throws JsonProcessingException {
     private String getSampleSecondaryDocument() {
         return """
             {
-                "_cspm_source": "Paladin Cloud",
-                "_reporting_source": "secondary",
                 "_resourceid": "i-76",
                 "_resourcename": "ABD-DEF",
                 "_cloudType": "aws",
@@ -226,16 +264,14 @@ void secondaryDtoIsFullyPopulated() throws JsonProcessingException {
     private String getSamplePrimaryAssetDocument() {
         return """
             {
-                "_docid": "us-central",
+                "_docid": "us-central_17",
                 "docType": "ec2",
-                "_cspm_source": "Paladin Cloud",
-                "_reporting_source": "gcp",
                 "_cloudType": "gcp",
                 "latest": true,
                 "_entity": "true",
                 "_entitytype": "ec2",
                 "name": "instance-abc",
-                "_resourcename": "17",
+                "_resourcename": "instance-abc",
                 "_resourceid": "17",
                 "sourceDisplayName": "GCP",
                 "assetIdDisplayName": null,

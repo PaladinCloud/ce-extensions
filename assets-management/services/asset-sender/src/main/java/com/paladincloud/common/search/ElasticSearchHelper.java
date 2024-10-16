@@ -209,7 +209,9 @@ public class ElasticSearchHelper {
                 endPoint, payLoad);
             if (response.hits != null && response.hits.hits != null) {
                 for (var hit : response.hits.hits) {
-                    results.put(hit.source.getDocId(), hit.source);
+                    // NOTE: This needs to be the legacy doc id in order for matches of pre-migrated
+                    // assets.
+                    results.put(hit.source.getLegacyDocId(), hit.source);
                 }
             }
             return response.scrollId;

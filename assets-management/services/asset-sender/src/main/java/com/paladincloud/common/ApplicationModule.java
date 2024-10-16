@@ -5,6 +5,7 @@ import com.paladincloud.common.assets.AssetCountsHelper;
 import com.paladincloud.common.assets.AssetGroupStatsCollector;
 import com.paladincloud.common.assets.AssetGroups;
 import com.paladincloud.common.assets.AssetRepository;
+import com.paladincloud.common.assets.AssetStateHelper;
 import com.paladincloud.common.assets.Assets;
 import com.paladincloud.common.assets.DataSourceHelper;
 import com.paladincloud.common.assets.ElasticAssetRepository;
@@ -56,8 +57,8 @@ public class ApplicationModule {
 
     @Singleton
     @Provides
-    Assets provideAssets(AssetRepository assetRepository, AssetTypes assetTypes, MapperRepository mapperRepository, DatabaseHelper databaseHelper) {
-        return new Assets(assetRepository, assetTypes, mapperRepository, databaseHelper);
+    Assets provideAssets(AssetRepository assetRepository, AssetTypes assetTypes, MapperRepository mapperRepository, DatabaseHelper databaseHelper, AssetStateHelper assetStateHelper) {
+        return new Assets(assetRepository, assetTypes, mapperRepository, databaseHelper, assetStateHelper);
     }
 
     @Singleton
@@ -106,5 +107,11 @@ public class ApplicationModule {
     @Provides
     AssetRepository provideAssetRepository(ElasticSearchHelper elasticSearch) {
         return new ElasticAssetRepository(elasticSearch);
+    }
+
+    @Singleton
+    @Provides
+    AssetStateHelper provideAssetStateHelper(DatabaseHelper databaseHelper) {
+        return new AssetStateHelper(databaseHelper);
     }
 }
