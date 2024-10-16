@@ -1,0 +1,19 @@
+Resources:
+  Function:
+    Type: AWS::Serverless::Function
+    Properties:
+      Timeout: 300
+      MemorySize: 1152
+      Handler: com.paladincloud.assetsender.AssetDoneHandler::handleRequest
+      CodeUri: /Users/kevintavog/Workspace/paladin/ce-extensions/assets-management/services/asset-sender
+      Runtime: java21
+      Architectures:
+        - arm64
+      Environment:
+        Variables:
+          ASSUME_ROLE_ARN: arn:aws:iam::246214016629:role/PaladinCloudIntegrationRole
+          JAVA_TOOL_OPTIONS: --enable-preview
+          REGION: us-east-1
+          SECRET_NAME_PREFIX: paladincloud/secret/
+          TENANT_CONFIG_OUTPUT_TABLE: tenant-output
+          TENANT_TABLE_PARTITION_KEY: tenant_id
