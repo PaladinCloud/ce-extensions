@@ -36,11 +36,6 @@ public class AssetDTO {
 
     @Setter
     @Getter
-    @JsonProperty(AssetDocumentFields.CSPM_SOURCE)
-    private String cspmSource;          // Usually PaladinCloud, but can be Wiz and others
-
-    @Setter
-    @Getter
     @JsonProperty(AssetDocumentFields.REPORTING_SOURCE)
     private String reportingSource;     // Qualys, Tenable, gcp, aws, azure
 
@@ -53,6 +48,11 @@ public class AssetDTO {
     @Setter
     @JsonProperty(AssetDocumentFields.LATEST)
     private boolean latest;
+
+    @Getter
+    @Setter
+    @JsonProperty(AssetDocumentFields.ASSET_STATE)
+    private AssetState assetState;
 
     @Getter
     @Setter

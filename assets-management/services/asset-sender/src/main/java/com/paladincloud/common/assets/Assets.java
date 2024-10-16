@@ -38,14 +38,17 @@ public class Assets {
     private final AssetRepository assetRepository;
     private final MapperRepository mapperRepository;
     private final DatabaseHelper databaseHelper;
+    private final AssetStateHelper assetStateHelper;
 
     @Inject
     public Assets(AssetRepository assetRepository, AssetTypes assetTypes,
-        MapperRepository mapperRepository, DatabaseHelper databaseHelper) {
+        MapperRepository mapperRepository, DatabaseHelper databaseHelper,
+        AssetStateHelper assetStateHelper) {
         this.assetRepository = assetRepository;
         this.assetTypes = assetTypes;
         this.mapperRepository = mapperRepository;
         this.databaseHelper = databaseHelper;
+        this.assetStateHelper = assetStateHelper;
     }
 
     private static String assetsPathPrefix(String dataSource) {
@@ -107,7 +110,7 @@ public class Assets {
                         .idField(idColumn).docIdFields(docIdFields).dataSource(dataSource)
                         .isCloud(isCloudDataSource)
                         .displayName(displayName).tags(tags).type(type)
-                        .accountIdToNameFn(this::accountIdToName);
+                        .accountIdToNameFn(this::accountIdToName).assetState(assetStateHelper.get(dataSource, type));
                     var mergeResponse = MergeAssets.process(assetCreator.build(), existingAssets,
                         latestAssets);
                     LOGGER.info(

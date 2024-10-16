@@ -5,10 +5,12 @@ package com.paladincloud.common;
  */
 public interface AssetDocumentFields {
 
-    String CSPM_SOURCE = "_cspm_source";
     String REPORTING_SOURCE = "_reporting_source";
     String NAME = "name";
     String ASSET_ID_DISPLAY_NAME = "assetIdDisplayName";
+
+    String ASSET_STATE = "_assetState";
+
     /**
      * This is the legacy field for the target type display name; the field name is
      * all lowercase and is being replaced with `targetTypeDisplayName`. Until the

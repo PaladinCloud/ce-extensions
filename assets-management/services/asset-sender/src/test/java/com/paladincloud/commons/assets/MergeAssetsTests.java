@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import com.paladincloud.common.AssetDocumentFields;
 import com.paladincloud.common.assets.AssetDTO;
 import com.paladincloud.common.assets.AssetDocumentHelper;
+import com.paladincloud.common.assets.AssetState;
 import com.paladincloud.common.assets.MergeAssets;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -36,7 +37,6 @@ public class MergeAssetsTests {
             doc.put("id", id);
             doc.put(AssetDocumentFields.NAME, STR."name \{id}");
             doc.put(AssetDocumentFields.DISCOVERY_DATE, "2024-07-21 13:13:00+0000");
-            doc.put(AssetDocumentFields.CSPM_SOURCE, "Paladin Cloud");
             doc.put(AssetDocumentFields.REPORTING_SOURCE, "aws");
             latest.add(doc);
         });
@@ -55,6 +55,7 @@ public class MergeAssetsTests {
             .tags(List.of())
             .type(type)
             .accountIdToNameFn( (_) -> null)
+            .assetState(AssetState.MANAGED)
             .build();
     }
 

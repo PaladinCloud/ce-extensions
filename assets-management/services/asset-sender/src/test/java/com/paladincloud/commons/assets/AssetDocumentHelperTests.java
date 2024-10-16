@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.paladincloud.common.AssetDocumentFields;
 import com.paladincloud.common.assets.AssetDocumentHelper;
+import com.paladincloud.common.assets.AssetState;
 import com.paladincloud.common.util.JsonHelper;
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -29,6 +30,7 @@ public class AssetDocumentHelperTests {
             .tags(List.of())
             .type("ec2")
             .accountIdToNameFn( (_) -> null)
+            .assetState(AssetState.MANAGED)
             .build();
     }
 
@@ -82,7 +84,6 @@ public class AssetDocumentHelperTests {
         AssetDocumentHelper helper = getHelper("gcp", "id");
         helper.updateFrom(mappedAsMap, dto);
 
-        assertEquals("Paladin Cloud", dto.getCspmSource());
         assertEquals("gcp", dto.getReportingSource());
     }
 
@@ -93,7 +94,6 @@ void secondaryDtoIsFullyPopulated() throws JsonProcessingException {
         var dto = helper.createFrom(mappedAsMap);
         assertNotNull(dto);
 
-        assertEquals("Paladin Cloud", dto.getCspmSource());
         assertEquals("secondary", dto.getReportingSource());
     }
 

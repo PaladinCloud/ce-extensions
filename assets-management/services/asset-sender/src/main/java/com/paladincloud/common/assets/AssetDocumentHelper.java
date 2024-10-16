@@ -42,7 +42,7 @@ public class AssetDocumentHelper {
     // Once all components are updated, the additional mapper fields will be removed from the
     // top-level asset document
     static private Set<String> assetFields = new HashSet<>(
-        List.of(MAPPER_RAW_DATA, AssetDocumentFields.CSPM_SOURCE,
+        List.of(MAPPER_RAW_DATA,
             AssetDocumentFields.REPORTING_SOURCE, AssetDocumentFields.NAME,
             AssetDocumentFields.ASSET_ID_DISPLAY_NAME,
             AssetDocumentFields.LEGACY_TARGET_TYPE_DISPLAY_NAME,
@@ -76,6 +76,8 @@ public class AssetDocumentHelper {
     private List<Map<String, Object>> tags;
     @NonNull
     private Function<String, String> accountIdToNameFn;
+    @NonNull
+    private AssetState assetState;
     private String resourceNameField;
 
 
@@ -124,7 +126,6 @@ public class AssetDocumentHelper {
             entry(AssetDocumentFields.ACCOUNT_NAME, v -> dto.setAccountName(v.toString())),
             entry(AssetDocumentFields.CLOUD_TYPE,
                 v -> dto.setCloudType(v.toString().toLowerCase())),
-            entry(AssetDocumentFields.CSPM_SOURCE, v -> dto.setCspmSource(v.toString())),
             entry(AssetDocumentFields.DISCOVERY_DATE,
                 v -> dto.setDiscoveryDate(TimeHelper.parseDiscoveryDate(v.toString()))),
             entry(AssetDocumentFields.NAME, v -> dto.setName(v.toString())),
@@ -144,6 +145,7 @@ public class AssetDocumentHelper {
         dto.setDocId(docId);
         dto.setEntity(true);
         dto.setReportingSource(dataSource);
+        dto.setAssetState(assetState);
 
         // Set common asset properties
         dto.setEntityType(type);
@@ -221,13 +223,12 @@ public class AssetDocumentHelper {
             data.getOrDefault(AssetDocumentFields.SOURCE_DISPLAY_NAME, "").toString());
 
         // One time only, existing assets in ElasticSearch must be updated to include new fields
-        if (StringUtils.isBlank(dto.getCspmSource())) {
-            dto.setCspmSource(data.getOrDefault(AssetDocumentFields.CSPM_SOURCE, "").toString());
-        }
         if (StringUtils.isBlank(dto.getReportingSource())) {
             dto.setReportingSource(
                 data.getOrDefault(AssetDocumentFields.REPORTING_SOURCE, "").toString());
         }
+
+        dto.setAssetState(assetState);
 
         // Update all fields the user has control over.
         if (data.containsKey(AssetDocumentFields.NAME)) {
