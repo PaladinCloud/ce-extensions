@@ -111,7 +111,7 @@ public class ApplicationModule {
 
     @Singleton
     @Provides
-    AssetStateHelper provideAssetStatusHelper(DatabaseHelper databaseHelper) {
+    AssetStateHelper provideAssetStateHelper(DatabaseHelper databaseHelper) {
         return new AssetStateHelper(databaseHelper);
     }
 }

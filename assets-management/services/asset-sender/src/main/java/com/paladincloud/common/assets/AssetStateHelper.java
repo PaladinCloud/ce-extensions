@@ -20,9 +20,6 @@ public class AssetStateHelper {
 
     public AssetState get(String dataSource, String assetType) {
         var typeCountMap = getSourceTypeMap(dataSource);
-        if (typeCountMap == null) {
-            return AssetState.SUSPICIOUS;
-        }
         if (typeCountMap.getOrDefault(assetType, 0).equals(0)) {
             return AssetState.UNMANAGED;
         }
