@@ -32,31 +32,60 @@ import org.apache.logging.log4j.Logger;
 public class AssetDocumentHelper {
 
     private static final Logger LOGGER = LogManager.getLogger(AssetDocumentHelper.class);
-    static private String MAPPER_RAW_DATA = "rawData";
-
-    // These are the fields the primary Asset 2.0 document model fields. This set is to allow
-    // a hybrid model that has both the correct top-level fields and the backward compatible
+    // These are the fields the primary Asset 2.0 document model supports. This set is to allow
+    // a hybrid model that has both the correct reserved/top-level fields and the backward compatible
     // top-level fields necessary for some components (policies, for instance).
     // This specific list is used as a filter of the mapper data in order to ignore common fields,
     // which are set elsewhere.
     // Once all components are updated, the additional mapper fields will be removed from the
     // top-level asset document
     static private Set<String> assetFields = new HashSet<>(
-        List.of(MAPPER_RAW_DATA,
-            AssetDocumentFields.REPORTING_SOURCE, AssetDocumentFields.NAME,
+        List.of(
+            MapperFields.ACCOUNT_ID,
+            MapperFields.LEGACY_ACCOUNT_ID,
+            MapperFields.RAW_DATA,
+            MapperFields.REPORTING_SOURCE,
+
+            AssetDocumentFields.LEGACY_NAME,
             AssetDocumentFields.ASSET_ID_DISPLAY_NAME,
             AssetDocumentFields.LEGACY_TARGET_TYPE_DISPLAY_NAME,
-            AssetDocumentFields.TARGET_TYPE_DISPLAY_NAME, AssetDocumentFields.SOURCE_DISPLAY_NAME,
-            AssetDocumentFields.PRIMARY_PROVIDER, AssetDocumentFields.DOC_TYPE,
-            AssetDocumentFields.DISCOVERY_DATE, AssetDocumentFields.FIRST_DISCOVERED,
-            AssetDocumentFields.LOAD_DATE, AssetDocumentFields.ACCOUNT_ID,
-            AssetDocumentFields.ACCOUNT_NAME, AssetDocumentFields.PROJECT_ID,
-            AssetDocumentFields.PROJECT_NAME, AssetDocumentFields.SUBSCRIPTION,
-            AssetDocumentFields.SUBSCRIPTION_NAME, AssetDocumentFields.CLOUD_TYPE,
-            AssetDocumentFields.DOC_ID, AssetDocumentFields.ENTITY, AssetDocumentFields.ENTITY_TYPE,
-            AssetDocumentFields.RELATIONS, AssetDocumentFields.LATEST,
-            AssetDocumentFields.RESOURCE_GROUP_NAME, AssetDocumentFields.RESOURCE_ID,
-            AssetDocumentFields.RESOURCE_NAME, AssetDocumentFields.TAGS));
+            AssetDocumentFields.LEGACY_ENTITY_TYPE_DISPLAY_NAME,
+            AssetDocumentFields.SOURCE_DISPLAY_NAME,
+            AssetDocumentFields.PRIMARY_PROVIDER,
+            AssetDocumentFields.LAST_DISCOVERY_DATE,
+            AssetDocumentFields.LEGACY_LAST_DISCOVERY_DATE,
+            AssetDocumentFields.FIRST_DISCOVERY_DATE,
+            AssetDocumentFields.LEGACY_FIRST_DISCOVERY_DATE,
+            AssetDocumentFields.LOAD_DATE,
+            AssetDocumentFields.LEGACY_LOAD_DATE,
+            AssetDocumentFields.ACCOUNT_ID,
+            AssetDocumentFields.LEGACY_ACCOUNT_ID,
+            AssetDocumentFields.ACCOUNT_NAME,
+            AssetDocumentFields.LEGACY_ACCOUNT_NAME,
+            AssetDocumentFields.PROJECT_ID,
+            AssetDocumentFields.PROJECT_NAME,
+            AssetDocumentFields.SUBSCRIPTION,
+            AssetDocumentFields.SUBSCRIPTION_NAME,
+            AssetDocumentFields.SOURCE,
+            AssetDocumentFields.LEGACY_SOURCE,
+            AssetDocumentFields.DOC_TYPE,
+            AssetDocumentFields.LEGACY_DOC_TYPE,
+            AssetDocumentFields.DOC_ID,
+            AssetDocumentFields.LEGACY_DOC_ID,
+            AssetDocumentFields.IS_ENTITY,
+            AssetDocumentFields.LEGACY_IS_ENTITY,
+            AssetDocumentFields.ENTITY_TYPE,
+            AssetDocumentFields.LEGACY_ENTITY_TYPE,
+            AssetDocumentFields.RELATIONS,
+            AssetDocumentFields.IS_LATEST,
+            AssetDocumentFields.LEGACY_IS_LATEST,
+            AssetDocumentFields.RESOURCE_GROUP_NAME,
+            AssetDocumentFields.RESOURCE_ID,
+            AssetDocumentFields.LEGACY_RESOURCE_ID,
+            AssetDocumentFields.RESOURCE_NAME,
+            AssetDocumentFields.LEGACY_RESOURCE_NAME,
+            AssetDocumentFields.REGION,
+            AssetDocumentFields.TAGS));
     static private Map<String, String> accountIdNameMap = new HashMap<>();
     @NonNull
     private ZonedDateTime loadDate;
@@ -80,11 +109,10 @@ public class AssetDocumentHelper {
     private AssetState assetState;
     private String resourceNameField;
 
-
     public String buildDocId(Map<String, Object> data) {
         var docId = StringHelper.concatenate(data, docIdFields, "_");
         if ("aws".equalsIgnoreCase(dataSource)) {
-            if (docIdFields.contains(AssetDocumentFields.ACCOUNT_ID)) {
+            if (docIdFields.contains(AssetDocumentFields.LEGACY_ACCOUNT_ID)) {
                 docId = STR."\{StringHelper.indexName(dataSource, type)}_\{docId}";
             }
         }
@@ -121,18 +149,39 @@ public class AssetDocumentHelper {
         // Set some common properties, which are type safe and require function calls rather
         // than map puts. These properties are removed from 'data' (the mapper data) in order
         // to decrease confusion between an additional property and a typed property.
+        // Legacy fields are set first to allow the newer fields to have precedence
         Map<String, DtoSetter> fieldSetterMap = Map.ofEntries(
-            entry(AssetDocumentFields.ACCOUNT_ID, v -> dto.setAccountId(v.toString())),
-            entry(AssetDocumentFields.ACCOUNT_NAME, v -> dto.setAccountName(v.toString())),
-            entry(AssetDocumentFields.CLOUD_TYPE,
-                v -> dto.setCloudType(v.toString().toLowerCase())),
-            entry(AssetDocumentFields.DISCOVERY_DATE,
-                v -> dto.setDiscoveryDate(TimeHelper.parseDiscoveryDate(v.toString()))),
-            entry(AssetDocumentFields.NAME, v -> dto.setName(v.toString())),
-            entry(AssetDocumentFields.SOURCE_DISPLAY_NAME,
+            entry(AssetDocumentFields.LEGACY_ACCOUNT_ID, v -> {
+                dto.setAccountId(v.toString());
+                dto.setLegacyAccountId(v.toString());
+            }),
+            entry(AssetDocumentFields.ACCOUNT_ID, v -> {
+                dto.setAccountId(v.toString());
+                dto.setLegacyAccountId(v.toString());
+            }),
+            entry(AssetDocumentFields.LEGACY_SOURCE, v -> {
+                dto.setSource(v.toString());
+                dto.setLegacySource(v.toString().toLowerCase());
+            }),
+            entry(AssetDocumentFields.SOURCE, v -> {
+                dto.setSource(v.toString().toLowerCase());
+                dto.setLegacySource(v.toString());
+            }),
+            entry(AssetDocumentFields.LEGACY_LAST_DISCOVERY_DATE, v -> {
+                dto.setLastDiscoveryDate(TimeHelper.parseDiscoveryDate(v.toString()));
+                dto.setLegacyLastDiscoveryDate(TimeHelper.parseDiscoveryDate(v.toString()));
+            }),
+            entry(AssetDocumentFields.LAST_DISCOVERY_DATE, v -> {
+                dto.setLastDiscoveryDate(TimeHelper.parseDiscoveryDate(v.toString()));
+                dto.setLegacyLastDiscoveryDate(TimeHelper.parseDiscoveryDate(v.toString()));
+            }),
+            entry(AssetDocumentFields.REGION, v -> dto.setRegion(v.toString())),
+            entry(AssetDocumentFields.LEGACY_NAME, v -> dto.setLegacyName(v.toString())),
+            entry(MapperFields.LEGACY_SOURCE_DISPLAY_NAME,
                 v -> dto.setSourceDisplayName(v.toString())),
-            entry(MAPPER_RAW_DATA, v -> dto.setPrimaryProvider(v.toString())),
-            entry(AssetDocumentFields.REPORTING_SOURCE, v -> dto.setReportingSource(v.toString())));
+            entry(MapperFields.SOURCE_DISPLAY_NAME,
+                v -> dto.setSourceDisplayName(v.toString())),
+            entry(MapperFields.RAW_DATA, v -> dto.setPrimaryProvider(v.toString())));
 
         fieldSetterMap.forEach((key, value) -> {
             var fieldValue = getOrNull(key, data);
@@ -143,35 +192,51 @@ public class AssetDocumentHelper {
 
         // Set the remaining mapper properties
         dto.setDocId(docId);
+        dto.setLegacyDocId(docId);
         dto.setEntity(true);
-        dto.setReportingSource(dataSource);
+        dto.setLegacyIsEntity(true);
         dto.setAssetState(assetState);
 
         // Set common asset properties
         dto.setEntityType(type);
+        dto.setLegacyEntityType(type);
+        dto.setEntityTypeDisplayName(displayName);
+        dto.setLegacyEntityTypeDisplayName(displayName);
         dto.setLegacyTargetTypeDisplayName(displayName);
-        dto.setTargetTypeDisplayName(displayName);
         dto.setDocType(type);
+        dto.setLegacyDocType(type);
 
         if (isCloud) {
             dto.addRelation(STR."\{type}\{AssetDocumentFields.RELATIONS}", type);
         }
         dto.setResourceName(data.getOrDefault(resourceNameField, idValue).toString());
-        dto.setResourceId(data.getOrDefault(AssetDocumentFields.RESOURCE_ID, idValue).toString());
+        dto.setLegacyResourceName(dto.getResourceName());
+        dto.setLegacyName(dto.getResourceName());
 
-        if (data.containsKey(AssetDocumentFields.SUBSCRIPTION_NAME)) {
-            dto.setAccountName(data.get(AssetDocumentFields.SUBSCRIPTION_NAME).toString());
-        } else if (data.containsKey(AssetDocumentFields.PROJECT_NAME)) {
-            dto.setAccountName(data.get(AssetDocumentFields.PROJECT_NAME).toString());
+        var resourceId = MapHelper.getFirstOrDefault(data,
+            List.of(AssetDocumentFields.RESOURCE_ID, AssetDocumentFields.LEGACY_RESOURCE_ID),
+            idValue);
+        dto.setResourceId(resourceId.toString());
+        dto.setLegacyResourceId(resourceId.toString());
+
+        var accountName = MapHelper.getFirstOrDefault(data,
+            List.of(AssetDocumentFields.ACCOUNT_NAME, AssetDocumentFields.LEGACY_ACCOUNT_NAME,
+                AssetDocumentFields.SUBSCRIPTION_NAME, AssetDocumentFields.PROJECT_NAME), null);
+        if (accountName != null) {
+            dto.setAccountName(accountName.toString());
+            dto.setLegacyAccountName(accountName.toString());
         }
 
         if (data.containsKey(AssetDocumentFields.SUBSCRIPTION)) {
             dto.setAccountId(data.get(AssetDocumentFields.SUBSCRIPTION).toString());
+            dto.setLegacyAccountId(data.get(AssetDocumentFields.SUBSCRIPTION).toString());
         } else if (data.containsKey(AssetDocumentFields.PROJECT_ID)) {
             dto.setAccountId(data.get(AssetDocumentFields.PROJECT_ID).toString());
+            dto.setLegacyAccountId(data.get(AssetDocumentFields.PROJECT_ID).toString());
         }
 
-        dto.setFirstDiscoveryDate(dto.getDiscoveryDate());
+        dto.setFirstDiscoveryDate(dto.getLastDiscoveryDate());
+        dto.setLegacyFirstDiscoveryDate(dto.getLegacyLastDiscoveryDate());
 
         tags.parallelStream().filter(tag -> MapHelper.containsAll(tag, data, docIdFields))
             .forEach(tag -> {
@@ -189,11 +254,11 @@ public class AssetDocumentHelper {
 
         addTags(data, dto);
         if ("gcp".equalsIgnoreCase(
-            data.getOrDefault(AssetDocumentFields.CLOUD_TYPE, "").toString())) {
+            data.getOrDefault(AssetDocumentFields.LEGACY_SOURCE, "").toString())) {
             addLegacyTags(data, dto);
         }
 
-        if ("Azure".equalsIgnoreCase(dto.getCloudType())) {
+        if ("Azure".equalsIgnoreCase(dto.getLegacySource())) {
             dto.setAssetIdDisplayName(getAssetIdDisplayName(data));
         }
 
@@ -205,7 +270,9 @@ public class AssetDocumentHelper {
         });
 
         dto.setLoadDate(loadDate);
+        dto.setLegacyLoadDate(loadDate);
         dto.setLatest(true);
+        dto.setLegacyIsLatest(true);
         return dto;
     }
 
@@ -218,48 +285,51 @@ public class AssetDocumentHelper {
     public void updateFrom(Map<String, Object> data, AssetDTO dto) {
         var idValue = data.getOrDefault(idField, "").toString();
 
-        dto.setPrimaryProvider(data.getOrDefault(MAPPER_RAW_DATA, "").toString());
+        dto.setPrimaryProvider(data.getOrDefault(MapperFields.RAW_DATA, "").toString());
         dto.setSourceDisplayName(
             data.getOrDefault(AssetDocumentFields.SOURCE_DISPLAY_NAME, "").toString());
-
-        // One time only, existing assets in ElasticSearch must be updated to include new fields
-        if (StringUtils.isBlank(dto.getReportingSource())) {
-            dto.setReportingSource(
-                data.getOrDefault(AssetDocumentFields.REPORTING_SOURCE, "").toString());
-        }
 
         dto.setAssetState(assetState);
 
         // Update all fields the user has control over.
-        if (data.containsKey(AssetDocumentFields.NAME)) {
-            dto.setName(data.get(AssetDocumentFields.NAME).toString());
+        if (data.containsKey(AssetDocumentFields.LEGACY_NAME)) {
+            dto.setLegacyName(data.get(AssetDocumentFields.LEGACY_NAME).toString());
         }
         dto.setLoadDate(loadDate);
+        dto.setLegacyLoadDate(loadDate);
         dto.setLatest(true);
+        dto.setLegacyIsLatest(true);
 
         dto.setResourceName(data.getOrDefault(resourceNameField, idValue).toString());
-        dto.setResourceId(data.getOrDefault(AssetDocumentFields.RESOURCE_ID, idValue).toString());
-        if (data.containsKey(AssetDocumentFields.ACCOUNT_NAME)) {
-            dto.setAccountName(data.get(AssetDocumentFields.ACCOUNT_NAME).toString());
-        }
+        dto.setLegacyResourceName(dto.getResourceName());
+        dto.setLegacyName(dto.getResourceName());
 
-        if (data.containsKey(AssetDocumentFields.SUBSCRIPTION_NAME)) {
-            dto.setAccountName(data.get(AssetDocumentFields.SUBSCRIPTION_NAME).toString());
-        } else if (data.containsKey(AssetDocumentFields.PROJECT_NAME)) {
-            dto.setAccountName(data.get(AssetDocumentFields.PROJECT_NAME).toString());
+        var resourceId = MapHelper.getFirstOrDefault(data,
+            List.of(AssetDocumentFields.RESOURCE_ID, AssetDocumentFields.LEGACY_RESOURCE_ID),
+            idValue);
+        dto.setResourceId(resourceId.toString());
+        dto.setLegacyResourceId(resourceId.toString());
+
+        var accountName = MapHelper.getFirstOrDefault(data,
+            List.of(AssetDocumentFields.ACCOUNT_NAME, AssetDocumentFields.LEGACY_ACCOUNT_NAME,
+                AssetDocumentFields.SUBSCRIPTION_NAME, AssetDocumentFields.PROJECT_NAME), null);
+        if (accountName != null) {
+            dto.setAccountName(accountName.toString());
+            dto.setLegacyAccountName(accountName.toString());
         }
 
         // The display name comes out of our database, but could potentially change with an update.
         // Hence, it gets updated here.
+        dto.setEntityTypeDisplayName(displayName);
+        dto.setLegacyEntityTypeDisplayName(displayName);
         dto.setLegacyTargetTypeDisplayName(displayName);
-        dto.setTargetTypeDisplayName(displayName);
-        if ("Azure".equalsIgnoreCase(dto.getCloudType())) {
+        if ("Azure".equalsIgnoreCase(dto.getLegacySource())) {
             dto.setAssetIdDisplayName(getAssetIdDisplayName(data));
         }
 
         addTags(data, dto);
         if ("gcp".equalsIgnoreCase(
-            data.getOrDefault(AssetDocumentFields.CLOUD_TYPE, "").toString())) {
+            data.getOrDefault(AssetDocumentFields.LEGACY_SOURCE, "").toString())) {
             addLegacyTags(data, dto);
         }
 
@@ -270,6 +340,22 @@ public class AssetDocumentHelper {
             }
         });
 
+        // This is needed to upgrade existing documents to the v2 asset model
+        if (!dto.getLegacyDocId().equalsIgnoreCase(dto.getDocId())) {
+            dto.setDocId(dto.getLegacyDocId());
+            dto.setDocType(dto.getLegacyDocType());
+            dto.setEntityType(dto.getLegacyEntityType());
+            dto.setEntity(dto.isLegacyIsEntity());
+            dto.setLatest(dto.isLegacyIsLatest());
+            dto.setLastDiscoveryDate(dto.getLegacyLastDiscoveryDate());
+            dto.setLoadDate(dto.getLegacyLoadDate());
+            dto.setFirstDiscoveryDate(dto.getLegacyFirstDiscoveryDate());
+            dto.setResourceId(dto.getLegacyResourceId());
+            dto.setResourceName(dto.getLegacyResourceName());
+            dto.setSource(dto.getLegacySource());
+            dto.setAccountId(dto.getLegacyAccountId());
+            dto.setAccountName(dto.getLegacyAccountName());
+        }
     }
 
     /**
@@ -279,7 +365,7 @@ public class AssetDocumentHelper {
      * @param dto - the existing AssetDTO that is to be removed.
      */
     public void remove(AssetDTO dto) {
-        dto.setLatest(false);
+        dto.setLegacyIsLatest(false);
     }
 
     private Object getOrNull(String key, Map<String, Object> data) {
@@ -292,7 +378,7 @@ public class AssetDocumentHelper {
     private String getAssetIdDisplayName(Map<String, Object> data) {
         var resourceGroupName = ObjectUtils.firstNonNull(
             data.get(AssetDocumentFields.RESOURCE_GROUP_NAME), "").toString();
-        var assetName = ObjectUtils.firstNonNull(data.get(AssetDocumentFields.NAME), "").toString();
+        var assetName = ObjectUtils.firstNonNull(data.get(AssetDocumentFields.LEGACY_NAME), "").toString();
         String assetIdDisplayName;
         if (!resourceGroupName.isEmpty() && !assetName.isEmpty()) {
             assetIdDisplayName = STR."\{resourceGroupName}/\{assetName}";
@@ -306,7 +392,8 @@ public class AssetDocumentHelper {
 
     private void setMissingAccountName(AssetDTO dto, Map<String, Object> data) {
         String accountId = Stream.of(data.get(AssetDocumentFields.PROJECT_ID),
-                data.get(AssetDocumentFields.ACCOUNT_ID)).filter(Objects::nonNull).map(String::valueOf)
+                data.get(AssetDocumentFields.LEGACY_ACCOUNT_ID)).filter(Objects::nonNull)
+            .map(String::valueOf)
             .findFirst().orElse(null);
         if (StringUtils.isNotEmpty(accountId)) {
             if (!accountIdNameMap.containsKey(accountId)) {
@@ -316,6 +403,7 @@ public class AssetDocumentHelper {
                 }
             }
             dto.setAccountName(accountIdNameMap.get(accountId));
+            dto.setLegacyAccountName(accountIdNameMap.get(accountId));
         }
     }
 
@@ -339,6 +427,18 @@ public class AssetDocumentHelper {
         if (tagData instanceof Map) {
             dto.setTags((Map<String, String>) tagData);
         }
+    }
+
+    interface MapperFields {
+
+        String LEGACY_ACCOUNT_ID = "accountid";
+        String ACCOUNT_ID = "account_id";
+
+        String RAW_DATA = "rawData";
+        String REPORTING_SOURCE = "_reporting_source";
+
+        String SOURCE_DISPLAY_NAME = "source_display_name";
+        String LEGACY_SOURCE_DISPLAY_NAME = "sourceDisplayName";
     }
 
 

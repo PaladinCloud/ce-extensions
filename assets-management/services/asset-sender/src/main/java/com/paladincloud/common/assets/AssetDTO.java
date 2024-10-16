@@ -20,6 +20,14 @@ public class AssetDTO {
      */
     private final Map<String, Object> additionalProperties = new HashMap<>();
 
+    // ---------------------------------------------------------------------------------------------
+    // RESERVED FIELDS
+    // ---------------------------------------------------------------------------------------------
+    // NOTE: There are legacy fields for some of these values; these fields are being replaced
+    // for the Asset 2.0 document model. These reserved fields will start with an underscore and
+    // be lowerCamelCase (_likeThis).
+    // Legacy fields will have the word legacy in them and will eventually be removed.
+
     /**
      * This is the unique id for the asset, which depends on the source & type as well as the unique
      * id for the instance. This unique id the same for the lifetime of the asset.
@@ -34,36 +42,50 @@ public class AssetDTO {
     @JsonProperty(AssetDocumentFields.DOC_TYPE)
     private String docType;
 
-    @Setter
-    @Getter
-    @JsonProperty(AssetDocumentFields.REPORTING_SOURCE)
-    private String reportingSource;     // Qualys, Tenable, gcp, aws, azure
-
-    @Setter
-    @Getter
-    @JsonProperty(AssetDocumentFields.CLOUD_TYPE)
-    private String cloudType;
-
-    @Getter
-    @Setter
-    @JsonProperty(AssetDocumentFields.LATEST)
-    private boolean latest;
-
     @Getter
     @Setter
     @JsonProperty(AssetDocumentFields.ASSET_STATE)
     private AssetState assetState;
 
-    @Getter
-    @Setter
-    @JsonProperty(AssetDocumentFields.ENTITY)
-    @JsonFormat(shape = Shape.STRING)
-    private boolean entity;
-
     @Setter
     @Getter
     @JsonProperty(AssetDocumentFields.ENTITY_TYPE)
     private String entityType;
+
+    @Setter
+    @Getter
+    @JsonProperty(AssetDocumentFields.ENTITY_TYPE_DISPLAY_NAME)
+    private String entityTypeDisplayName;
+
+    @Getter
+    @Setter
+    @JsonProperty(AssetDocumentFields.IS_ENTITY)
+    private boolean isEntity;
+
+    @Getter
+    @Setter
+    @JsonProperty(AssetDocumentFields.IS_LATEST)
+    private boolean isLatest;
+
+    /**
+     * Managed by the asset-shipper; this is the earliest discovery date there are records for. The
+     * format is "yyyy-MM-dd HH:mm:00Z"
+     */
+    @Setter
+    @Getter
+    @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd HH:mm:00Z")
+    @JsonProperty(AssetDocumentFields.FIRST_DISCOVERY_DATE)
+    private ZonedDateTime firstDiscoveryDate;
+
+    /**
+     * The most recent date the primary source discovered this asset; this is set in the mapper. The
+     * format is "yyyy-MM-dd HH:mm:00Z"
+     */
+    @Setter
+    @Getter
+    @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd HH:mm:00Z")
+    @JsonProperty(AssetDocumentFields.LAST_DISCOVERY_DATE)
+    private ZonedDateTime lastDiscoveryDate;
 
     /**
      * The date the item was loaded/saved into the repository: The format is "yyyy-MM-dd HH:mm:00Z"
@@ -74,15 +96,70 @@ public class AssetDTO {
     @JsonProperty(AssetDocumentFields.LOAD_DATE)
     private ZonedDateTime loadDate;
 
+
+    // ---------------------------------------------------------------------------------------------
+    // LEGACY RESERVED FIELDS
+    // ---------------------------------------------------------------------------------------------
     @Setter
     @Getter
-    @JsonProperty(AssetDocumentFields.NAME)
-    private String name;
+    @JsonProperty(AssetDocumentFields.LEGACY_DOC_ID)
+    private String legacyDocId;
 
     @Setter
     @Getter
-    @JsonProperty(AssetDocumentFields.RESOURCE_NAME)
-    private String resourceName;
+    @JsonProperty(AssetDocumentFields.LEGACY_DOC_TYPE)
+    private String legacyDocType;
+
+    @Setter
+    @Getter
+    @JsonProperty(AssetDocumentFields.LEGACY_ENTITY_TYPE)
+    private String legacyEntityType;
+
+    @Setter
+    @Getter
+    @JsonProperty(AssetDocumentFields.LEGACY_ENTITY_TYPE_DISPLAY_NAME)
+    private String legacyEntityTypeDisplayName;
+
+    @Setter
+    @Getter
+    @JsonProperty(AssetDocumentFields.LEGACY_TARGET_TYPE_DISPLAY_NAME)
+    private String legacyTargetTypeDisplayName;
+
+    @Getter
+    @Setter
+    @JsonProperty(AssetDocumentFields.LEGACY_IS_ENTITY)
+    @JsonFormat(shape = Shape.STRING)
+    private boolean legacyIsEntity;
+
+    @Getter
+    @Setter
+    @JsonProperty(AssetDocumentFields.LEGACY_IS_LATEST)
+    private boolean legacyIsLatest;
+
+    @Setter
+    @Getter
+    @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd HH:mm:00Z")
+    @JsonProperty(AssetDocumentFields.LEGACY_LAST_DISCOVERY_DATE)
+    private ZonedDateTime legacyLastDiscoveryDate;
+
+    @Setter
+    @Getter
+    @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd HH:mm:00Z")
+    @JsonProperty(AssetDocumentFields.LEGACY_LOAD_DATE)
+    private ZonedDateTime legacyLoadDate;
+
+    @Setter
+    @Getter
+    @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd HH:mm:00Z")
+    @JsonProperty(AssetDocumentFields.LEGACY_FIRST_DISCOVERY_DATE)
+    private ZonedDateTime legacyFirstDiscoveryDate;
+
+    // ---------------------------------------------------------------------------------------------
+    // TOP LEVEL FIELDS
+    // ---------------------------------------------------------------------------------------------
+    // NOTE: There are legacy fields for some of these values; these fields are being replaced
+    // for the Asset 2.0 document model. These reserved fields are snake case (like_this).
+    // Legacy fields will have the word legacy in them and will eventually be removed.
 
     @Setter
     @Getter
@@ -91,38 +168,19 @@ public class AssetDTO {
 
     @Setter
     @Getter
-    @JsonProperty(AssetDocumentFields.TAGS)
-    private Map<String, String> tags;
+    @JsonProperty(AssetDocumentFields.RESOURCE_NAME)
+    private String resourceName;
+
+    @Setter
+    @Getter
+    @JsonProperty(AssetDocumentFields.SOURCE)
+    private String source;
+
 
     @Setter
     @Getter
     @JsonProperty(AssetDocumentFields.SOURCE_DISPLAY_NAME)
     private String sourceDisplayName;
-
-    @Setter
-    @Getter
-    @JsonProperty(AssetDocumentFields.PRIMARY_PROVIDER)
-    private String primaryProvider;
-
-    @Setter
-    @Getter
-    @JsonProperty(AssetDocumentFields.ASSET_ID_DISPLAY_NAME)
-    private String assetIdDisplayName;
-
-    /**
-     * This is the legacy field for the target type display name; the field name is
-     * all lowercase and is being replaced with `targetTypeDisplayName`. Until the
-     * transition is complete, both fields will exist simultaneously.
-     */
-    @Setter
-    @Getter
-    @JsonProperty(AssetDocumentFields.LEGACY_TARGET_TYPE_DISPLAY_NAME)
-    private String legacyTargetTypeDisplayName;
-
-    @Setter
-    @Getter
-    @JsonProperty(AssetDocumentFields.TARGET_TYPE_DISPLAY_NAME)
-    private String targetTypeDisplayName;
 
     @Setter
     @Getter
@@ -134,30 +192,66 @@ public class AssetDTO {
     @JsonProperty(AssetDocumentFields.ACCOUNT_NAME)
     private String accountName;
 
-    /**
-     * The date the primary source discovered this asset; this is set in the mapper. The format is
-     * "yyyy-MM-dd HH:mm:00Z"
-     */
     @Setter
     @Getter
-    @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd HH:mm:00Z")
-    @JsonProperty(AssetDocumentFields.DISCOVERY_DATE)
-    private ZonedDateTime discoveryDate;
+    @JsonProperty(AssetDocumentFields.REGION)
+    private String region;
 
-    /**
-     * Managed by the asset-shipper; this is the earliest discovery date there are records for. The
-     * format is "yyyy-MM-dd HH:mm:00Z"
-     */
     @Setter
     @Getter
-    @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd HH:mm:00Z")
-    @JsonProperty(AssetDocumentFields.FIRST_DISCOVERED)
-    private ZonedDateTime firstDiscoveryDate;
+    @JsonProperty(AssetDocumentFields.TAGS)
+    private Map<String, String> tags;
+
+    @Setter
+    @Getter
+    @JsonProperty(AssetDocumentFields.PRIMARY_PROVIDER)
+    private String primaryProvider;
+
+
+    // ---------------------------------------------------------------------------------------------
+    // LEGACY TOP LEVEL FIELDS
+    // ---------------------------------------------------------------------------------------------
+    @Setter
+    @Getter
+    @JsonProperty(AssetDocumentFields.LEGACY_RESOURCE_ID)
+    private String legacyResourceId;
+    @Setter
+    @Getter
+    @JsonProperty(AssetDocumentFields.LEGACY_NAME)
+    private String legacyName;
+    @Setter
+    @Getter
+    @JsonProperty(AssetDocumentFields.LEGACY_RESOURCE_NAME)
+    private String legacyResourceName;
+    @Setter
+    @Getter
+    @JsonProperty(AssetDocumentFields.LEGACY_SOURCE)
+    private String legacySource;
+    @Setter
+    @Getter
+    @JsonProperty(AssetDocumentFields.LEGACY_ACCOUNT_ID)
+    private String legacyAccountId;
+    @Setter
+    @Getter
+    @JsonProperty(AssetDocumentFields.LEGACY_ACCOUNT_NAME)
+    private String legacyAccountName;
+
+    // ---------------------------------------------------------------------------------------------
+    // Fields of uncertain usage; it's not clear if these continue to be used; these should be
+    // either proper top-level fields or legacy fields or be removed.
+
+    // NOTE: This is only set for Azure
+    @Setter
+    @Getter
+    @JsonProperty(AssetDocumentFields.ASSET_ID_DISPLAY_NAME)
+    private String assetIdDisplayName;
+
 
     /**
-     * This is used by the JSON parser when it can't find a matching field. It's needed for
-     * tags & relations
-     * @param key - key
+     * This is used by the JSON parser when it can't find a matching field. It's needed for tags &
+     * relations
+     *
+     * @param key   - key
      * @param value - value
      */
     @JsonAnySetter
@@ -172,6 +266,7 @@ public class AssetDTO {
     public void addType(String key, Object value) {
         additionalProperties.put(key, value);
     }
+
     /**
      * This property provides access to the remaining fields in this document. Set non-common
      * properties via {@link #addRelation(String, String)} and {@link #addType(String, Object)}.

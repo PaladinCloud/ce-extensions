@@ -54,4 +54,14 @@ public class MapHelper {
             throw new JobException("Error converting map to json string", e);
         }
     }
+
+    public static Object getFirstOrDefault(Map<String, ?> map, List<String> keys, Object defaultValue) {
+        for (String key : keys) {
+            var value = map.get(key);
+            if (value != null) {
+                return value;
+            }
+        }
+        return defaultValue;
+    }
 }
