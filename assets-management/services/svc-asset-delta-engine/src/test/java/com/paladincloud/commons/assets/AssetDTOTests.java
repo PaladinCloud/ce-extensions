@@ -40,13 +40,13 @@ public class AssetDTOTests {
         assertEquals(TimeHelper.formatZeroSeconds(dateTime),
             asMap.get(AssetDocumentFields.FIRST_DISCOVERY_DATE));
         assertEquals(TimeHelper.formatZeroSeconds(dateTime),
-            asMap.get(AssetDocumentFields.LAST_DISCOVERY_DATE));
+            asMap.get(AssetDocumentFields.LAST_SCAN_DATE));
         assertEquals(TimeHelper.formatZeroSeconds(dateTime),
             asMap.get(AssetDocumentFields.LEGACY_LOAD_DATE));
         assertEquals(TimeHelper.formatZeroSeconds(dateTime),
             asMap.get(AssetDocumentFields.LEGACY_FIRST_DISCOVERY_DATE));
         assertEquals(TimeHelper.formatZeroSeconds(dateTime),
-            asMap.get(AssetDocumentFields.LEGACY_LAST_DISCOVERY_DATE));
+            asMap.get(AssetDocumentFields.LEGACY_LAST_SCAN_DATE));
     }
 
     @Test
@@ -110,8 +110,8 @@ public class AssetDTOTests {
         dto.setLegacyIsEntity(true);
         dto.setLoadDate(dateTime);
         dto.setLegacyLoadDate(dateTime);
-        dto.setLastDiscoveryDate(dateTime);
-        dto.setLegacyLastDiscoveryDate(dateTime);
+        dto.setLastScanDate(dateTime);
+        dto.setLegacyLastScanDate(dateTime);
         dto.setFirstDiscoveryDate(dateTime);
         dto.setLegacyFirstDiscoveryDate(dateTime);
         return dto;
@@ -174,7 +174,7 @@ public class AssetDTOTests {
                       "_isEntity": true,
                       "_isLatest": true,
                       "_firstDiscoveryDate": "2024-09-27 22:28:00+0000",
-                      "_lastDiscoveryDate": "2024-09-27 22:28:00+0000",
+                      "_lastScanDate": "2024-09-27 22:28:00+0000",
                       "_loadDate": "2024-09-27 23:14:00+0000",
 
                       "resource_id": "3228267340273394036",

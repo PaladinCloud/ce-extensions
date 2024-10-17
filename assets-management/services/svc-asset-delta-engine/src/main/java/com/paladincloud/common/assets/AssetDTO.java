@@ -84,8 +84,8 @@ public class AssetDTO {
     @Setter
     @Getter
     @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd HH:mm:00Z")
-    @JsonProperty(AssetDocumentFields.LAST_DISCOVERY_DATE)
-    private ZonedDateTime lastDiscoveryDate;
+    @JsonProperty(AssetDocumentFields.LAST_SCAN_DATE)
+    private ZonedDateTime lastScanDate;
 
     /**
      * The date the item was loaded/saved into the repository: The format is "yyyy-MM-dd HH:mm:00Z"
@@ -139,8 +139,8 @@ public class AssetDTO {
     @Setter
     @Getter
     @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd HH:mm:00Z")
-    @JsonProperty(AssetDocumentFields.LEGACY_LAST_DISCOVERY_DATE)
-    private ZonedDateTime legacyLastDiscoveryDate;
+    @JsonProperty(AssetDocumentFields.LEGACY_LAST_SCAN_DATE)
+    private ZonedDateTime legacyLastScanDate;
 
     @Setter
     @Getter
@@ -176,7 +176,6 @@ public class AssetDTO {
     @JsonProperty(AssetDocumentFields.SOURCE)
     private String source;
 
-
     @Setter
     @Getter
     @JsonProperty(AssetDocumentFields.SOURCE_DISPLAY_NAME)
@@ -207,10 +206,19 @@ public class AssetDTO {
     @JsonProperty(AssetDocumentFields.PRIMARY_PROVIDER)
     private String primaryProvider;
 
+    @Setter
+    @Getter
+    @JsonProperty(AssetDocumentFields.OPINIONS)
+    private Map<String,Map<String, String>> opinions;
+
 
     // ---------------------------------------------------------------------------------------------
     // LEGACY TOP LEVEL FIELDS
     // ---------------------------------------------------------------------------------------------
+    @Setter
+    @Getter
+    @JsonProperty(AssetDocumentFields.LEGACY_SOURCE_DISPLAY_NAME)
+    private String legacySourceDisplayName;
     @Setter
     @Getter
     @JsonProperty(AssetDocumentFields.LEGACY_RESOURCE_ID)

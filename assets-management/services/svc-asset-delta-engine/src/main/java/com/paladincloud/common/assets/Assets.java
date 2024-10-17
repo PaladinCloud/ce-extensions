@@ -71,7 +71,6 @@ public class Assets {
         var allFilenames = mapperRepository.listFiles(bucket, assetsPathPrefix(dataSource));
         var types = assetTypes.getTypesWithDisplayName(dataSource);
         var fileTypes = FilesAndTypes.matchFilesAndTypes(allFilenames, types.keySet());
-        var isCloudDataSource = isCloud(dataSource);
         if (!fileTypes.unknownFiles.isEmpty()) {
             LOGGER.warn("Unknown files: {}", fileTypes.unknownFiles);
         }
@@ -108,7 +107,6 @@ public class Assets {
                     // Merge stored assets and mapped assets
                     var assetCreator = AssetDocumentHelper.builder().loadDate(startTime)
                         .idField(idColumn).docIdFields(docIdFields).dataSource(dataSource)
-                        .isCloud(isCloudDataSource)
                         .displayName(displayName).tags(tags).type(type)
                         .accountIdToNameFn(this::accountIdToName).assetState(assetStateHelper.get(dataSource, type));
                     var mergeResponse = MergeAssets.process(assetCreator.build(), existingAssets,
@@ -162,20 +160,6 @@ public class Assets {
             return accountNameMapList.getFirst().get("accountName");
         }
         return null;
-    }
-
-    private boolean isCloud(String dataSource) {
-        // This needs to connect to the saas account and use the plugins table there.
-        return true;
-        /*
-        var mapList = databaseHelper.executeQuery(STR."SELECT isCloud FROM plugins_new WHERE source = '\{dataSource}'");
-        if (!mapList.isEmpty()) {
-            return Objects.equals(mapList.getFirst().getOrDefault("isCloud", "0"), "1");
-        }
-        LOGGER.warn(STR."Unable to find 'plugins_new' entry for data source \{dataSource}");
-        return false;
-
-         */
     }
 
     private Map<String, List<Map<String, Object>>> loadTypeErrors(String bucket,

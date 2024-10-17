@@ -24,6 +24,7 @@ public class MergeAssetsTests {
         ids.forEach(id -> {
             var asset = new AssetDTO();
             asset.setLegacyDocId(id);
+            asset.setSource("aws");
 
             existing.put(asset.getLegacyDocId(), asset);
         });
@@ -35,9 +36,10 @@ public class MergeAssetsTests {
         ids.forEach(id -> {
             Map<String, Object> doc = new HashMap<>();
             doc.put("id", id);
+            doc.put("source", "aws");
+            doc.put("reporting_source", "aws");
             doc.put(AssetDocumentFields.RESOURCE_NAME, STR."name \{id}");
-            doc.put(AssetDocumentFields.LAST_DISCOVERY_DATE, "2024-07-21 13:13:00+0000");
-//            doc.put(AssetDocumentFields.REPORTING_SOURCE, "aws");
+            doc.put(AssetDocumentFields.LAST_SCAN_DATE, "2024-07-21 13:13:00+0000");
             latest.add(doc);
         });
         return latest;
@@ -50,7 +52,6 @@ public class MergeAssetsTests {
             .idField("id")
             .docIdFields(List.of("id"))
             .dataSource(dataSource)
-            .isCloud(true)
             .displayName(type)
             .tags(List.of())
             .type(type)

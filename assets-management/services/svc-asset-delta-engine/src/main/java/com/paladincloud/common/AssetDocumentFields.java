@@ -12,14 +12,16 @@ public interface AssetDocumentFields {
 
     String LEGACY_TARGET_TYPE_DISPLAY_NAME = "targetTypeDisplayName";
     String LEGACY_ENTITY_TYPE_DISPLAY_NAME = "targettypedisplayname";
-    String SOURCE_DISPLAY_NAME = "sourceDisplayName";
+    String LEGACY_SOURCE_DISPLAY_NAME = "sourceDisplayName";
+    String SOURCE_DISPLAY_NAME = "source_display_name";
     String PRIMARY_PROVIDER = "primaryProvider";
+    String OPINIONS = "opinions";
 
     String DOC_TYPE = "_docType";
     String LEGACY_DOC_TYPE = "docType";
 
-    String LAST_DISCOVERY_DATE = "_lastDiscoveryDate";
-    String LEGACY_LAST_DISCOVERY_DATE = "discoverydate";
+    String LAST_SCAN_DATE = "_lastScanDate";
+    String LEGACY_LAST_SCAN_DATE = "discoverydate";
 
     String FIRST_DISCOVERY_DATE = "_firstDiscoveryDate";
     String LEGACY_FIRST_DISCOVERY_DATE = "firstdiscoveredon";
