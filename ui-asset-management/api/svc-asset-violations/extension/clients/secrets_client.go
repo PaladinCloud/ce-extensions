@@ -39,7 +39,7 @@ var (
 )
 
 // NewSecretsClient initializes the SecretsManager client
-func NewSecretsClient(ctx context.Context, assumeRoleArn, region string) (*SecretsClient, error) {
+func NewSecretsClient(ctx context.Context, useAssumeRole bool, assumeRoleArn, region string) (*SecretsClient, error) {
 	// Load the default configuration with region
 	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(region))
 	if err != nil {
@@ -47,22 +47,28 @@ func NewSecretsClient(ctx context.Context, assumeRoleArn, region string) (*Secre
 		return nil, err
 	}
 
-	// Create an STS client
-	stsClient := sts.NewFromConfig(cfg)
+	var svc *secretsmanager.Client
+	if useAssumeRole {
+		// Create an STS client
+		stsClient := sts.NewFromConfig(cfg)
 
-	// Assume the role using STS
-	creds := stscreds.NewAssumeRoleProvider(stsClient, assumeRoleArn, func(o *stscreds.AssumeRoleOptions) {
-		o.RoleSessionName = "SecretsSession"
-	})
+		// Assume the role using STS
+		creds := stscreds.NewAssumeRoleProvider(stsClient, assumeRoleArn, func(o *stscreds.AssumeRoleOptions) {
+			o.RoleSessionName = "SecretsSession"
+		})
 
-	// Create a new configuration with the assumed role credentials
-	assumedCfg := aws.Config{
-		Credentials: aws.NewCredentialsCache(creds),
-		Region:      region,
+		// Create a new configuration with the assumed role credentials
+		assumedCfg := aws.Config{
+			Credentials: aws.NewCredentialsCache(creds),
+			Region:      region,
+		}
+
+		// Initialize the Secrets Manager client
+		svc = secretsmanager.NewFromConfig(assumedCfg)
+	} else {
+		// Initialize the Secrets Manager client
+		svc = secretsmanager.NewFromConfig(cfg)
 	}
-
-	// Initialize the Secrets Manager client
-	svc := secretsmanager.NewFromConfig(assumedCfg)
 
 	fmt.Println("initialized secrets client")
 	return &SecretsClient{

@@ -25,6 +25,7 @@ import (
 
 type Configuration struct {
 	EnableExtension         bool
+	UseAssumeRole           bool
 	AssumeRoleArn           string
 	Region                  string
 	TenantConfigOutputTable string
@@ -41,14 +42,23 @@ func LoadConfigurationDetails() *Configuration {
 		enableExtension = true
 	}
 
+	// We only want to use assume role if config dynamodb and secrets manager is in a different account
+	assumeRoleArn := os.Getenv("ASSUME_ROLE_ARN")
+	useAssumeRole := false
+	if assumeRoleArn != "" {
+		fmt.Printf("using ASSUME_ROLE_ARN to assume role: %s\n", assumeRoleArn)
+		useAssumeRole = true
+	}
+
+	// Load the region and other configuration details and fail if not set
 	region := getEnvVariable("REGION")
-	assumeRoleArn := getEnvVariable("ASSUME_ROLE_ARN")
 	tenantConfigOutputTable := getEnvVariable("TENANT_CONFIG_OUTPUT_TABLE")
 	tenantTablePartitionKey := getEnvVariable("TENANT_TABLE_PARTITION_KEY")
 	secretIdPrefix := getEnvVariable("SECRET_NAME_PREFIX")
 
 	return &Configuration{
 		EnableExtension:         enableExtension,
+		UseAssumeRole:           useAssumeRole,
 		AssumeRoleArn:           assumeRoleArn,
 		Region:                  region,
 		TenantConfigOutputTable: tenantConfigOutputTable,

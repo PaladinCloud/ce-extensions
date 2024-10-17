@@ -31,8 +31,8 @@ type AssetViolationsClient struct {
 }
 
 func NewAssetViolationsClient(ctx context.Context, config *Configuration) *AssetViolationsClient {
-	dynamodbClient, _ := NewDynamoDBClient(ctx, config.AssumeRoleArn, config.Region, config.TenantConfigOutputTable, config.TenantTablePartitionKey)
-	secretsClient, _ := NewSecretsClient(ctx, config.AssumeRoleArn, config.Region)
+	dynamodbClient, _ := NewDynamoDBClient(ctx, config.UseAssumeRole, config.AssumeRoleArn, config.Region, config.TenantConfigOutputTable, config.TenantTablePartitionKey)
+	secretsClient, _ := NewSecretsClient(ctx, config.UseAssumeRole, config.AssumeRoleArn, config.Region)
 
 	return &AssetViolationsClient{
 		elasticSearchClient: NewElasticSearchClient(dynamodbClient),

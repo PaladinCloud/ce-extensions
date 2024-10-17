@@ -17,8 +17,8 @@ type AssetDetailsClient struct {
 }
 
 func NewAssetDetailsClient(ctx context.Context, config *Configuration) *AssetDetailsClient {
-	dynamodbClient, _ := NewDynamoDBClient(ctx, config.AssumeRoleArn, config.Region, config.TenantConfigOutputTable, config.TenantTablePartitionKey)
-	secretsClient, _ := NewSecretsClient(ctx, config.AssumeRoleArn, config.Region)
+	dynamodbClient, _ := NewDynamoDBClient(ctx, config.UseAssumeRole, config.AssumeRoleArn, config.Region, config.TenantConfigOutputTable, config.TenantTablePartitionKey)
+	secretsClient, _ := NewSecretsClient(ctx, config.UseAssumeRole, config.AssumeRoleArn, config.Region)
 
 	return &AssetDetailsClient{
 		configuration:       config,
