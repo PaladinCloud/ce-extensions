@@ -37,6 +37,10 @@ Parameters:
     Type: String
     Description: The release version of the Lambda function code.
 
+  TARGETACCOUNT:
+    Type: String
+    Description: The target account ID for cross-account role assumption.
+
 Resources:
   # Create IAM Role
   DeltaEngineLambdaExecutionRole:
@@ -76,6 +80,7 @@ Resources:
                   - logs:PutLogEvents
                 Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/svc-${Environment}-asset-shipper:*"
 
+
   svcassetshipper:
     Type: AWS::Serverless::Function
     Properties:
@@ -94,11 +99,12 @@ Resources:
         Size: 512
       Environment:
         Variables:
-          ASSET_SHIPPER_DONE_SQS_URL: !Ref SQSAssetShippingDone
           JAVA_TOOL_OPTIONS: '--enable-preview'
           SUBSYSTEM_NAME: ASSET_SHIPPER
-          ENABLED_DELTA_ENGINE_PLUGINS: gcp
-          ASSET_MAPPING_DONE_QUEUE_URL: !Ref SQSAssetMappingDone
+          TENANT_CONFIG_OUTPUT_TABLE: tenant-output
+          TENANT_TABLE_PARTITION_KEY: tenant_id
+          SECRET_NAME_PREFIX: paladincloud/secret/
+          ASSUME_ROLE_ARN: arn:aws:iam::${TARGETACCOUNT}:role/PaladinCloudIntegrationRole
       EventInvokeConfig:
         MaximumEventAgeInSeconds: 21600
         MaximumRetryAttempts: 2

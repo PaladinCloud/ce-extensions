@@ -101,6 +101,7 @@ def main():
     print(f"CIDRIP: {os.getenv('CIDRIP')}")
     print(f"S3BUCKETNAME: {os.getenv('S3BUCKETNAME')}")
     print(f"RELEASEVERSION: {os.getenv('RELEASE_VERSION')}")
+    print(f"TARGETACCOUNT: {os.getenv('TARGET_ACCOUNT_ID')}")
 
     parameters = [
         {"ParameterKey": "Environment", "ParameterValue": os.getenv("ENVIRONMENT")},
@@ -110,6 +111,7 @@ def main():
         {"ParameterKey": "CidrIp", "ParameterValue": os.getenv("CIDRIP")},
         {"ParameterKey": "S3BUCKETNAME", "ParameterValue": os.getenv("S3BUCKETNAME")},
         {"ParameterKey": "RELEASEVERSION", "ParameterValue": os.getenv("RELEASE_VERSION")},
+        {"ParameterKey": "TARGETACCOUNT", "ParameterValue": os.getenv("TARGET_ACCOUNT_ID")},
     ]
 
     # Log parameters for debugging
