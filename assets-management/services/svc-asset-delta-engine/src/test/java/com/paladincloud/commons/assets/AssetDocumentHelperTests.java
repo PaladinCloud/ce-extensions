@@ -265,7 +265,7 @@ public class AssetDocumentHelperTests {
     private String getSamplePrimaryAssetDocument() {
         return """
             {
-                "_docid": "us-central_17",
+                "_docid": "gcp_ec2_us-central_17",
                 "docType": "ec2",
                 "_cloudType": "gcp",
                 "latest": true,

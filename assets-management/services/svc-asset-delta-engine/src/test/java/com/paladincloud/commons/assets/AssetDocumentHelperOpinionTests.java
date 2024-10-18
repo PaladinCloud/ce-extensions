@@ -162,7 +162,7 @@ public class AssetDocumentHelperOpinionTests {
     private String getOpinionAssetDocument() {
         return """
                 {
-                    "_docId": "central-run-3433_us-central1-a_134312",
+                    "_docId": "gcp_vminstance_central-run-3433_us-central1-a_134312",
                     "_docType": "vminstance",
                     "opinions": {
                         "secondary": {

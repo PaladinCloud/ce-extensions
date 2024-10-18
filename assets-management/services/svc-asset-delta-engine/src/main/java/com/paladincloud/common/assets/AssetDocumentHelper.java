@@ -110,7 +110,7 @@ public class AssetDocumentHelper {
     private String opinionSource;
 
     public String buildDocId(Map<String, Object> data) {
-        var docId = StringHelper.concatenate(data, docIdFields, "_");
+        var docId = STR."\{dataSource}_\{type}_\{StringHelper.concatenate(data, docIdFields, "_")}";
         if ("aws".equalsIgnoreCase(dataSource)) {
             if (docIdFields.contains(AssetDocumentFields.LEGACY_ACCOUNT_ID)) {
                 docId = STR."\{StringHelper.indexName(dataSource, type)}_\{docId}";
@@ -135,7 +135,8 @@ public class AssetDocumentHelper {
     public AssetDTO createFrom(Map<String, Object> data) {
         var idValue = data.getOrDefault(idField, "").toString();
         if (idValue.isEmpty()) {
-            throw new JobException(STR."Mapper data is missing the designated id field: '\{idField}'");
+            throw new JobException(
+                STR."Mapper data is missing the designated id field: '\{idField}'");
         }
 
         var source = MapHelper.getFirstOrDefaultString(data,
@@ -147,7 +148,8 @@ public class AssetDocumentHelper {
         var reportingSource = MapHelper.getFirstOrDefaultString(data,
             List.of(MapperFields.REPORTING_SOURCE), null);
         if (reportingSource == null) {
-            LOGGER.error("Mapper data is missing the 'reporting_source' field, assuming it's the same as the source");
+            LOGGER.error(
+                "Mapper data is missing the 'reporting_source' field, assuming it's the same as the source");
             reportingSource = source;
         }
 
@@ -180,7 +182,6 @@ public class AssetDocumentHelper {
         dto.setLegacyDocType(dto.getDocType());
 
         setCommonPrimaryFields(data, dto, idValue);
-
 
         dto.setPrimaryProvider(data.getOrDefault(MapperFields.RAW_DATA, "").toString());
 
@@ -241,7 +242,8 @@ public class AssetDocumentHelper {
      * Creates a partial primary asset from a secondary source. This is invoked when the primary
      * asset is not reported but a secondary source reports the asset.
      */
-    private void populateNewPrimaryFromSecondary(Map<String, Object> data, AssetDTO dto, String idValue) {
+    private void populateNewPrimaryFromSecondary(Map<String, Object> data, AssetDTO dto,
+        String idValue) {
         dto.setLegacySource(dto.getSource());
         dto.setLegacyDocId(dto.getDocId());
         dto.setLegacyDocType(dto.getDocType());
@@ -260,7 +262,8 @@ public class AssetDocumentHelper {
     public void updateFrom(Map<String, Object> data, AssetDTO dto) {
         var idValue = data.getOrDefault(idField, "").toString();
         if (idValue.isEmpty()) {
-            throw new JobException(STR."Mapper data is missing the designated id field: '\{idField}'");
+            throw new JobException(
+                STR."Mapper data is missing the designated id field: '\{idField}'");
         }
 
         var source = MapHelper.getFirstOrDefaultString(data,
@@ -272,7 +275,8 @@ public class AssetDocumentHelper {
         var reportingSource = MapHelper.getFirstOrDefaultString(data,
             List.of(MapperFields.REPORTING_SOURCE), null);
         if (reportingSource == null) {
-            LOGGER.error("Mapper data is missing the 'reporting_source' field, assuming it's the same as the source");
+            LOGGER.error(
+                "Mapper data is missing the 'reporting_source' field, assuming it's the same as the source");
             reportingSource = source;
         }
 
@@ -329,7 +333,8 @@ public class AssetDocumentHelper {
         }
     }
 
-    private void updatePrimaryFromSecondary(Map<String, Object> data, AssetDTO dto, String idValue) {
+    private void updatePrimaryFromSecondary(Map<String, Object> data, AssetDTO dto,
+        String idValue) {
         setCommonPrimaryFields(data, dto, idValue);
     }
 
@@ -382,7 +387,6 @@ public class AssetDocumentHelper {
         dto.setResourceName(data.getOrDefault(resourceNameField, idValue).toString());
         dto.setLoadDate(loadDate);
         dto.setLatest(true);
-
 
         dto.setLegacyIsEntity(true);
         dto.setLegacyEntityType(type);
