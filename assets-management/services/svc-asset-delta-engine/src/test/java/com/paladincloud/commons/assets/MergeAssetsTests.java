@@ -23,9 +23,10 @@ public class MergeAssetsTests {
         Map<String, AssetDTO> existing = new HashMap<>();
         ids.forEach(id -> {
             var asset = new AssetDTO();
+            asset.setDocId(id);
             asset.setLegacyDocId(id);
 
-            existing.put(asset.getLegacyDocId(), asset);
+            existing.put(asset.getDocId(), asset);
         });
         return existing;
     }
@@ -37,7 +38,6 @@ public class MergeAssetsTests {
             doc.put("id", id);
             doc.put(AssetDocumentFields.RESOURCE_NAME, STR."name \{id}");
             doc.put(AssetDocumentFields.LAST_DISCOVERY_DATE, "2024-07-21 13:13:00+0000");
-//            doc.put(AssetDocumentFields.REPORTING_SOURCE, "aws");
             latest.add(doc);
         });
         return latest;
@@ -70,7 +70,7 @@ public class MergeAssetsTests {
         var merger = MergeAssets.process(creator, existing, latest);
 
         assertEquals(Set.of(), merger.getRemovedAssets().keySet());
-        assertEquals(Set.of("q13"), merger.getNewAssets().keySet());
+        assertEquals(Set.of("test3_ec3_q13"), merger.getNewAssets().keySet());
         assertEquals(Set.of(), merger.getUpdatedAssets().keySet());
     }
 
@@ -82,23 +82,23 @@ public class MergeAssetsTests {
 
         var creator = getHelper(ZonedDateTime.now(), "test", "ec2", "resource_name");
         var merger = MergeAssets.process(creator, existing, latest);
-        assertEquals(Set.of("q13"), merger.getNewAssets().keySet());
+        assertEquals(Set.of("test_ec2_q13"), merger.getNewAssets().keySet());
 
-        var created = merger.getNewAssets().get("q13");
+        var created = merger.getNewAssets().get("test_ec2_q13");
         assertNotNull(created);
-        assertEquals("q13", created.getLegacyDocId());
+        assertEquals("test_ec2_q13", created.getDocId());
     }
 
     // Verify no longer present assets are identified properly
     @Test
     void allRemovedAreIdentified() {
-        var existing = createExisting(List.of("q13"));
+        var existing = createExisting(List.of("test3_ec3_q13"));
         var latest = createLatest(List.of());
 
         var creator = getHelper(ZonedDateTime.now(), "test", "ec2", "resource_name");
         var merger = MergeAssets.process(creator, existing, latest);
 
-        assertEquals(Set.of("q13"), merger.getRemovedAssets().keySet());
+        assertEquals(Set.of("test3_ec3_q13"), merger.getRemovedAssets().keySet());
         assertEquals(Set.of(), merger.getNewAssets().keySet());
         assertEquals(Set.of(), merger.getUpdatedAssets().keySet());
     }
@@ -106,7 +106,7 @@ public class MergeAssetsTests {
     // Verify existing documents are identified properly
     @Test
     void allUpdatedAreIdentified() {
-        var existing = createExisting(List.of("q13"));
+        var existing = createExisting(List.of("test_ec2_q13"));
         var latest = createLatest(List.of("q13"));
 
         var creator = getHelper(ZonedDateTime.now(), "test", "ec2", "resource_name");
@@ -114,18 +114,19 @@ public class MergeAssetsTests {
 
         assertEquals(Set.of(), merger.getRemovedAssets().keySet());
         assertEquals(Set.of(), merger.getNewAssets().keySet());
-        assertEquals(Set.of("q13"), merger.getUpdatedAssets().keySet());
+        assertEquals(Set.of("test_ec2_q13"), merger.getUpdatedAssets().keySet());
     }
 
     @Test
     void updatedAreModified() {
-        var existing = createExisting(List.of("q13"));
-        existing.get("q13").setResourceName("old name");
+        var docId = "test_ec2_q13";
+        var existing = createExisting(List.of(docId));
+        existing.get(docId).setResourceName("old name");
         var latest = createLatest(List.of("q13"));
 
         var creator = getHelper(ZonedDateTime.now(), "test", "ec2", "resource_name");
         MergeAssets.process(creator, existing, latest);
-        var updated = existing.get("q13");
+        var updated = existing.get(docId);
         assertNotNull(updated);
         assertEquals("name q13", updated.getResourceName());
     }
