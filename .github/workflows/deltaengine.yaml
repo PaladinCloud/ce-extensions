@@ -149,7 +149,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: asset-artifact
-      
+          path: asset-sender-1.0-SNAPSHOT.jar
       # push api artifact to s3
       - name: copy API jars to S3 
         run: |
