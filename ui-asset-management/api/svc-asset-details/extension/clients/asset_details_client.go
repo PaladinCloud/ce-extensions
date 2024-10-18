@@ -124,25 +124,25 @@ func (c *AssetDetailsClient) GetAssetDetails(ctx context.Context, tenantId, asse
 func (c *AssetDetailsClient) buildCommonFields(assetDetails map[string]interface{}) map[string]string {
 	commonFields := map[string]string{}
 
-	if v, ok := assetDetails["accountid"]; ok {
+	if v, ok := assetDetails["accountid"]; ok && v != nil {
 		commonFields[accountId] = v.(string)
 	}
-	if v, ok := assetDetails["accountname"]; ok {
+	if v, ok := assetDetails["accountname"]; ok && v != nil {
 		commonFields[accountName] = v.(string)
 	}
-	if v, ok := assetDetails[cloudType]; ok {
+	if v, ok := assetDetails[cloudType]; ok && v != nil {
 		commonFields[source] = v.(string)
 	}
-	if v, ok := assetDetails[region]; ok {
+	if v, ok := assetDetails[region]; ok && v != nil {
 		commonFields[region] = v.(string)
 	}
-	if v, ok := assetDetails[sourceDisplayName]; ok {
+	if v, ok := assetDetails[sourceDisplayName]; ok && v != nil {
 		commonFields[sourceName] = v.(string)
 	}
-	if v, ok := assetDetails[entitytype]; ok {
+	if v, ok := assetDetails[entitytype]; ok && v != nil {
 		commonFields[targetType] = v.(string)
 	}
-	if v, ok := assetDetails["targetTypeDisplayName"]; ok {
+	if v, ok := assetDetails["targetTypeDisplayName"]; ok && v != nil {
 		commonFields[targetTypeName] = v.(string)
 	}
 
