@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.Builder;
 import lombok.Getter;
@@ -110,7 +111,7 @@ public class AssetDocumentHelper {
     private String resourceNameField;
 
     public String buildDocId(Map<String, Object> data) {
-        var docId = StringHelper.concatenate(data, docIdFields, "_");
+        var docId = STR."\{dataSource}_\{type}_\{StringHelper.concatenate(data, docIdFields, "_")}";
         if ("aws".equalsIgnoreCase(dataSource)) {
             if (docIdFields.contains(AssetDocumentFields.LEGACY_ACCOUNT_ID)) {
                 docId = STR."\{StringHelper.indexName(dataSource, type)}_\{docId}";
