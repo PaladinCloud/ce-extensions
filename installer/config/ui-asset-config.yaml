@@ -1,0 +1,57 @@
+---
+- serviceName: svc-asset-details
+  apiConfig:
+    method: GET
+    path: "/api/v2/assets/{assetId}"
+    requireAuth: true
+    requireOptionsMethod: true
+  serviceConfig:
+    environmentalVariables:
+      REGION: {REGION}
+      TENANT_CONFIG_TABLE: {TENANT_CONFIG_TABLE}
+      TENANT_CONFIG_PARTITION_KEY: {TENANT_CONFIG_PARTITION_KEY}
+      RDS_SECRET_NAME: {RDS_SECRET_NAME}
+      RDS_DB_NAME: {RDS_DB_NAME}
+      RDS_HOST: {RDS_HOST}
+      RDS_PORT: {RDS_PORT}
+      ENABLE_EXTENSION: {ENABLE_EXTENSION}
+    lambdaConfig:
+      handler: lambda_function.lambda_handler
+      runtime: python
+      runtimeVersion: latest
+      timeout: 10
+      isArm64: true
+      permissions:
+        requireS3: false
+        requireDynamoDB: true
+        requireSecretsManager: false
+      layers:
+        - name: svc-asset-details-layer
+- serviceName: svc-asset-violations
+  apiConfig:
+    method: GET
+    path: "/api/v2/targets/{targetType}/assets/{assetId}/violations"
+    requireAuth: true
+    requireOptionsMethod: true
+  serviceConfig:
+    environmentalVariables:
+      REGION: {REGION}
+      TENANT_CONFIG_TABLE: {TENANT_CONFIG_TABLE}
+      TENANT_CONFIG_PARTITION_KEY: {TENANT_CONFIG_PARTITION_KEY}
+      RDS_SECRET_NAME: {RDS_SECRET_NAME}
+      RDS_DB_NAME: {RDS_DB_NAME}
+      RDS_HOST: {RDS_HOST}
+      RDS_PORT: {RDS_PORT}
+      ENABLE_EXTENSION: {ENABLE_EXTENSION}
+    lambdaConfig:
+      handler: lambda_function.lambda_handler
+      runtime: python
+      runtimeVersion: latest
+      timeout: 10
+      isArm64: true
+      permissions:
+        requireS3: false
+        requireDynamoDB: true
+        requireSecretsManager: true
+      layers:
+        - name: svc-asset-vioaltions-layer
