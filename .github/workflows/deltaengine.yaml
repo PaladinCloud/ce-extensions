@@ -89,14 +89,14 @@ jobs:
     # This step is for building the Asset jar
       - name: Building asset shipper jar
         run: |
-          cd assets-management/services/asset-sender
+          cd assets-management/services/svc-asset-delta-engine
           mvn clean install -DskipTests=true -Dmaven.javadoc.skip=true
 
       - name: Upload Asset Shipper artifact 
         uses: actions/upload-artifact@v4
         with:
           name: asset-artifact
-          path: assets-management/services/asset-sender/target/asset-sender-1.0-SNAPSHOT.jar
+          path: assets-management/services/svc-asset-delta-engine/target/asset-sender-1.0-SNAPSHOT.jar
 
   PushBuildDev:
     name: Push JAR to Dev
