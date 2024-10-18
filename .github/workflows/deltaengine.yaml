@@ -134,6 +134,7 @@ jobs:
     environment: 'SaaSQA'
     needs:
       - AssetBuild
+      - extract_version
     steps:
       - uses: actions/checkout@v4
         with:
