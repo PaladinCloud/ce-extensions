@@ -48,6 +48,8 @@ func LoadConfigurationDetails() *Configuration {
 	if assumeRoleArn != "" {
 		fmt.Printf("using ASSUME_ROLE_ARN to assume role: %s\n", assumeRoleArn)
 		useAssumeRole = true
+	} else {
+		fmt.Println("ASSUME_ROLE_ARN environment variable not set, defaulting to false")
 	}
 
 	// Load the region and other configuration details and fail if not set

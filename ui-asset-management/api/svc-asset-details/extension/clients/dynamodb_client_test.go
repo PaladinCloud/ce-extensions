@@ -25,12 +25,13 @@ func TestNewDynamoDBClient(t *testing.T) {
 	ctx := context.Background()
 
 	tenantId := "tenant_id"
+	useAssumeRole := true
 	assumeRole := "arn:aws:iam::{accountID}:role/{roleName}"
 	region := "us-east-1"
 	tenantConfigTable := "tenant-output"
 	tenantConfigTablePartitionKey := "tenant_id"
 
-	client, err := NewDynamoDBClient(ctx, assumeRole, region, tenantConfigTable, tenantConfigTablePartitionKey)
+	client, err := NewDynamoDBClient(ctx, useAssumeRole, assumeRole, region, tenantConfigTable, tenantConfigTablePartitionKey)
 	if err != nil {
 		t.Fatalf("Failed to create DynamoDB client: %v", err)
 	}

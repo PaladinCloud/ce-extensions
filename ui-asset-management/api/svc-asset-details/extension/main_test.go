@@ -26,6 +26,8 @@ func TestStartMain(t *testing.T) {
 	t.Run("main", func(t *testing.T) {
 		config := &clients.Configuration{
 			EnableExtension:         false,
+			UseAssumeRole:           false,
+			AssumeRoleArn:           "",
 			Region:                  "us-east-1",
 			TenantConfigOutputTable: "tenant-output",
 			TenantTablePartitionKey: "tenant_id",

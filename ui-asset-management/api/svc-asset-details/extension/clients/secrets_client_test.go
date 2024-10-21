@@ -18,7 +18,6 @@ package clients
 
 import (
 	"context"
-	"os"
 	"testing"
 )
 
@@ -26,12 +25,11 @@ func TestNewSecretsClient(t *testing.T) {
 	t.Run("NewSecretsClient", func(t *testing.T) {
 		ctx := context.Background()
 
-		assumeRole := os.Getenv("AWS_ASSUME_ROLE_ARN")
-		if assumeRole == "" {
-			t.Fatal("AWS_ASSUME_ROLE_ARN environment variable not set")
-		}
+		useAssumeRole := false
+		assumeRoleArn := ""
+		region := "us-east-1"
 
-		_, err := NewSecretsClient(ctx, assumeRole, "us-east-1")
+		_, err := NewSecretsClient(ctx, useAssumeRole, assumeRoleArn, region)
 		if err != nil {
 			t.Errorf("Error loading AWS config: %v", err)
 		}

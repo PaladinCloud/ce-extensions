@@ -25,12 +25,13 @@ import (
 func TestNewRDSClient(t *testing.T) {
 	ctx := context.Background()
 
-	tenantId := "tenant_id"
-	assumeRole := "arn:aws:iam::{accountID}:role/{roleName}"
+	tenantId := "9c35f4eb-b880-4e63-bcef-ed47569d9408"
+	useAssumeRole := false
+	assumeRoleArn := ""
 	region := "us-east-1"
-	secretIdPrefix := "paladincloud/secret/`"
+	secretIdPrefix := "paladincloud/secret/"
 
-	secretsClient, _ := NewSecretsClient(ctx, assumeRole, region)
+	secretsClient, _ := NewSecretsClient(ctx, useAssumeRole, assumeRoleArn, region)
 
 	client := NewRdsClient(secretsClient, secretIdPrefix)
 	response, err := client.FetchMandatoryTags(ctx, tenantId)
