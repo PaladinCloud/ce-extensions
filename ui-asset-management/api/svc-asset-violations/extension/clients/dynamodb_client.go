@@ -66,7 +66,7 @@ func NewDynamoDBClient(ctx context.Context, useAssumeRole bool, assumeRoleArn, r
 		svc = dynamodb.NewFromConfig(cfg)
 	}
 
-	fmt.Println("initialized dynamodb client with assumed role")
+	fmt.Println("initialized dynamodb client")
 	return &DynamodbClient{
 		region:                  region,
 		client:                  svc,
