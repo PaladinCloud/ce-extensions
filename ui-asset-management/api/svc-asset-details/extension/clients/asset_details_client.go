@@ -114,6 +114,7 @@ func (c *AssetDetailsClient) GetAssetDetails(ctx context.Context, tenantId, asse
 			TargetTypeName:  commonFields[targetTypeName],
 			Tags:            tags,
 			MandatoryTags:   mandatoryTagsWIthValues,
+			Region:          commonFields[region],
 			PrimaryProvider: primaryProvider,
 		}, Message: success}, nil
 	} else {
