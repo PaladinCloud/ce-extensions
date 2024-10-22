@@ -13,7 +13,7 @@ type AssetNetworkRulesClient struct {
 }
 
 func NewAssetNetworkRulesClient(ctx context.Context, config *Configuration) *AssetNetworkRulesClient {
-	dynamodbClient, _ := NewDynamoDBClient(ctx, config.AssumeRoleArn, config.Region, config.TenantConfigOutputTable, config.TenantTablePartitionKey)
+	dynamodbClient, _ := NewDynamoDBClient(ctx, config.UseAssumeRole, config.AssumeRoleArn, config.Region, config.TenantConfigOutputTable, config.TenantTablePartitionKey)
 	return &AssetNetworkRulesClient{elasticSearchClient: NewElasticSearchClient(dynamodbClient)}
 }
 
