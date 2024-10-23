@@ -1,15 +1,15 @@
-name: DeltaEngineJarBuild
+name: Build Executable and Push to S3
+
 on:
   push:
     branches:
       - main
       - release-v*.*.*
-
   pull_request:
     branches:
       - main
       - release-v*.*.*
-      
+
 permissions:
   id-token: write
   contents: read  
@@ -17,6 +17,7 @@ permissions:
   issues: write
 
 jobs:
+  # Checking Branch
   check_branch:
     name: Check Branch
     runs-on: ubuntu-latest
@@ -37,14 +38,16 @@ jobs:
       - name: Display is_release
         run: |
           is_release="${{ steps.check_branch.outputs.is_release }}"
-          echo " It is a release branch: $is_release"
+          echo " It is an release branch: $is_release"
 
+
+  # Extracting Version
   extract_version:
-    name: extract_version
+    name: Extract Version
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release-v') 
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release-v')
     outputs:
-      version: ${{ steps.extract_version.outputs.version }}   
+      version: ${{ steps.extract_version.outputs.version }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -57,14 +60,14 @@ jobs:
           else
             echo "Invalid branch name format"
             exit 1
-          fi
       - name: Display Version
         run: |
           version="${{ steps.extract_version.outputs.version }}"
           echo "Extracted Version: $version"
 
-  AssetBuild:
-    name: Asset-Build
+  # Make Build
+  MakeBuild:
+    name: Make Build
     needs:
       - check_branch
     runs-on: ubuntu-latest
@@ -72,11 +75,15 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Set up JDK 21
+      - name: Set up Java and Go
         uses: actions/setup-java@v2
         with:
           distribution: 'adopt'
           java-version: '21'
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
       - name: running update
         run: sudo apt update
       - name: Setup Maven Action
@@ -86,72 +93,73 @@ jobs:
           java-version: 21
           java-distribution: temurin
           maven-version: 3.9.9
-    # This step is for building the Asset jar
-      - name: Building asset shipper jar
-        run: |
-          cd assets-management/services/svc-asset-delta-engine
-          mvn clean install -DskipTests=true -Dmaven.javadoc.skip=true
-
-      - name: Upload Asset Shipper artifact 
+      - name: Execute an Makefile target
+        run: make package-all
+      - name: Upload dist folder as an artifact
         uses: actions/upload-artifact@v4
         with:
-          name: asset-artifact
-          path: assets-management/services/svc-asset-delta-engine/target/asset-sender-1.0-SNAPSHOT.jar
+          name: dist-folder
+          path: dist/
 
+  # Deploy to Dev (JAR and Lambda)
   PushBuildDev:
     name: Push JAR to Dev
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/heads/main') && github.event_name == 'push'
     environment: 'SaaSDEV'
     needs:
-      - AssetBuild
+      - MakeBuild
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Download dist folder
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-folder
+          path: dist/
       - name: Configure AWS credentials for Dev account
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_DEV }}
           aws-region: ${{ secrets.AWS_REGION }}
-
-      # Download Api artifact
-      - name: Download API artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: asset-artifact
-          path: asset-sender-1.0-SNAPSHOT.jar
-
-      # push api artifact to s3
-      - name: copy API jars to S3 
+      - name: Upload dist folder to S3 bucket
         run: |
-          aws s3 cp --recursive asset-sender-1.0-SNAPSHOT.jar s3://${{ secrets.AWS_BUCKET_DEV }}/vlatest/dev/deltaengine
-      
-  PushBuildQA:
-    name: Push JAR to QA
+           cd dist
+           ls
+           aws s3 cp --recursive . s3://${{ secrets.AWS_BUCKET_DEV }}/vlatest/dev/
+
+  # Deploy Lambda Layer to QA
+  qa-lambda-layer:
+    name: Deploy Lambda Layer to QA
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/heads/release-v') && github.event_name == 'push'
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release-v')
     environment: 'SaaSQA'
     needs:
-      - AssetBuild
-      - extract_version
+      - MakeBuild
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Manual approval
+        uses: trstringer/manual-approval@v1
+        timeout-minutes: 3
         with:
-          fetch-depth: 0
+          secret: ${{ github.TOKEN }}
+          approvers: rnithinpaladin,ershad-paladin,plyubich,arunpaladin
+          minimum-approvals: 1
+          issue-title: "API JARs to QA"
+          issue-body: "Please approve or deny the deployment for QA"
+      - name: Download dist folder
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-folder
+          path: dist/
       - name: Configure AWS credentials for QA account
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_QA }}
           aws-region: ${{ secrets.AWS_REGION }}
-
-      # Download Api artifact
-      - name: Download API artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: asset-artifact
-          path: asset-sender-1.0-SNAPSHOT.jar
-      # push api artifact to s3
-      - name: copy API jars to S3 
+      - name: Upload dist folder to S3 bucket
         run: |
-          aws s3 cp --recursive asset-sender-1.0-SNAPSHOT.jar s3://${{ secrets.AWS_BUCKET_QA }}/${{ needs.extract_version.outputs.version }}/qa/deltaengine
+          cd dist
+          aws s3 cp --recursive . s3://${{ secrets.AWS_BUCKET_QA }}/${{ needs.extract_version.outputs.version }}/qa/

@@ -384,3 +384,15 @@ poetry.toml
 pyrightconfig.json
 
 # End of https://www.toptal.com/developers/gitignore/api/go,intellij,goland,python
+
+ui-asset-management/api/svc-asset-details/bin/layers/bin/extension.zip
+ui-asset-management/api/svc-asset-details/bin/layers/bin/extension.zip
+ui-asset-management/api/svc-asset-details/bin/layers/bin/extensions/svc-asset-details-layer
+ui-asset-management/api/svc-asset-details/bin/service/lambda_function.zip
+ui-asset-management/api/svc-asset-network-rules/bin/layers/bin/extension.zip
+ui-asset-management/api/svc-asset-network-rules/bin/layers/bin/extensions/svc-asset-network-rules-layer
+ui-asset-management/api/svc-asset-network-rules/bin/service/lambda_function.zip
+ui-asset-management/api/svc-asset-violations/bin/layers/bin/extension.zip
+ui-asset-management/api/svc-asset-violations/bin/layers/bin/extensions/svc-asset-violations-layer
+ui-asset-management/api/svc-asset-violations/bin/service/lambda_function.zip
+ui-common/api/svc-options-method/service/svc-options-method.zip
