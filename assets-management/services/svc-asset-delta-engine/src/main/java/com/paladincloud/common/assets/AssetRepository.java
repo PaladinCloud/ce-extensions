@@ -7,7 +7,7 @@ import java.util.Map;
 
 public interface AssetRepository {
 
-    Map<String, AssetDTO> getLatestAssets(String indexName, List<String> filters);
+    Map<String, AssetDTO> getAssets(String indexName, boolean latestOnly, List<String> filters);
 
     void deleteAssetsWithoutValue(String indexName, String docType, String fieldName,
         String fieldValue) throws IOException;
@@ -33,5 +33,7 @@ public interface AssetRepository {
         void flush() throws IOException;
 
         void close() throws Exception;
+
+        void cancel();
     }
 }

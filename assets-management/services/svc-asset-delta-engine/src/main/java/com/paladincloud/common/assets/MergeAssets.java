@@ -1,25 +1,27 @@
 package com.paladincloud.common.assets;
 
 import com.paladincloud.common.errors.JobException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.Getter;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 @Getter
 public class MergeAssets {
+
+    private static final Logger LOGGER = LogManager.getLogger(MergeAssets.class);
+
     private final Map<String, AssetDTO> updatedAssets = new HashMap<>();
-    private final Map<String, AssetDTO> removedAssets = new HashMap<>();
+    private final Map<String, AssetDTO> missingAssets = new HashMap<>();
     private final Map<String, AssetDTO> newAssets = new HashMap<>();
+    private final Map<String, AssetDTO> newPrimaryAssets = new HashMap<>();
+    private final List<AssetDTO> deletedPrimaryAssets = new ArrayList<>();
+    private final List<AssetDTO> deletedOpinionAssets = new ArrayList<>();
 
     private MergeAssets() {
-    }
-
-    public Map<String, AssetDTO> getAllAssets() {
-        var allAssets = new HashMap<>(getUpdatedAssets());
-        allAssets.putAll(getNewAssets());
-        allAssets.putAll(getRemovedAssets());
-        return allAssets;
     }
 
     /**
@@ -28,34 +30,75 @@ public class MergeAssets {
      * provide the new document ids and the deleted document ids.
      *
      * @param existingAssets - the documents in the repository (OpenSearch)
-     * @param latestAssets - the mapper documents
+     * @param latestAssets   - the mapper documents
+     * @param primaryAssets  - may be null; for secondary sources, all the existing primary assets.
      * @return - A MergeAssets instance
      */
-    static public MergeAssets process(AssetDocumentHelper assetHelper, Map<String, AssetDTO> existingAssets, List<Map<String, Object>> latestAssets) {
+    static public MergeAssets process(AssetDocumentHelper assetHelper,
+        Map<String, AssetDTO> existingAssets, List<Map<String, Object>> latestAssets, Map<String, AssetDTO> primaryAssets) {
         var response = new MergeAssets();
 
+        var latestAssetsDataMap = new HashMap<String, Map<String, Object>>();
         latestAssets.forEach(latestDoc -> {
             var idField = latestDoc.getOrDefault(assetHelper.getIdField(), "").toString();
             if (idField.isEmpty()) {
-                throw new JobException(STR."Asset missing the id field '\{assetHelper.getIdField()}'");
+                throw new JobException(
+                    STR."Asset missing the id field '\{assetHelper.getIdField()}'");
             }
             var docId = assetHelper.buildDocId(latestDoc);
-            if (!existingAssets.containsKey(docId)) {
+            latestAssetsDataMap.put(docId, latestDoc);
+            var asset = existingAssets.get(docId);
+            var isNew = asset == null || (assetHelper.isPrimarySource() && asset.getPrimaryProvider() == null);
+            if (isNew) {
                 response.newAssets.put(docId, assetHelper.createFrom(latestDoc));
                 response.updatedAssets.remove(docId);
             } else {
-                var asset = existingAssets.get(docId);
                 response.updatedAssets.put(docId, asset);
                 assetHelper.updateFrom(latestDoc, asset);
             }
         });
 
-        existingAssets.forEach( (key, value) -> {
+        existingAssets.forEach((key, value) -> {
             if (!response.updatedAssets.containsKey(key) && !response.newAssets.containsKey(key)) {
-                response.removedAssets.put(key, value);
-                assetHelper.remove(value);
+                if (assetHelper.isPrimarySource()) {
+                    response.missingAssets.put(key, value);
+                    assetHelper.missing(value);
+                } else {
+                    if (assetHelper.missing(value)) {
+                        response.deletedOpinionAssets.add(value);
+                        var primaryAsset = primaryAssets.get(key);
+                        if (primaryAsset != null && primaryAsset.getPrimaryProvider() == null) {
+                            response.deletedPrimaryAssets.add(primaryAsset);
+                        }
+                    } else {
+                        response.updatedAssets.put(key, value);
+                    }
+                }
             }
         });
+
+        // If opinions are being processed, primaryAssets is valid
+        if (primaryAssets != null) {
+            var activeAssets = new HashMap<>(response.getUpdatedAssets());
+            activeAssets.putAll(response.getNewAssets());
+            activeAssets.forEach((key, _) -> {
+                if (!primaryAssets.containsKey(key)) {
+                    var data = latestAssetsDataMap.get(key);
+                    if (data == null) {
+                        LOGGER.error("Missing mapper asset data for key '{}'", key);
+                    } else {
+                        response.newPrimaryAssets.put(key, assetHelper.createPrimaryFromOpinionData(data));
+                    }
+                }
+            });
+        }
         return response;
+    }
+
+    public Map<String, AssetDTO> getExistingAssets() {
+        var allAssets = new HashMap<>(getUpdatedAssets());
+        allAssets.putAll(getNewAssets());
+        allAssets.putAll(getMissingAssets());
+        return allAssets;
     }
 }

@@ -24,7 +24,7 @@ public class AssetDocumentHelperTests {
             .loadDate(ZonedDateTime.now())
             .idField(idField)
             .docIdFields(List.of("accountid", "region", idField))
-            .dataSource(dataSource)
+            .reportingSource(dataSource)
             .displayName("ec2")
             .tags(List.of())
             .type("ec2")
@@ -92,7 +92,7 @@ public class AssetDocumentHelperTests {
         helper.updateFrom(mappedAsMap, dto);
 
         assertEquals("new account name", dto.getLegacyAccountName());
-        assertTrue(dto.isLatest());
+        assertTrue(dto.getIsLatest());
     }
 
     /**
@@ -275,10 +275,8 @@ public class AssetDocumentHelperTests {
                 "_resourcename": "instance-abc",
                 "_resourceid": "17",
                 "sourceDisplayName": "GCP",
-                "assetIdDisplayName": null,
                 "targettypedisplayname": "ec2",
                 "accountid": "xyz",
-                "accountname": null,
                 "discoverydate": "2024-09-05 14:57:00+0000",
                 "firstdiscoveredon": "2024-09-05 14:57:00+0000",
                 "ec2_relations": "ec2"

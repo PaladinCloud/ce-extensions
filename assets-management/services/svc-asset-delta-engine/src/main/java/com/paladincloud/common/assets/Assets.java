@@ -66,10 +66,11 @@ public class Assets {
         }
     }
 
-    public void process(String dataSource) {
+    public void process(String dataSource, String reportingSource, String opinionService) {
+        var isOpinion = !dataSource.equalsIgnoreCase(reportingSource);
         var bucket = ConfigService.get(ConfigConstants.S3.BUCKET_NAME);
-        var allFilenames = mapperRepository.listFiles(bucket, assetsPathPrefix(dataSource));
-        var types = assetTypes.getTypesWithDisplayName(dataSource);
+        var allFilenames = mapperRepository.listFiles(bucket, assetsPathPrefix(reportingSource));
+        var types = assetTypes.getTypesWithDisplayName(reportingSource);
         var fileTypes = FilesAndTypes.matchFilesAndTypes(allFilenames, types.keySet());
         if (!fileTypes.unknownFiles.isEmpty()) {
             LOGGER.warn("Unknown files: {}", fileTypes.unknownFiles);
@@ -80,48 +81,114 @@ public class Assets {
             return;
         }
 
+        if (allFilenames.isEmpty()) {
+            LOGGER.info("There are no files to process for dataSource: {}", dataSource);
+            return;
+        }
+
         LOGGER.info("Start processing Asset info");
 
+        var startTime = ZonedDateTime.now();
         var typeToError = loadTypeErrors(bucket, fileTypes.loadErrors);
         try (var batchIndexer = assetRepository.createBatch()) {
             fileTypes.typeFiles.forEach((type, filename) -> {
                 try {
                     var displayName = types.get(type);
-                    var startTime = ZonedDateTime.now();
                     var indexName = StringHelper.indexName(dataSource, type);
 
-                    var existingAssets = assetRepository.getLatestAssets(indexName, Collections.emptyList());
+                    String primaryIndexName;
+                    Map<String, AssetDTO> existingPrimaryAssets = Collections.emptyMap();
+                    if (isOpinion) {
+                        primaryIndexName = StringHelper.indexName(reportingSource, type);
+                        existingPrimaryAssets = assetRepository.getAssets(primaryIndexName, true,
+                            Collections.emptyList());
+                        indexName = StringHelper.opinionIndexName(reportingSource, type);
+                    } else {
+                        primaryIndexName = null;
+                    }
+
+                    var existingAssets = assetRepository.getAssets(indexName, !isOpinion,
+                        Collections.emptyList());
                     var latestAssets = fetchMapperFiles(bucket, filename, dataSource, type);
                     var tags = (fileTypes.tagFiles.containsKey(type)) ? fetchMapperFiles(bucket,
                         fileTypes.tagFiles.get(type), dataSource, type)
                         : new ArrayList<Map<String, Object>>();
 
+                    if (isOpinion) {
+                        LOGGER.info(
+                            "The data source is {}; the reporting source is {}; {} assets were found in the primary index {}",
+                            dataSource, reportingSource, existingPrimaryAssets.size(),
+                            primaryIndexName);
+                    }
                     LOGGER.info("For {}, {} assets and {} tags were fetched from S3 and {} "
                             + "assets were fetched from ElasticSearch", type, latestAssets.size(),
                         tags.size(), existingAssets.size());
 
                     var docIdFields = Arrays.stream(
-                        assetTypes.getKeyForType(dataSource, type).split(",")).toList();
-                    var idColumn = assetTypes.getIdForType(dataSource, type);
+                        assetTypes.getKeyForType(reportingSource, type).split(",")).toList();
+                    var idColumn = assetTypes.getIdForType(reportingSource, type);
 
                     // Merge stored assets and mapped assets
                     var assetCreator = AssetDocumentHelper.builder().loadDate(startTime)
-                        .idField(idColumn).docIdFields(docIdFields).dataSource(dataSource)
+                        .idField(idColumn).docIdFields(docIdFields).reportingSource(reportingSource)
                         .displayName(displayName).tags(tags).type(type)
-                        .accountIdToNameFn(this::accountIdToName).assetState(assetStateHelper.get(dataSource, type));
+                        .accountIdToNameFn(this::accountIdToName).opinionSource(dataSource)
+                        .opinionService(opinionService)
+                        .assetState(assetStateHelper.get(dataSource, type));
                     var mergeResponse = MergeAssets.process(assetCreator.build(), existingAssets,
-                        latestAssets);
+                        latestAssets, existingPrimaryAssets);
+
                     LOGGER.info(
-                        "Merged mapper assets for {}; {} were updated, {} were added and {} were deleted",
+                        "Merged mapper assets for {}; {} were updated, {} were added, " +
+                            "{} were missing, {} opinions were deleted, " +
+                            "{} stub primary documents were added, {} primary documents were deleted",
                         type, mergeResponse.getUpdatedAssets().size(),
                         mergeResponse.getNewAssets().size(),
-                        mergeResponse.getRemovedAssets().size());
+                        mergeResponse.getMissingAssets().size(),
+                        mergeResponse.getDeletedOpinionAssets().size(),
+                        mergeResponse.getNewPrimaryAssets().size(),
+                        mergeResponse.getDeletedPrimaryAssets().size());
+
+                    String finalIndexName = indexName;
+                    mergeResponse.getDeletedOpinionAssets().forEach(value -> {
+                        try {
+                            batchIndexer.add(
+                                BatchItem.deleteEntry(finalIndexName, value.getDocId())
+                            );
+                        } catch (IOException e) {
+                            throw new JobException("Failed batching item for delete", e);
+                        }
+                    });
+
+                    // Persist any stub primary documents that were created
+                    if (primaryIndexName != null) {
+                        mergeResponse.getDeletedPrimaryAssets().forEach(value -> {
+                            try {
+                                batchIndexer.add(
+                                    BatchItem.deleteEntry(primaryIndexName, value.getDocId())
+                                );
+                            } catch (IOException e) {
+                                throw new JobException("Failed batching item for delete", e);
+                            }
+                        });
+                    }
 
                     // Each document needs to be updated, regardless of which state it is in
-                    mergeResponse.getAllAssets().forEach((_, value) -> {
+                    mergeResponse.getExistingAssets().forEach((_, value) -> {
                         try {
-                            batchIndexer.add(BatchItem.documentEntry(indexName, value.getDocId(),
-                                JsonHelper.toJson(value)));
+                            batchIndexer.add(
+                                BatchItem.documentEntry(finalIndexName, value.getDocId(),
+                                    JsonHelper.toJson(value)));
+                        } catch (IOException e) {
+                            throw new JobException("Failed converting asset to JSON", e);
+                        }
+                    });
+
+                    mergeResponse.getNewPrimaryAssets().forEach((_, value) -> {
+                        try {
+                            batchIndexer.add(
+                                BatchItem.documentEntry(primaryIndexName, value.getDocId(),
+                                    JsonHelper.toJson(value)));
                         } catch (IOException e) {
                             throw new JobException("Failed converting asset to JSON", e);
                         }
@@ -142,6 +209,7 @@ public class Assets {
                         fileTypes.supportingTypes.getOrDefault(type, Collections.emptyList()),
                         loadDate);
                 } catch (Exception e) {
+                    batchIndexer.cancel();
                     throw new JobException(
                         STR."Failed uploading asset data for \{dataSource} and \{type}", e);
                 }

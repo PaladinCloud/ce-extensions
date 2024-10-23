@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonFormat.Shape;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.paladincloud.common.AssetDocumentFields;
 import java.time.ZonedDateTime;
@@ -12,6 +13,7 @@ import java.util.Map;
 import lombok.Getter;
 import lombok.Setter;
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class AssetDTO {
 
     /**
@@ -60,12 +62,12 @@ public class AssetDTO {
     @Getter
     @Setter
     @JsonProperty(AssetDocumentFields.IS_ENTITY)
-    private boolean isEntity;
+    private Boolean isEntity;
 
     @Getter
     @Setter
     @JsonProperty(AssetDocumentFields.IS_LATEST)
-    private boolean isLatest;
+    private Boolean isLatest;
 
     /**
      * Managed by the asset-shipper; this is the earliest discovery date there are records for. The
@@ -129,12 +131,12 @@ public class AssetDTO {
     @Setter
     @JsonProperty(AssetDocumentFields.LEGACY_IS_ENTITY)
     @JsonFormat(shape = Shape.STRING)
-    private boolean legacyIsEntity;
+    private Boolean legacyIsEntity;
 
     @Getter
     @Setter
     @JsonProperty(AssetDocumentFields.LEGACY_IS_LATEST)
-    private boolean legacyIsLatest;
+    private Boolean legacyIsLatest;
 
     @Setter
     @Getter

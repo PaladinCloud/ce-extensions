@@ -1,6 +1,7 @@
 package com.paladincloud.commons.assets;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -17,27 +18,28 @@ import org.junit.jupiter.api.Test;
 
 public class AssetDocumentHelperOpinionTests {
 
-    static private AssetDocumentHelper getHelper(String dataSource, String idField,
+    static private AssetDocumentHelper getHelper(String opinionSource, String idField,
         String resourceNameField, AssetState assetState) {
         return AssetDocumentHelper.builder()
             .loadDate(ZonedDateTime.now())
             .idField(idField)
             .docIdFields(List.of("projectId", "region", idField))
-            .dataSource(dataSource)
+            .reportingSource("gcp")
             .displayName("vm instance")
             .tags(List.of())
             .type("vminstance")
             .accountIdToNameFn((_) -> null)
             .assetState(assetState)
             .resourceNameField(resourceNameField)
-            .opinionSource("assets")
+            .opinionSource(opinionSource)
+            .opinionService("assets")
             .build();
     }
 
     @Test
     void opinionPopulatedFromMapper() throws JsonProcessingException {
         var mapperData = JsonHelper.mapFromString(getOpinionMapperDocument());
-        AssetDocumentHelper helper = getHelper("gcp", "resource_id", "resource_name",
+        AssetDocumentHelper helper = getHelper("secondary", "resource_id", "resource_name",
             AssetState.MANAGED);
         var dto = helper.createFrom(mapperData);
 
@@ -71,7 +73,7 @@ public class AssetDocumentHelperOpinionTests {
         var mapperData = JsonHelper.mapFromString(getOpinionMapperDocument());
 
         // Get the existing  document (the one from OpenSearch, for instance)
-        AssetDocumentHelper helper = getHelper("gcp", "resource_id", "resource_name",
+        AssetDocumentHelper helper = getHelper("secondary", "resource_id", "resource_name",
             AssetState.MANAGED);
         var dto = helper.createFrom(mapperData);
 
@@ -85,55 +87,6 @@ public class AssetDocumentHelperOpinionTests {
         assertEquals(newRawData, opinionDetails.get("assets"));
     }
 
-    // Given an opinion, create a primary asset. This is the version of the asset stored in the
-    // primary index when it's not present but an opinion reports the asset
-    @Test
-    void primaryFromOpinion() throws JsonProcessingException {
-        var mapperData = JsonHelper.mapFromString(getOpinionMapperDocument());
-        AssetDocumentHelper helper = getHelper("gcp", "resource_id", "resource_name",
-            AssetState.SUSPICIOUS);
-        var dto = helper.createFrom(mapperData);
-
-        assertNotNull(dto);
-        assertNotNull(dto.getDocId());
-        assertNotNull(dto.getDocType());
-        assertNotNull(dto.getEntityType());
-        assertNotNull(dto.getEntityTypeDisplayName());
-        assertEquals(AssetState.SUSPICIOUS, dto.getAssetState());
-
-        assertNotNull(dto.getResourceId());
-        assertNotNull(dto.getResourceName());
-        assertNotNull(dto.getRegion());
-        assertNotNull(dto.getSource());
-        assertNotNull(dto.getLegacySourceDisplayName());
-        assertNotNull(dto.getAccountId());
-        assertNotNull(dto.getAccountName());
-
-        assertNotNull(dto.getFirstDiscoveryDate());
-        assertNotNull(dto.getLoadDate());
-        assertNotNull(dto.getLastScanDate());
-
-        assertTrue(dto.isLatest());
-        assertTrue(dto.isEntity());
-
-        assertNull(dto.getOpinions());
-        assertNull(dto.getPrimaryProvider());
-        assertTrue(dto.getAdditionalProperties().isEmpty());
-    }
-
-    @Test
-    public void updatePrimaryFromOpinion() throws JsonProcessingException {
-        var mapperData = JsonHelper.mapFromString(getOpinionMapperDocument());
-        AssetDocumentHelper helper = getHelper("gcp", "resource_id", "resource_name",
-            AssetState.SUSPICIOUS);
-        var dto = helper.createFrom(mapperData);
-
-        mapperData.put(AssetDocumentFields.RESOURCE_NAME, "new name");
-        helper.updateFrom(mapperData, dto);
-
-        assertEquals("new name", dto.getResourceName());
-    }
-
     private String getOpinionMapperDocument() {
         return """
             {
@@ -144,8 +97,8 @@ public class AssetDocumentHelperOpinionTests {
                 "account_id": "central-run-3433",
                 "account_name": "main",
                 "projectId": "central-run-3433",
-                "source": "gcp",
-                "reporting_source": "secondary",
+                "source": "secondary",
+                "reporting_source": "gcp",
                 "source_display_name": "GCP",
                 "region": "us-central1-a",
                 "_entityType": "vminstance",

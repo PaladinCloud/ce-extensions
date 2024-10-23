@@ -25,6 +25,16 @@ public class StringHelper {
 
     public static String indexName(String dataSource, String type) {
         var name = STR."\{dataSource}_\{type}";
+        return addOptionalDevPrefix(name);
+    }
+
+    public static String opinionIndexName(String reportingSource, String type) {
+        var name = STR."\{reportingSource}_\{type}_opinions";
+        return addOptionalDevPrefix(name);
+    }
+
+    private static String addOptionalDevPrefix(String indexName) {
+        var name = indexName;
         var devPrefix = ConfigService.get(Dev.INDEX_PREFIX);
         if (!StringUtils.isEmpty(devPrefix)) {
             name = STR."\{devPrefix}_\{name}";
