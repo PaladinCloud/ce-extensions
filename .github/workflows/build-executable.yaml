@@ -137,6 +137,7 @@ jobs:
     environment: 'SaaSQA'
     needs:
       - MakeBuild
+      - extract_version
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
