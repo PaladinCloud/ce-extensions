@@ -11,8 +11,7 @@ import lombok.NonNull;
 @Builder
 public class ConfigParams {
 
-    // The role to assume to get both secrets & config from DynamoDB
-    @NonNull
+    // The role to assume to get both secrets & config from DynamoDB; this is optional
     String assumeRoleArn;
 
     // The tenantId (GUID)

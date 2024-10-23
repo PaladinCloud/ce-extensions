@@ -1,6 +1,5 @@
 package com.paladincloud.common.jobs;
 
-import com.paladincloud.common.config.ConfigConstants;
 import com.paladincloud.common.config.ConfigConstants.PaladinCloud;
 import com.paladincloud.common.config.ConfigConstants.Tenant;
 import com.paladincloud.common.config.ConfigParams;
@@ -20,15 +19,17 @@ public abstract class JobExecutor {
     // The required tenant-id is specified as a job argument (which comes from an SQS event)
     private static final String TENANT_ID_JOB_ARGUMENT = "tenant_id";
 
-    // The AWS config details - these are required environment variables
+    // An optional environment variable; it'll be used if provided
     private static final String ASSUME_ROLE_ARN = "ASSUME_ROLE_ARN";
+
+    // The AWS config details - these are required environment variables
     private static final String REGION = "REGION";
     private static final String SECRET_NAME_PREFIX = "SECRET_NAME_PREFIX";
     private static final String TENANT_CONFIG_OUTPUT_TABLE = "TENANT_CONFIG_OUTPUT_TABLE";
     private static final String TENANT_TABLE_PARTITION_KEY = "TENANT_TABLE_PARTITION_KEY";
 
-    private static final List<String> requiredEnvironmentVariables = List.of(ASSUME_ROLE_ARN,
-        REGION, SECRET_NAME_PREFIX, TENANT_CONFIG_OUTPUT_TABLE,
+    private static final List<String> requiredEnvironmentVariables = List.of(REGION,
+        SECRET_NAME_PREFIX, TENANT_CONFIG_OUTPUT_TABLE,
         TENANT_TABLE_PARTITION_KEY);
 
     private static final List<String> requiredExecutorFields = List.of(TENANT_ID_JOB_ARGUMENT);
