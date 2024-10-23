@@ -37,32 +37,36 @@ type DynamodbClient struct {
 }
 
 // NewDynamoDBClient inits a DynamoDB session to be used throughout the services
-func NewDynamoDBClient(ctx context.Context, assumeRoleArn, region, tenantConfigOutputTable, tenantTablePartitionKey string) (*DynamodbClient, error) {
-
+func NewDynamoDBClient(ctx context.Context, useAssumeRole bool, assumeRoleArn, region, tenantConfigOutputTable, tenantTablePartitionKey string) (*DynamodbClient, error) {
 	// Load the default AWS configuration
 	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(region))
 	if err != nil {
 		return nil, fmt.Errorf("error loading AWS config: %+v", err)
 	}
 
-	// Create an STS client
-	stsClient := sts.NewFromConfig(cfg)
+	var svc *dynamodb.Client
+	if useAssumeRole {
+		// Create an STS client
+		stsClient := sts.NewFromConfig(cfg)
 
-	// Assume the role using STS
-	creds := stscreds.NewAssumeRoleProvider(stsClient, assumeRoleArn, func(o *stscreds.AssumeRoleOptions) {
-		o.RoleSessionName = "DynamoDBSession"
-	})
+		// Assume the role using STS
+		creds := stscreds.NewAssumeRoleProvider(stsClient, assumeRoleArn, func(o *stscreds.AssumeRoleOptions) {
+			o.RoleSessionName = "DynamoDBSession"
+		})
 
-	// Create a new AWS configuration with the assumed role credentials
-	assumedCfg := aws.Config{
-		Credentials: aws.NewCredentialsCache(creds),
-		Region:      region,
+		// Create a new AWS configuration with the assumed role credentials
+		assumedCfg := aws.Config{
+			Credentials: aws.NewCredentialsCache(creds),
+			Region:      region,
+		}
+
+		// Initialize the DynamoDB client with the assumed role credentials
+		svc = dynamodb.NewFromConfig(assumedCfg)
+	} else {
+		svc = dynamodb.NewFromConfig(cfg)
 	}
 
-	// Initialize the DynamoDB client with the assumed role credentials
-	svc := dynamodb.NewFromConfig(assumedCfg)
-
-	fmt.Println("initialized dynamodb client with assumed role")
+	fmt.Println("initialized dynamodb client")
 	return &DynamodbClient{
 		region:                  region,
 		client:                  svc,

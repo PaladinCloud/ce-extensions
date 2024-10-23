@@ -12,6 +12,7 @@ import com.paladincloud.common.util.JsonHelper;
 import java.util.Map;
 import java.util.Properties;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.StringUtils;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient;
 import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueRequest;
@@ -63,10 +64,11 @@ public class ConfigService {
     private static Map<String, String> getSecretsWithRole(ConfigParams configParams) {
         return RoleHelper.runAs(configParams.awsRegion, null, configParams.assumeRoleArn,
             secretCredentialsProvider -> {
-                try (var client = SecretsManagerClient.builder()
-                    .credentialsProvider(secretCredentialsProvider)
-                    .region(Region.of(configParams.awsRegion))
-                    .build()) {
+                var builder = SecretsManagerClient.builder().region(Region.of(configParams.awsRegion));
+                if (secretCredentialsProvider != null) {
+                    builder.credentialsProvider(secretCredentialsProvider);
+                }
+                try (var client = builder.build()) {
                     var request = GetSecretValueRequest.builder()
                         .secretId(configParams.secretNamePrefix + configParams.tenantId)
                         .build();

@@ -77,7 +77,7 @@ func startMain(configuration *clients.Configuration) {
 			fmt.Errorf("unable to register extension: %+v", err)
 		}
 
-		fmt.Println("client registered:", res)
+		fmt.Println("client registered:", *res)
 
 		// Will block until shutdown event is received or cancelled via the context.
 		processEvents(ctx)

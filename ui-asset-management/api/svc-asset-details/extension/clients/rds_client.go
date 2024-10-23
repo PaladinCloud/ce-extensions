@@ -79,7 +79,7 @@ func (r *RdsClient) CreateNewClient(ctx context.Context, tenantId string) *sql.D
 func (r *RdsClient) FetchMandatoryTags(ctx context.Context, tenantId string) ([]models.Tag, error) {
 	dbClient := r.CreateNewClient(ctx, tenantId)
 
-	fmt.Println("Getting Plugins List from RDS")
+	fmt.Println("getting mandatory tags from rds")
 	query := `
 		select opt.optionName as tagName
                 from pac_v2_ui_options opt join pac_v2_ui_filters fil on opt.filterId= fil.filterId 

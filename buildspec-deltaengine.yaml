@@ -1,0 +1,35 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.11
+    commands:
+      - pip install awscli
+
+  pre_build:
+    commands:
+      - echo "Starting build process..."
+      - |
+        # Set up environment variables based on branch and stack
+        BRANCH_NAME=$RELEASE_BRANCH
+        if [ "${ENVIRONMENT}" = "dev" ]; then
+          RELEASE_VERSION="vlatest"
+        else
+          RELEASE_VERSION=${BRANCH_NAME#release-}
+        fi
+        
+        # Export RELEASE_VERSION as an environment variable
+        export RELEASE_VERSION
+        
+        echo "RELEASE_VERSION is set to: ${RELEASE_VERSION}"
+
+  build:
+    commands:
+      - echo "Running CloudFormation deployment script"
+      - cd installer/delta-engine
+      - python delta-installer.py  # Assuming your script is named delta-installer.py
+
+  post_build:
+    commands:
+      - echo "Build completed successfully."
