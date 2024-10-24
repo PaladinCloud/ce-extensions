@@ -77,3 +77,29 @@
         requireSecretsManager: false
       layers:
         - name: svc-asset-network-rules-layer
+- serviceName: svc-asset-related-assets
+  apiConfig:
+    method: POST
+    path: "/api/v2/targets/{targetType}/assets/related-assets"
+    requireAuth: true
+    requireOptionsMethod: true
+  serviceConfig:
+    environmentalVariables:
+      ASSUME_ROLE_ARN: {ASSUME_ROLE_ARN}
+      ENABLE_EXTENSION: {ENABLE_EXTENSION}
+      REGION: {REGION}
+      SECRET_NAME_PREFIX: {SECRET_NAME_PREFIX}
+      TENANT_CONFIG_OUTPUT_TABLE: {TENANT_CONFIG_OUTPUT_TABLE}
+      TENANT_PARTITION_KEY: {TENANT_PARTITION_KEY}
+    lambdaConfig:
+      handler: lambda_function.lambda_handler
+      runtime: python
+      runtimeVersion: latest
+      timeout: 10
+      isArm64: true
+      permissions:
+        requireS3: false
+        requireDynamoDB: true
+        requireSecretsManager: false
+      layers:
+        - name: svc-asset-related-assets-layer
