@@ -164,7 +164,6 @@ public abstract class JobExecutor {
                 envVars.put(name, value);
             }
         }
-
         return envVars;
     }
 }
