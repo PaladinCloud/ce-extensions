@@ -56,7 +56,7 @@ public abstract class JobExecutor {
         long startTime = System.nanoTime();
         try {
             setDefaultParams();
-            envVars.putAll(getEnvironmentVariables());
+            envVars.putAll(getEnvironmentVariables(List.of(ASSUME_ROLE_ARN)));
             params.putAll(parseArgs(args));
             validateRequiredFields();
 
@@ -150,9 +150,15 @@ public abstract class JobExecutor {
         }
     }
 
-    private Map<String, String> getEnvironmentVariables() {
+    private Map<String, String> getEnvironmentVariables(List<String> optional) {
         var envVars = new HashMap<String, String>();
         for (var name : requiredEnvironmentVariables) {
+            var value = System.getenv(name);
+            if (value != null) {
+                envVars.put(name, value);
+            }
+        }
+        for (var name : optional) {
             var value = System.getenv(name);
             if (value != null) {
                 envVars.put(name, value);
