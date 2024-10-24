@@ -3,10 +3,10 @@ package com.paladincloud.common.assets;
 import lombok.Getter;
 
 public enum AssetState {
-    MANAGED("Managed"),
-    UNMANAGED("Unmanaged"),
-    SUSPICIOUS("Suspicious"),
-    RECONCILING("Reconciling");
+    MANAGED("managed"),
+    UNMANAGED("unmanaged"),
+    SUSPICIOUS("suspicious"),
+    RECONCILING("reconciling");
 
     @Getter
     final private String name;

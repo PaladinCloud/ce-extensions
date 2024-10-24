@@ -45,7 +45,7 @@ public class AssetDTO {
     @Getter
     @Setter
     @JsonProperty(AssetDocumentFields.ASSET_STATE)
-    private AssetState assetState;
+    private String assetState;
 
     @Setter
     @Getter
