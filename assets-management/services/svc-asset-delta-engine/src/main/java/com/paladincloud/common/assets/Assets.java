@@ -77,12 +77,12 @@ public class Assets {
         }
 
         if (types.isEmpty()) {
-            LOGGER.info("There are no types to process for dataSource: {}", dataSource);
+            LOGGER.info("There are no types to process for reportingSource: {}", reportingSource);
             return;
         }
 
         if (allFilenames.isEmpty()) {
-            LOGGER.info("There are no files to process for dataSource: {}", dataSource);
+            LOGGER.info("There are no files to process for reportingSource: {}", reportingSource);
             return;
         }
 

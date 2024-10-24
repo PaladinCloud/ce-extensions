@@ -35,7 +35,8 @@ public class MergeAssets {
      * @return - A MergeAssets instance
      */
     static public MergeAssets process(AssetDocumentHelper assetHelper,
-        Map<String, AssetDTO> existingAssets, List<Map<String, Object>> latestAssets, Map<String, AssetDTO> primaryAssets) {
+        Map<String, AssetDTO> existingAssets, List<Map<String, Object>> latestAssets,
+        Map<String, AssetDTO> primaryAssets) {
         var response = new MergeAssets();
 
         var latestAssetsDataMap = new HashMap<String, Map<String, Object>>();
@@ -48,7 +49,8 @@ public class MergeAssets {
             var docId = assetHelper.buildDocId(latestDoc);
             latestAssetsDataMap.put(docId, latestDoc);
             var asset = existingAssets.get(docId);
-            var isNew = asset == null || (assetHelper.isPrimarySource() && asset.getPrimaryProvider() == null);
+            var isNew = asset == null || (assetHelper.isPrimarySource()
+                && asset.getPrimaryProvider() == null);
             if (isNew) {
                 response.newAssets.put(docId, assetHelper.createFrom(latestDoc));
                 response.updatedAssets.remove(docId);
@@ -59,10 +61,14 @@ public class MergeAssets {
         });
 
         existingAssets.forEach((key, value) -> {
-            if (!response.updatedAssets.containsKey(key) && !response.newAssets.containsKey(key)) {
+            if (!response.updatedAssets.containsKey(key) && !response.newAssets.containsKey(
+                key)) {
                 if (assetHelper.isPrimarySource()) {
-                    response.missingAssets.put(key, value);
-                    assetHelper.missing(value);
+                    var assetState = value.getAssetState();
+                    if (assetState == null || !assetState.equals(AssetState.SUSPICIOUS)) {
+                        response.missingAssets.put(key, value);
+                        assetHelper.missing(value);
+                    }
                 } else {
                     if (assetHelper.missing(value)) {
                         response.deletedOpinionAssets.add(value);
@@ -87,7 +93,8 @@ public class MergeAssets {
                     if (data == null) {
                         LOGGER.error("Missing mapper asset data for key '{}'", key);
                     } else {
-                        response.newPrimaryAssets.put(key, assetHelper.createPrimaryFromOpinionData(data));
+                        response.newPrimaryAssets.put(key,
+                            assetHelper.createPrimaryFromOpinionData(data));
                     }
                 }
             });

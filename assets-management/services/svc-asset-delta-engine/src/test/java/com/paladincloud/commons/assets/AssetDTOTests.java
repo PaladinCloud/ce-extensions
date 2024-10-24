@@ -50,7 +50,7 @@ public class AssetDTOTests {
         assertEquals(TimeHelper.formatZeroSeconds(dateTime),
             asMap.get(AssetDocumentFields.LEGACY_FIRST_DISCOVERY_DATE));
         assertEquals(TimeHelper.formatZeroSeconds(dateTime),
-            asMap.get(AssetDocumentFields.LEGACY_LAST_DISCOVERY_DATE));
+            asMap.get(AssetDocumentFields.LEGACY_LAST_SCAN_DATE));
         assertEquals("managed", asMap.get(AssetDocumentFields.ASSET_STATE));
     }
 
@@ -121,7 +121,7 @@ public class AssetDTOTests {
         dto.setLegacyDocId("1");
         dto.setLegacyName("name");
         dto.setAssetState(AssetState.MANAGED);
-        dto.setLatest(true);
+        dto.setIsLatest(true);
         dto.setLegacyIsLatest(true);
         dto.setIsEntity(true);
         dto.setLegacyIsEntity(true);
