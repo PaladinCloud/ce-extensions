@@ -155,7 +155,7 @@ public class ElasticSearchHelper {
      * @param indexName the index name
      * @return the asset documents
      */
-    public Map<String, AssetDTO> getLatestAssets(String indexName, boolean latestOnly,
+    public Map<String, AssetDTO> getAssets(String indexName, boolean latestOnly,
         List<String> filters) {
         String query;
         if (latestOnly) {

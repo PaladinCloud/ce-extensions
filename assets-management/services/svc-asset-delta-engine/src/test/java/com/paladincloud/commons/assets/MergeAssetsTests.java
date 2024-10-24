@@ -3,16 +3,13 @@ package com.paladincloud.commons.assets;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.paladincloud.common.AssetDocumentFields;
 import com.paladincloud.common.assets.AssetDTO;
 import com.paladincloud.common.assets.AssetDocumentHelper;
 import com.paladincloud.common.assets.AssetState;
 import com.paladincloud.common.assets.MergeAssets;
-import com.paladincloud.common.util.JsonHelper;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -61,7 +58,7 @@ public class MergeAssetsTests {
             .displayName(type)
             .tags(List.of())
             .type(type)
-            .accountIdToNameFn( (_) -> null)
+            .accountIdToNameFn((_) -> null)
             .assetState(AssetState.MANAGED)
             .resourceNameField("resource_name")
             .build();

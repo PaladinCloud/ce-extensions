@@ -61,7 +61,7 @@ public class AssetSenderJob extends JobExecutor {
         var opinionService = params.get(OPINION_SERVICE);
 
         LOGGER.info(
-            "Processing assets; bucket={} dataSource={} path={} tenant={} reportingSource={} reportingService={}",
+            "Processing assets; bucket={} dataSource={} path={} tenant={} reportingSource={} opinionService={}",
             ConfigService.get(ConfigConstants.S3.BUCKET_NAME), dataSource, params.get(S3_PATH),
             tenantName, reportingSource, opinionService);
         ConfigService.setProperties("batch.",
