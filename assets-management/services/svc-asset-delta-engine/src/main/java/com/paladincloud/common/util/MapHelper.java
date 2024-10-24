@@ -64,4 +64,12 @@ public class MapHelper {
         }
         return defaultValue;
     }
+
+    public static String getFirstOrDefaultString(Map<String, ?> map, List<String> keys, String defaultValue) {
+        var value = getFirstOrDefault(map, keys, defaultValue);
+        if (value != null) {
+            return value.toString();
+        }
+        return defaultValue;
+    }
 }
