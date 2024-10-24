@@ -10,19 +10,6 @@ phases:
   pre_build:
     commands:
       - echo "Starting build process..."
-      - |
-        # Set up environment variables based on branch and stack
-        BRANCH_NAME=$RELEASE_BRANCH
-        if [ "${ENVIRONMENT}" = "dev" ]; then
-          RELEASE_VERSION="vlatest"
-        else
-          RELEASE_VERSION=${BRANCH_NAME#release-}
-        fi
-        
-        # Export RELEASE_VERSION as an environment variable
-        export RELEASE_VERSION
-        
-        echo "RELEASE_VERSION is set to: ${RELEASE_VERSION}"
 
   build:
     commands:
