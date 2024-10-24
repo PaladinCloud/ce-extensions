@@ -140,12 +140,7 @@ public class AssetDocumentHelper {
      * @return - AssetDTO, intended for manipulation & serialization
      */
     public AssetDTO createFrom(Map<String, Object> data) {
-        var idValue = data.getOrDefault(idField, "").toString();
-        if (idValue.isEmpty()) {
-            throw new JobException(
-                STR."Mapper data is missing the designated id field: '\{idField}'");
-        }
-
+        var idValue = getIdValue(data);
         var source = getSource(data);
         var reportingSource = getReportingSource(data, source);
 
@@ -247,12 +242,7 @@ public class AssetDocumentHelper {
      * asset is not reported but a secondary source reports the asset.
      */
     public AssetDTO createPrimaryFromOpinionData(Map<String, Object> data) {
-        var idValue = data.getOrDefault(idField, "").toString();
-        if (idValue.isEmpty()) {
-            throw new JobException(
-                STR."Mapper data is missing the designated id field: '\{idField}'");
-        }
-
+        var idValue = getIdValue(data);
         var source = getSource(data);
         var reportingSource = getReportingSource(data, source);
 
@@ -280,11 +270,7 @@ public class AssetDocumentHelper {
      * @param dto  - the existing AssetDTO
      */
     public void updateFrom(Map<String, Object> data, AssetDTO dto) {
-        var idValue = data.getOrDefault(idField, "").toString();
-        if (idValue.isEmpty()) {
-            throw new JobException(
-                STR."Mapper data is missing the designated id field: '\{idField}'");
-        }
+        var idValue = getIdValue(data);
 
         if (isPrimarySource()) {
             updatePrimary(data, dto, idValue);
@@ -500,6 +486,15 @@ public class AssetDocumentHelper {
         if (tagData instanceof Map) {
             dto.setTags((Map<String, String>) tagData);
         }
+    }
+
+    private String getIdValue(Map<String, Object> data) {
+        var idValue = data.getOrDefault(idField, "").toString();
+        if (idValue.isEmpty()) {
+            throw new JobException(
+                STR."Mapper data is missing the designated id field: '\{idField}'");
+        }
+        return idValue;
     }
 
     private String getSource(Map<String, Object> data) {
