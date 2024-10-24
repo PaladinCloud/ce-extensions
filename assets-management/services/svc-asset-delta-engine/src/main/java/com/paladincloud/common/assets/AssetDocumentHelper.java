@@ -196,7 +196,7 @@ public class AssetDocumentHelper {
         dto.setLegacyDocId(docId);
         dto.setEntity(true);
         dto.setLegacyIsEntity(true);
-        dto.setAssetState(assetState.getName());
+        dto.setAssetState(assetState);
 
         // Set common asset properties
         dto.setEntityType(type);
@@ -290,7 +290,7 @@ public class AssetDocumentHelper {
         dto.setSourceDisplayName(
             data.getOrDefault(AssetDocumentFields.SOURCE_DISPLAY_NAME, "").toString());
 
-        dto.setAssetState(assetState.getName());
+        dto.setAssetState(assetState);
 
         // Update all fields the user has control over.
         if (data.containsKey(AssetDocumentFields.LEGACY_NAME)) {

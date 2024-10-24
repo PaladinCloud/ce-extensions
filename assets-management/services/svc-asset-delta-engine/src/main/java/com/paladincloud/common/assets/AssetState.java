@@ -1,17 +1,20 @@
 package com.paladincloud.common.assets;
 
+import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.Getter;
 
+
+@Getter
 public enum AssetState {
     MANAGED("managed"),
     UNMANAGED("unmanaged"),
     SUSPICIOUS("suspicious"),
     RECONCILING("reconciling");
 
-    @Getter
-    final private String name;
+    @JsonValue
+    private final String name;
 
-    private AssetState(String name) {
+    AssetState(String name) {
         this.name = name;
     }
 }
