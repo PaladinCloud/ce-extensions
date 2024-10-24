@@ -2,6 +2,7 @@ package com.paladincloud.common.assets;
 
 import com.paladincloud.common.errors.JobException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -106,6 +107,6 @@ public class MergeAssets {
         var allAssets = new HashMap<>(getUpdatedAssets());
         allAssets.putAll(getNewAssets());
         allAssets.putAll(getMissingAssets());
-        return allAssets;
+        return Collections.unmodifiableMap(allAssets);
     }
 }
