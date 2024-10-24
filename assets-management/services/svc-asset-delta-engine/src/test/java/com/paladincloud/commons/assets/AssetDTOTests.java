@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.paladincloud.common.AssetDocumentFields;
 import com.paladincloud.common.assets.AssetDTO;
+import com.paladincloud.common.assets.AssetState;
 import com.paladincloud.common.search.ElasticQueryAssetResponse;
 import com.paladincloud.common.util.JsonHelper;
 import com.paladincloud.common.util.TimeHelper;
@@ -47,6 +48,7 @@ public class AssetDTOTests {
             asMap.get(AssetDocumentFields.LEGACY_FIRST_DISCOVERY_DATE));
         assertEquals(TimeHelper.formatZeroSeconds(dateTime),
             asMap.get(AssetDocumentFields.LEGACY_LAST_DISCOVERY_DATE));
+        assertEquals("managed", asMap.get(AssetDocumentFields.ASSET_STATE));
     }
 
     @Test
@@ -104,6 +106,7 @@ public class AssetDTOTests {
         dto.setDocId("1");
         dto.setLegacyDocId("1");
         dto.setLegacyName("name");
+        dto.setAssetState(AssetState.MANAGED);
         dto.setLatest(true);
         dto.setLegacyIsLatest(true);
         dto.setEntity(true);
@@ -168,7 +171,7 @@ public class AssetDTOTests {
                     "_source": {
                       "_docId": "central-run-349616_us-central1-a_3228267340273394036",
                       "_docType": "vminstance",
-                      "_assetState": "MANAGED",
+                      "_assetState": "managed",
                       "_entityType": "vminstance",
                       "_entityTypeDisplayName": "VM",
                       "_isEntity": true,
