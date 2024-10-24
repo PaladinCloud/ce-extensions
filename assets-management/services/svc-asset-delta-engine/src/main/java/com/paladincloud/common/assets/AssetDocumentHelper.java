@@ -15,7 +15,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.Builder;
 import lombok.Getter;
@@ -147,19 +146,8 @@ public class AssetDocumentHelper {
                 STR."Mapper data is missing the designated id field: '\{idField}'");
         }
 
-        var source = MapHelper.getFirstOrDefaultString(data,
-            List.of(AssetDocumentFields.SOURCE, AssetDocumentFields.LEGACY_SOURCE), null);
-        if (source == null) {
-            throw new JobException("Mapper data is missing the 'source' field");
-        }
-
-        var reportingSource = MapHelper.getFirstOrDefaultString(data,
-            List.of(MapperFields.REPORTING_SOURCE), null);
-        if (reportingSource == null) {
-            LOGGER.error(
-                "Mapper data is missing the 'reporting_source' field, assuming it's the same as the source");
-            reportingSource = source;
-        }
+        var source = getSource(data);
+        var reportingSource = getReportingSource(data, source);
 
         var docId = buildDocId(data);
         var dto = new AssetDTO();
@@ -265,19 +253,8 @@ public class AssetDocumentHelper {
                 STR."Mapper data is missing the designated id field: '\{idField}'");
         }
 
-        var source = MapHelper.getFirstOrDefaultString(data,
-            List.of(AssetDocumentFields.SOURCE, AssetDocumentFields.LEGACY_SOURCE), null);
-        if (source == null) {
-            throw new JobException("Mapper data is missing the 'source' field");
-        }
-
-        var reportingSource = MapHelper.getFirstOrDefaultString(data,
-            List.of(MapperFields.REPORTING_SOURCE), null);
-        if (reportingSource == null) {
-            LOGGER.error(
-                "Mapper data is missing the 'reporting_source' field, assuming it's the same as the source");
-            reportingSource = source;
-        }
+        var source = getSource(data);
+        var reportingSource = getReportingSource(data, source);
 
         var dto = new AssetDTO();
         dto.setDocId(buildDocId(data));
@@ -307,12 +284,6 @@ public class AssetDocumentHelper {
         if (idValue.isEmpty()) {
             throw new JobException(
                 STR."Mapper data is missing the designated id field: '\{idField}'");
-        }
-
-        var source = MapHelper.getFirstOrDefaultString(data,
-            List.of(AssetDocumentFields.SOURCE, AssetDocumentFields.LEGACY_SOURCE), null);
-        if (source == null) {
-            throw new JobException("Mapper data is missing the 'source' field");
         }
 
         if (isPrimarySource()) {
@@ -529,6 +500,26 @@ public class AssetDocumentHelper {
         if (tagData instanceof Map) {
             dto.setTags((Map<String, String>) tagData);
         }
+    }
+
+    private String getSource(Map<String, Object> data) {
+        var source = MapHelper.getFirstOrDefaultString(data,
+            List.of(AssetDocumentFields.SOURCE, AssetDocumentFields.LEGACY_SOURCE), null);
+        if (source == null) {
+            throw new JobException("Mapper data is missing the 'source' field");
+        }
+        return source;
+    }
+
+    private String getReportingSource(Map<String, Object> data, String source) {
+        var reportingSource = MapHelper.getFirstOrDefaultString(data,
+            List.of(MapperFields.REPORTING_SOURCE), null);
+        if (reportingSource == null) {
+            LOGGER.error(
+                "Mapper data is missing the 'reporting_source' field, assuming it's the same as the source");
+            reportingSource = source;
+        }
+        return reportingSource;
     }
 
     interface MapperFields {
