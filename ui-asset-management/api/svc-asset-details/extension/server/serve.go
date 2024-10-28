@@ -45,7 +45,7 @@ func Start(port string, server *HttpServer, enableExtension bool) {
 }
 
 // Method that responds back with the cached values
-func startHTTPServer(port string, httpConfig *HttpServer) error {
+func startHTTPServer(port string, httpConfig *HttpServer) {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)

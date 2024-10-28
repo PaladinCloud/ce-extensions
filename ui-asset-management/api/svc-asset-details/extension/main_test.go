@@ -34,6 +34,9 @@ func TestStartMain(t *testing.T) {
 			SecretIdPrefix:          "paladincloud/secret/",
 		}
 
-		startMain(config)
+		err := startMain(config)
+		if err != nil {
+			t.Fatalf("failed to start main %+v", err)
+		}
 	})
 }

@@ -91,6 +91,8 @@ func startMain(configuration *clients.Configuration) error {
 		// Will block until shutdown event is received or cancelled via the context.
 		processEvents(ctx)
 	}
+
+	return nil
 }
 
 func processEvents(ctx context.Context) error {
