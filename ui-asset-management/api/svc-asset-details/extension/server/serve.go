@@ -54,7 +54,7 @@ func startHTTPServer(port string, httpConfig *HttpServer) {
 	err := http.ListenAndServe(fmt.Sprintf(":%s", port), r)
 	if err != nil {
 		log.Printf("error starting the server %+v", err)
-		os.Exit(0)
+		os.Exit(1)
 	}
 
 	log.Printf("server started on [%s]\n", port)
@@ -63,19 +63,19 @@ func startHTTPServer(port string, httpConfig *HttpServer) {
 func handleValue(config *HttpServer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tenantId := chi.URLParam(r, "tenantId")
-		assetId, err := url.QueryUnescape(chi.URLParam(r, "assetId"))
 
-		log.Printf("fetching asset details for tenant id [%s] asset id [%s]\n", tenantId, assetId)
+		assetId, err := url.QueryUnescape(chi.URLParam(r, "assetId"))
 		if err != nil {
-			log.Println("error decoding the assetId from url path")
+			log.Println("error decoding the asset id from url path")
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
+		log.Printf("fetching asset details for tenant id [%s] asset id [%s]\n", tenantId, assetId)
 		assetDetails, err := config.AssetDetailsClient.GetAssetDetails(r.Context(), tenantId, assetId)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
-			w.Write([]byte(err.Error()))
+			return
 		}
 
 		b, _ := json.Marshal(assetDetails)

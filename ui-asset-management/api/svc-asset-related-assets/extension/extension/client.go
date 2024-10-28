@@ -117,7 +117,6 @@ func (e *Client) Register(ctx context.Context, filename string) (*RegisterRespon
 		return nil, err
 	}
 	e.extensionID = httpRes.Header.Get(extensionIdentiferHeader)
-	print(e.extensionID)
 	return &res, nil
 }
 

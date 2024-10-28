@@ -31,6 +31,10 @@ import (
 	"github.com/google/uuid"
 )
 
+const (
+	projectionExpression = "datastore_es_ESDomain"
+)
+
 type DynamodbClient struct {
 	region                  string
 	tenantConfigOutputTable string
@@ -79,7 +83,6 @@ func NewDynamoDBClient(ctx context.Context, useAssumeRole bool, assumeRoleArn, r
 
 func (d *DynamodbClient) GetOpenSearchDomain(ctx context.Context, tenantId string) (*models.OpenSearchDomainProperties, error) {
 	log.Printf("fetching tenant configs for tenant id [%s]\n", tenantId)
-	const projectionExpression = "datastore_es_ESDomain"
 
 	key := struct {
 		TenantId string `dynamodbav:"tenant_id" json:"tenant_id"`

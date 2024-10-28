@@ -33,7 +33,10 @@ func TestNewRDSClient(t *testing.T) {
 
 	secretsClient, _ := NewSecretsClient(ctx, useAssumeRole, assumeRoleArn, region)
 
-	client, _ := NewRdsClient(secretsClient, secretIdPrefix)
+	client, err := NewRdsClient(secretsClient, secretIdPrefix)
+	if err != nil {
+		t.Fatalf("Failed to create RDS client: %v", err)
+	}
 	response, err := client.FetchMandatoryTags(ctx, tenantId)
 
 	if err != nil {

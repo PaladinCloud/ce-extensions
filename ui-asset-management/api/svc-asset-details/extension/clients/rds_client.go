@@ -66,13 +66,13 @@ func (r *RdsClient) CreateNewClient(ctx context.Context, tenantId string) (*sql.
 	// open a connection to the database
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
-		return nil, nil
+		return nil, fmt.Errorf("failed to open database connection: %w", err)
 	}
 
 	// check if the database is reachable
 	err = db.Ping()
 	if err != nil {
-		return nil, nil
+		return nil, fmt.Errorf("database ping failed: %w", err)
 	}
 
 	log.Println("connected to rds successfully!")

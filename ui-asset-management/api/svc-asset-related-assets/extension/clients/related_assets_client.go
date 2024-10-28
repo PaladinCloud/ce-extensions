@@ -3,6 +3,7 @@ package clients
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"slices"
 	"strings"
@@ -13,9 +14,13 @@ type RelatedAssetsClient struct {
 	elasticSearchClient *ElasticSearchClient
 }
 
-func NewRelatedAssetsClient(ctx context.Context, config *Configuration) *RelatedAssetsClient {
-	dynamodbClient, _ := NewDynamoDBClient(ctx, config.AssumeRoleArn, config.Region, config.TenantConfigOutputTable, config.TenantTablePartitionKey)
-	return &RelatedAssetsClient{elasticSearchClient: NewElasticSearchClient(dynamodbClient)}
+func NewRelatedAssetsClient(ctx context.Context, config *Configuration) (*RelatedAssetsClient, error) {
+	dynamodbClient, err := NewDynamoDBClient(ctx, config.UseAssumeRole, config.AssumeRoleArn, config.Region, config.TenantConfigOutputTable, config.TenantTablePartitionKey)
+	if err != nil {
+		return nil, err
+	}
+
+	return &RelatedAssetsClient{elasticSearchClient: NewElasticSearchClient(dynamodbClient)}, nil
 }
 
 const (
@@ -37,13 +42,12 @@ const (
 var (
 	defaultTargetTypeWithRelatedAssets = [1]string{"ec2"}
 	targetTypeWithRelatedAssets        = os.Getenv(targetTypeRelatedAssetsEnv)
-	relatedAssetDoctypes               = map[string][]string{"ec2": []string{doctypeSecGroup, doctypeBlockDevices}}
+	relatedAssetDocTypes               = map[string][]string{"ec2": []string{doctypeSecGroup, doctypeBlockDevices}}
 )
 
 func (c *RelatedAssetsClient) GetRelatedAssetsDetails(ctx context.Context, tenantId, targetType, assetId string) (*models.Response, error) {
-
 	if len(strings.TrimSpace(assetId)) == 0 {
-		return nil, fmt.Errorf("assetId must be present")
+		return nil, fmt.Errorf("asset id must be present")
 	}
 
 	var validTargetTypes []string
@@ -53,12 +57,12 @@ func (c *RelatedAssetsClient) GetRelatedAssetsDetails(ctx context.Context, tenan
 		validTargetTypes = strings.Split(targetTypeWithRelatedAssets, ",")
 	}
 	if !slices.Contains(validTargetTypes, targetType) {
-		fmt.Println("No valid related assets for target type: %s" + targetType)
+		log.Printf("no valid related assets for target type [%s]\n", targetType)
 		return &models.Response{Data: &models.RelatedAssets{AllRelatedAssets: &[]models.RelatedAsset{}}, Message: success}, nil
 	}
 
 	// related assets like Public Ip and Iam instance profile ARN are present in the asset details doc
-	fmt.Println("Fetching asset details")
+	log.Println("fetching asset details")
 	result, err := c.elasticSearchClient.FetchAssetDetails(ctx, tenantId, allSources, assetId)
 	if err != nil {
 		return nil, err
@@ -66,19 +70,19 @@ func (c *RelatedAssetsClient) GetRelatedAssetsDetails(ctx context.Context, tenan
 
 	assetDetails := getResults(result)
 	if len(assetDetails) == 0 {
-		return nil, fmt.Errorf("asset detials not found for asset id: %s", assetId)
+		return nil, fmt.Errorf("asset detials not found for asset id [%s]", assetId)
 	}
 
-	allRelatedAssets := []models.RelatedAsset{}
+	var allRelatedAssets []models.RelatedAsset
 	assetDetail := assetDetails[0].(map[string]interface{})["_source"].(map[string]interface{})
 
 	if v, ok := assetDetail[instanceid]; ok {
 
 		// fetch related assets for the asset
-		fmt.Println("Fetching related assets")
-		esResponse, err := c.elasticSearchClient.FetchRelatedAssets(ctx, relatedAssetDoctypes[targetType], tenantId, allSources, v.(string))
-		if err != nil {
-			return nil, err
+		log.Println("fetching related assets")
+		esResponse, err2 := c.elasticSearchClient.FetchRelatedAssets(ctx, relatedAssetDocTypes[targetType], tenantId, allSources, v.(string))
+		if err2 != nil {
+			return nil, err2
 		}
 
 		for _, response := range (*esResponse)["responses"].([]interface{}) {
@@ -98,24 +102,24 @@ func (c *RelatedAssetsClient) GetRelatedAssetsDetails(ctx context.Context, tenan
 		}
 
 		// fetch assetId and other info for the related assets from the related assets' own details
-		fmt.Println("Fetching asset details of related assets")
-		relatedAssetDetails, err := c.elasticSearchClient.FetchMultipleAssetsByResourceId(ctx, tenantId, allSources, allRelatedAssets)
-		if err != nil {
-			return nil, err
+		log.Println("fetching asset details of related assets")
+		relatedAssetDetails, err2 := c.elasticSearchClient.FetchMultipleAssetsByResourceId(ctx, tenantId, allSources, allRelatedAssets)
+		if err2 != nil {
+			return nil, err2
 		}
 
 		for _, response := range (*relatedAssetDetails)["responses"].([]interface{}) {
 			responseDetailMap := response.(map[string]interface{})
 			relatedAssetArray := getResults(&responseDetailMap)
 			for _, relatedAssetDoc := range relatedAssetArray {
-				relatedAssetDetails := relatedAssetDoc.(map[string]interface{})["_source"].(map[string]interface{})
-				assetTypeName := relatedAssetDetails[targetTypeDisplayName].(string)
-				docId := relatedAssetDetails[docId].(string)
-				assetType := relatedAssetDetails[docType].(string)
-				resourceId := relatedAssetDetails[_resourceId].(string)
+				relatedAssets := relatedAssetDoc.(map[string]interface{})["_source"].(map[string]interface{})
+				assetTypeName := relatedAssets[targetTypeDisplayName].(string)
+				documentId := relatedAssets[docId].(string)
+				assetType := relatedAssets[docType].(string)
+				resourceId := relatedAssets[_resourceId].(string)
 				for i, relatedAsset := range allRelatedAssets {
 					if relatedAsset.AssetType == assetType && relatedAsset.ResourceId == resourceId {
-						allRelatedAssets[i].AssetId = docId
+						allRelatedAssets[i].AssetId = documentId
 						allRelatedAssets[i].AssetTypeName = assetTypeName
 					}
 				}
@@ -132,7 +136,7 @@ func (c *RelatedAssetsClient) GetRelatedAssetsDetails(ctx context.Context, tenan
 		}
 
 	} else {
-		return nil, fmt.Errorf("instance Id not found for assetId: %s", assetId)
+		return nil, fmt.Errorf("instance Id not found for asset id [%s]", assetId)
 	}
 	return &models.Response{Data: &models.RelatedAssets{AllRelatedAssets: &allRelatedAssets}, Message: success}, nil
 }

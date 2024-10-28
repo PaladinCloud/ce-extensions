@@ -28,7 +28,7 @@ import (
 
 type ElasticSearchClient struct {
 	dynamodbClient           *DynamodbClient
-	elasticsearchClientCache sync.Map // Replaced with sync.Map
+	elasticsearchClientCache sync.Map
 }
 
 func NewElasticSearchClient(dynamodbClient *DynamodbClient) *ElasticSearchClient {

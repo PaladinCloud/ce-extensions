@@ -19,9 +19,6 @@ package clients
 import (
 	"context"
 	"fmt"
-	"log"
-	"svc-asset-network-rules-layer/models"
-
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
@@ -29,6 +26,12 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/google/uuid"
+	"log"
+	"svc-asset-network-rules-layer/models"
+)
+
+const (
+	projectionExpression = "datastore_es_ESDomain"
 )
 
 type DynamodbClient struct {
@@ -79,7 +82,6 @@ func NewDynamoDBClient(ctx context.Context, useAssumeRole bool, assumeRoleArn, r
 
 func (d *DynamodbClient) GetOpenSearchDomain(ctx context.Context, tenantId string) (*models.OpenSearchDomainProperties, error) {
 	log.Printf("fetching tenant configs for tenant id [%s]\n", tenantId)
-	const projectionExpression = "datastore_es_ESDomain"
 
 	key := struct {
 		TenantId string `dynamodbav:"tenant_id" json:"tenant_id"`
