@@ -17,7 +17,7 @@
 package clients
 
 import (
-	"log"
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -34,14 +34,32 @@ type Configuration struct {
 }
 
 func LoadConfigurationDetails() (*Configuration, error) {
-	enableExtension := parseEnableExtension()
-	useAssumeRole, assumeRoleArn := parseAssumeRole()
+	enableExtension, err := parseEnableExtension()
+	if err != nil {
+		return nil, err
+	}
+	useAssumeRole, assumeRoleArn, err := parseAssumeRole()
+	if err != nil {
+		return nil, err
+	}
 
 	// Load the region and other configuration details and fail if not set
-	region := getEnvVariable("REGION")
-	tenantConfigOutputTable := getEnvVariable("TENANT_CONFIG_OUTPUT_TABLE")
-	tenantTablePartitionKey := getEnvVariable("TENANT_TABLE_PARTITION_KEY")
-	secretIdPrefix := getEnvVariable("SECRET_NAME_PREFIX")
+	region, err := getEnvVariable("REGION")
+	if err != nil {
+		return nil, err
+	}
+	tenantConfigOutputTable, err := getEnvVariable("TENANT_CONFIG_OUTPUT_TABLE")
+	if err != nil {
+		return nil, err
+	}
+	tenantTablePartitionKey, err := getEnvVariable("TENANT_TABLE_PARTITION_KEY")
+	if err != nil {
+		return nil, err
+	}
+	secretIdPrefix, err := getEnvVariable("SECRET_NAME_PREFIX")
+	if err != nil {
+		return nil, err
+	}
 
 	return &Configuration{
 		EnableExtension:         enableExtension,
@@ -54,40 +72,39 @@ func LoadConfigurationDetails() (*Configuration, error) {
 	}, nil
 }
 
-func getEnvVariable(name string) string {
+func getEnvVariable(name string) (string, error) {
 	value := os.Getenv(name)
 	if value == "" {
-		log.Fatalf("required environment variable [%s] is not set", name)
+		return "", fmt.Errorf("required environment variable [%s] is not set", name)
 	}
 
-	return value
+	return value, nil
 }
 
-func parseEnableExtension() bool {
+func parseEnableExtension() (bool, error) {
 	if val := os.Getenv("ENABLE_EXTENSION"); val != "" {
 		parsedVal, err := strconv.ParseBool(val)
 		if err != nil {
-			log.Fatalf("invalid value for ENABLE_EXTENSION [%s]", val)
+			return false, fmt.Errorf("invalid value for ENABLE_EXTENSION [%s]", val)
 		}
 
-		return parsedVal
+		return parsedVal, nil
 	}
 
-	return true
+	return true, nil
 }
 
-func parseAssumeRole() (bool, string) {
+func parseAssumeRole() (bool, string, error) {
 	arn := os.Getenv("ASSUME_ROLE_ARN")
 	// We only want to use assume role if dynamodb config table and the secrets manager are in a different account
 	if arn == "" {
-		return false, ""
+		return false, "", nil
 	}
 
 	// Validate ARN format
 	if !strings.HasPrefix(arn, "arn:aws:iam::") {
-		log.Fatalf("invalid role ARN format [%s]", arn)
-		return false, ""
+		return false, "", fmt.Errorf("invalid value for ASSUME_ROLE_ARN [%s]", arn)
 	}
 
-	return true, arn
+	return true, arn, nil
 }

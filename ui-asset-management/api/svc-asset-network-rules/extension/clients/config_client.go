@@ -17,10 +17,10 @@
 package clients
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"strconv"
+	"strings"
 )
 
 type Configuration struct {
@@ -33,24 +33,9 @@ type Configuration struct {
 	SecretIdPrefix          string
 }
 
-func LoadConfigurationDetails() *Configuration {
-	enableExtensionStr := os.Getenv("ENABLE_EXTENSION")
-	enableExtension, err := strconv.ParseBool(enableExtensionStr)
-	if err != nil {
-		// When we deploy the lambda + extension, set the default runtime to enable extension
-		fmt.Println("ENABLE_EXTENSION environment variable not set, defaulting to true")
-		enableExtension = true
-	}
-
-	// We only want to use assume role if config dynamodb and secrets manager is in a different account
-	assumeRoleArn := os.Getenv("ASSUME_ROLE_ARN")
-	useAssumeRole := false
-	if assumeRoleArn != "" {
-		fmt.Printf("using ASSUME_ROLE_ARN to assume role: %s\n", assumeRoleArn)
-		useAssumeRole = true
-	} else {
-		fmt.Println("ASSUME_ROLE_ARN environment variable not set, defaulting to false")
-	}
+func LoadConfigurationDetails() (*Configuration, error) {
+	enableExtension := parseEnableExtension()
+	useAssumeRole, assumeRoleArn := parseAssumeRole()
 
 	// Load the region and other configuration details and fail if not set
 	region := getEnvVariable("REGION")
@@ -66,14 +51,43 @@ func LoadConfigurationDetails() *Configuration {
 		TenantConfigOutputTable: tenantConfigOutputTable,
 		TenantTablePartitionKey: tenantTablePartitionKey,
 		SecretIdPrefix:          secretIdPrefix,
-	}
+	}, nil
 }
 
 func getEnvVariable(name string) string {
 	value := os.Getenv(name)
 	if value == "" {
-		log.Fatalf("environment variable %s must be set", name)
+		log.Fatalf("required environment variable [%s] is not set", name)
 	}
 
 	return value
+}
+
+func parseEnableExtension() bool {
+	if val := os.Getenv("ENABLE_EXTENSION"); val != "" {
+		parsedVal, err := strconv.ParseBool(val)
+		if err != nil {
+			log.Fatalf("invalid value for ENABLE_EXTENSION [%s]", val)
+		}
+
+		return parsedVal
+	}
+
+	return true
+}
+
+func parseAssumeRole() (bool, string) {
+	arn := os.Getenv("ASSUME_ROLE_ARN")
+	// We only want to use assume role if dynamodb config table and the secrets manager are in a different account
+	if arn == "" {
+		return false, ""
+	}
+
+	// Validate ARN format
+	if !strings.HasPrefix(arn, "arn:aws:iam::") {
+		log.Fatalf("invalid role ARN format [%s]", arn)
+		return false, ""
+	}
+
+	return true, arn
 }
