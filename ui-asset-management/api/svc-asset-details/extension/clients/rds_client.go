@@ -35,6 +35,13 @@ type RdsClient struct {
 }
 
 func NewRdsClient(secretsClient *SecretsClient, secretIdPrefix string) (*RdsClient, error) {
+	if secretsClient == nil {
+		return nil, fmt.Errorf("secretsClient cannot be nil")
+	}
+	if secretIdPrefix == "" {
+		return nil, fmt.Errorf("secretIdPrefix cannot be empty")
+	}
+
 	return &RdsClient{
 		secretIdPrefix: secretIdPrefix,
 		secretsClient:  secretsClient,

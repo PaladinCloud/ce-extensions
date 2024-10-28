@@ -19,8 +19,8 @@ package clients
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"strconv"
-	"strings"
 )
 
 type Configuration struct {
@@ -101,8 +101,9 @@ func parseAssumeRole() (bool, string, error) {
 		return false, "", nil
 	}
 
-	// Validate ARN format
-	if !strings.HasPrefix(arn, "arn:aws:iam::") {
+	// Validate complete IAM role ARN format
+	arnPattern := `^arn:aws:iam::\d{12}:role/[\w+=,.@-]+$`
+	if matched, _ := regexp.MatchString(arnPattern, arn); !matched {
 		return false, "", fmt.Errorf("invalid value for ASSUME_ROLE_ARN [%s]", arn)
 	}
 
