@@ -57,7 +57,7 @@ func LoadConfigurationDetails() (*Configuration, error) {
 func getEnvVariable(name string) string {
 	value := os.Getenv(name)
 	if value == "" {
-		log.Fatalf("required environment variable %s is not set", name)
+		log.Fatalf("required environment variable [%s] is not set", name)
 	}
 
 	return value
@@ -67,7 +67,7 @@ func parseEnableExtension() bool {
 	if val := os.Getenv("ENABLE_EXTENSION"); val != "" {
 		parsedVal, err := strconv.ParseBool(val)
 		if err != nil {
-			log.Fatalf("invalid value for ENABLE_EXTENSION: %s", val)
+			log.Fatalf("invalid value for ENABLE_EXTENSION [%s]", val)
 		}
 
 		return parsedVal
@@ -85,7 +85,7 @@ func parseAssumeRole() (bool, string) {
 
 	// Validate ARN format
 	if !strings.HasPrefix(arn, "arn:aws:iam::") {
-		log.Fatalf("invalid role ARN format: %s", arn)
+		log.Fatalf("invalid role ARN format [%s]", arn)
 		return false, ""
 	}
 
