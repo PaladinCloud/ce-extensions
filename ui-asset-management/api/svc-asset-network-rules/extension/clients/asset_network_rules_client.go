@@ -3,6 +3,7 @@ package clients
 import (
 	"context"
 	"fmt"
+	"log"
 	"slices"
 	"strings"
 	"svc-asset-network-rules-layer/models"
@@ -12,9 +13,15 @@ type AssetNetworkRulesClient struct {
 	elasticSearchClient *ElasticSearchClient
 }
 
-func NewAssetNetworkRulesClient(ctx context.Context, config *Configuration) *AssetNetworkRulesClient {
-	dynamodbClient, _ := NewDynamoDBClient(ctx, config.UseAssumeRole, config.AssumeRoleArn, config.Region, config.TenantConfigOutputTable, config.TenantTablePartitionKey)
-	return &AssetNetworkRulesClient{elasticSearchClient: NewElasticSearchClient(dynamodbClient)}
+func NewAssetNetworkRulesClient(ctx context.Context, config *Configuration) (*AssetNetworkRulesClient, error) {
+	dynamodbClient, err := NewDynamoDBClient(ctx, config.UseAssumeRole, config.AssumeRoleArn, config.Region, config.TenantConfigOutputTable, config.TenantTablePartitionKey)
+	if err != nil {
+		return nil, err
+	}
+
+	return &AssetNetworkRulesClient{
+		elasticSearchClient: NewElasticSearchClient(dynamodbClient),
+	}, nil
 }
 
 const (
@@ -32,25 +39,26 @@ var targetTypesWithPortRules = []string{sg, nsg}
 
 func (c *AssetNetworkRulesClient) GetPortRuleDetails(ctx context.Context, tenantId, targetType string, assetId string) (*models.Response, error) {
 	if !slices.Contains(targetTypesWithPortRules, targetType) {
-		return nil, fmt.Errorf("asset type does not have port rules feature")
+		return nil, fmt.Errorf("asset type [%s] does not support port rules", targetType)
 	}
 
 	if len(strings.TrimSpace(assetId)) == 0 {
-		return nil, fmt.Errorf("assetId must be present")
+		return nil, fmt.Errorf("asset id must be present")
 	}
 
-	fmt.Println("Starting to fetch port rules")
+	log.Printf("starting to fetch port rules for asset id [%s] and tenant id [%s]\n", assetId, tenantId)
 	var outboundRules []models.OutboundNetworkRule
 	var inboundRules []models.InboundNetworkRule
 	if targetType == nsg {
 		result, err := c.elasticSearchClient.FetchAssetDetails(ctx, tenantId, allSources, assetId)
 		if err != nil {
-			return nil, err
+
+			return nil, fmt.Errorf("error fetching asset details %w", err)
 		}
 
 		assetDetails := getResults(result)
 		if len(assetDetails) == 0 {
-			return nil, fmt.Errorf("asset detials not found for asset id: %s", assetId)
+			return nil, fmt.Errorf("asset detials not found for asset id [%s]", assetId)
 		}
 
 		assetDetail := assetDetails[0].(map[string]interface{})["_source"].(map[string]interface{})
@@ -159,6 +167,7 @@ func concatAsString(arr []interface{}) string {
 				ports = append(ports, port.(string))
 			}
 		}
+
 		return strings.Join(ports, ",")
 	}
 

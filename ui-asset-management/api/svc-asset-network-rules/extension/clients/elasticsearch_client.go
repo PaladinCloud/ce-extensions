@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"sync"
 
 	"github.com/elastic/go-elasticsearch/v7"
@@ -16,7 +17,7 @@ type ElasticSearchClient struct {
 }
 
 func NewElasticSearchClient(dynamodbClient *DynamodbClient) *ElasticSearchClient {
-	fmt.Println("initialized opensearch client")
+	log.Println("initialized opensearch client")
 	return &ElasticSearchClient{
 		dynamodbClient: dynamodbClient,
 	}
@@ -36,7 +37,7 @@ func (c *ElasticSearchClient) CreateNewElasticSearchClient(ctx context.Context, 
 
 	client, err := elasticsearch.NewClient(elasticsearch.Config{Addresses: []string{"https://" + esDomainProperties.Endpoint}})
 	if err != nil {
-		return nil, fmt.Errorf("error creating opensearch client for tenant id: %s. err: %+v", tenantId, err)
+		return nil, fmt.Errorf("error creating opensearch client for tenant id [%s] %w", tenantId, err)
 	}
 
 	// Store the new client in the cache
@@ -54,7 +55,6 @@ var (
 )
 
 func (c *ElasticSearchClient) FetchAssetDetails(ctx context.Context, tenantId, ag, assetId string) (*map[string]interface{}, error) {
-
 	query := buildDetailsQuery(assetId)
 	esRequest := map[string]interface{}{
 		"size":  1,
@@ -71,12 +71,12 @@ func (c *ElasticSearchClient) FetchAssetDetails(ctx context.Context, tenantId, a
 	response, err := client.Search(client.Search.WithIndex(ag), client.Search.WithBody(&buffer))
 
 	if err != nil {
-		return nil, fmt.Errorf("error getting response from ES for assetId: %s. err: %s", assetId, err)
+		return nil, fmt.Errorf("error getting response from opensearch client for asset id [%s] %w", assetId, err)
 	}
 	defer response.Body.Close()
 
 	if response.StatusCode != 200 {
-		return nil, fmt.Errorf("error while fetching asset detials from ES for assetId: %s", assetId)
+		return nil, fmt.Errorf("error while fetching asset detials from opensearch client for asset id [%s]", assetId)
 	}
 	var result map[string]interface{}
 	json.NewDecoder(response.Body).Decode(&result)
@@ -101,13 +101,14 @@ func (c *ElasticSearchClient) FetchChildResourcesDetails(ctx context.Context, te
 	response, err := client.Search(client.Search.WithIndex(ag), client.Search.WithBody(&buffer))
 
 	if err != nil {
-		return nil, fmt.Errorf("error getting response from ES for assetId: %s. err: %s", assetId, err)
+		return nil, fmt.Errorf("error getting response from opensearch client for asset id [%s] %w", assetId, err)
 	}
 	defer response.Body.Close()
 
 	if response.StatusCode != 200 {
-		return nil, fmt.Errorf("error while fetching asset detials from ES for assetId: %s", assetId)
+		return nil, fmt.Errorf("error while fetching asset detials from opensearch client for asset id [%s]", assetId)
 	}
+
 	var result map[string]interface{}
 	json.NewDecoder(response.Body).Decode(&result)
 	return &result, nil
@@ -126,6 +127,7 @@ func buildDetailsQuery(assetId string) map[string]interface{} {
 			"must": [1]map[string]interface{}{assetIdFilter},
 		},
 	}
+
 	return query
 }
 
@@ -153,5 +155,6 @@ func buildChildResourcesQuery(targetType string, assetId string) map[string]inte
 			"must": [2]map[string]interface{}{docTypeFilter, childrenFilter},
 		},
 	}
+
 	return query
 }
