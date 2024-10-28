@@ -27,8 +27,6 @@ public class AssetSenderJob extends JobExecutor {
     public static final String S3_PATH = "s3_path";
     // These two optional arguments are provided for opinions; in that case, the reporting source
     // will differ from the data source and the opinion service will be used to store the opinion.
-    public static final String REPORTING_SOURCE = "reporting_source";
-    public static final String OPINION_SERVICE = "opinion_service";
     private static final Logger LOGGER = LogManager.getLogger(AssetSenderJob.class);
 
     private final AssetTypes assetTypes;
@@ -53,22 +51,17 @@ public class AssetSenderJob extends JobExecutor {
 
     @Override
     protected void execute() {
-        // NOTE: reportingSource dictates which set of types to deal with; it will be different from
-        // dataSource in those cases a vendor reports assets from a cloud provider. For example,
-        // when Qualys reports assets from GCP, dataSource is qualys and reportingSource is gcp.
         var dataSource = params.get(DATA_SOURCE);
-        var reportingSource = params.getOrDefault(REPORTING_SOURCE, dataSource);
-        var opinionService = params.get(OPINION_SERVICE);
 
         LOGGER.info(
-            "Processing assets; bucket={} dataSource={} path={} tenant={} reportingSource={} opinionService={}",
+            "Processing assets; bucket={} dataSource={} path={} tenant={}",
             ConfigService.get(ConfigConstants.S3.BUCKET_NAME), dataSource, params.get(S3_PATH),
-            tenantName, reportingSource, opinionService);
+            tenantName);
         ConfigService.setProperties("batch.",
             Collections.singletonMap("s3.data", params.get(S3_PATH)));
 
-        assetTypes.setupIndexAndTypes(reportingSource);
-        assets.process(dataSource, reportingSource, opinionService);
+        assetTypes.setupIndexAndTypes(dataSource);
+        assets.process(dataSource, params.get(S3_PATH));
 
         if ("true".equalsIgnoreCase(ConfigService.get(Dev.SKIP_ASSET_COUNT))) {
             LOGGER.error("Skipping asset count");

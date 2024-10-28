@@ -95,7 +95,7 @@ public class AssetDocumentHelper {
     @NonNull
     private List<String> docIdFields;
     @NonNull
-    private String reportingSource;
+    private String dataSource;
     @NonNull
     private String displayName;
     @NonNull
@@ -107,20 +107,20 @@ public class AssetDocumentHelper {
     @NonNull
     private AssetState assetState;
     private String resourceNameField;
-    private String opinionSource;
-    private String opinionService;
+    private String reportingSource;
+    private String reportingService;
 
 
     public boolean isPrimarySource() {
-        return null == opinionSource || reportingSource.equalsIgnoreCase(opinionSource);
+        return null == reportingSource || dataSource.equalsIgnoreCase(reportingSource);
     }
 
     public String buildDocId(Map<String, Object> data) {
-        var docId = STR."\{reportingSource}_\{type}_\{StringHelper.concatenate(data, docIdFields,
+        var docId = STR."\{dataSource}_\{type}_\{StringHelper.concatenate(data, docIdFields,
             "_")}";
-        if ("aws".equalsIgnoreCase(reportingSource)) {
+        if ("aws".equalsIgnoreCase(dataSource)) {
             if (docIdFields.contains(AssetDocumentFields.LEGACY_ACCOUNT_ID)) {
-                docId = STR."\{StringHelper.indexName(reportingSource, type)}_\{docId}";
+                docId = STR."\{StringHelper.indexName(dataSource, type)}_\{docId}";
             }
         }
         if (StringUtils.isBlank(docId)) {
@@ -142,7 +142,6 @@ public class AssetDocumentHelper {
     public AssetDTO createFrom(Map<String, Object> data) {
         var idValue = getIdValue(data);
         var source = getSource(data);
-        var reportingSource = getReportingSource(data, source);
 
         var docId = buildDocId(data);
         var dto = new AssetDTO();
@@ -152,7 +151,7 @@ public class AssetDocumentHelper {
 
         // Set the remaining asset fields
         if (isPrimarySource()) {
-            dto.setSource(reportingSource.toLowerCase());
+            dto.setSource(source.toLowerCase());
             dto.setAssetState(assetState);
             populateNewPrimary(data, dto, idValue);
         } else {
@@ -183,19 +182,18 @@ public class AssetDocumentHelper {
             });
 
         // For CQ Collector, accountName will be fetched from RDS using accountId only if not set earlier
-        if (("gcp".equalsIgnoreCase(reportingSource) || "crowdstrike".equalsIgnoreCase(
-            reportingSource))
+        if (("gcp".equalsIgnoreCase(dataSource) || "crowdstrike".equalsIgnoreCase(
+            dataSource))
             && dto.getAccountName() == null) {
             setMissingAccountName(dto, data);
         }
 
         addTags(data, dto);
-        if ("gcp".equalsIgnoreCase(
-            data.getOrDefault(AssetDocumentFields.LEGACY_SOURCE, "").toString())) {
+        if ("gcp".equalsIgnoreCase(dataSource)) {
             addLegacyTags(data, dto);
         }
 
-        if ("Azure".equalsIgnoreCase(dto.getLegacySource())) {
+        if ("azure".equalsIgnoreCase(dataSource)) {
             dto.setAssetIdDisplayName(getAssetIdDisplayName(data));
         }
 
@@ -214,26 +212,26 @@ public class AssetDocumentHelper {
     }
 
     private void setOpinion(Map<String, Object> data, AssetDTO dto) {
-        if (StringUtils.isBlank(opinionSource)) {
-            throw new JobException("opinionSource is not set");
+        if (StringUtils.isBlank(reportingSource)) {
+            throw new JobException("reportingSource is not set");
         }
-        if (StringUtils.isBlank(opinionService)) {
-            throw new JobException("opinionService is not set");
+        if (StringUtils.isBlank(reportingService)) {
+            throw new JobException("reportingService is not set");
         }
         if (dto.getOpinions() == null) {
             dto.setOpinions(new HashMap<>());
         }
 
-        Map<String, String> reportingOpinions = dto.getOpinions().get(opinionSource);
+        Map<String, String> reportingOpinions = dto.getOpinions().get(reportingSource);
         if (reportingOpinions == null) {
             reportingOpinions = new HashMap<>();
         } else {
             reportingOpinions = new HashMap<>(reportingOpinions);
         }
-        reportingOpinions.put(opinionService,
+        reportingOpinions.put(reportingService,
             data.getOrDefault(MapperFields.RAW_DATA, "").toString());
         var opinions = new HashMap<>(dto.getOpinions());
-        opinions.put(opinionSource, reportingOpinions);
+        opinions.put(reportingSource, reportingOpinions);
         dto.setOpinions(opinions);
     }
 
@@ -244,12 +242,11 @@ public class AssetDocumentHelper {
     public AssetDTO createPrimaryFromOpinionData(Map<String, Object> data) {
         var idValue = getIdValue(data);
         var source = getSource(data);
-        var reportingSource = getReportingSource(data, source);
 
         var dto = new AssetDTO();
         dto.setDocId(buildDocId(data));
         dto.setDocType(type);
-        dto.setSource(reportingSource.toLowerCase());
+        dto.setSource(source);
 
         setCommonPrimaryFields(data, dto, idValue);
 
@@ -417,14 +414,14 @@ public class AssetDocumentHelper {
             // An opinion has been removed; either update the document to reflect that or
             // delete the document.
             var opinions = new HashMap<>(dto.getOpinions());
-            var sourceOpinions = opinions.get(opinionSource);
-            if (sourceOpinions != null && sourceOpinions.containsKey(opinionService)) {
+            var sourceOpinions = opinions.get(reportingSource);
+            if (sourceOpinions != null && sourceOpinions.containsKey(reportingService)) {
                 sourceOpinions = new HashMap<>(sourceOpinions);
-                sourceOpinions.remove(opinionService);
+                sourceOpinions.remove(reportingService);
                 if (sourceOpinions.isEmpty()) {
-                    opinions.remove(opinionSource);
+                    opinions.remove(reportingSource);
                 } else {
-                    opinions.put(opinionSource, sourceOpinions);
+                    opinions.put(reportingSource, sourceOpinions);
                 }
                 dto.setOpinions(opinions);
             }
@@ -506,24 +503,14 @@ public class AssetDocumentHelper {
         return source;
     }
 
-    private String getReportingSource(Map<String, Object> data, String source) {
-        var reportingSource = MapHelper.getFirstOrDefaultString(data,
-            List.of(MapperFields.REPORTING_SOURCE), null);
-        if (reportingSource == null) {
-            LOGGER.error(
-                "Mapper data is missing the 'reporting_source' field, assuming it's the same as the source");
-            reportingSource = source;
-        }
-        return reportingSource;
-    }
-
-    interface MapperFields {
+    public interface MapperFields {
 
         String LEGACY_ACCOUNT_ID = "accountid";
         String ACCOUNT_ID = "account_id";
 
         String RAW_DATA = "rawData";
         String REPORTING_SOURCE = "reporting_source";
+        String REPORTING_SERVICE = "reporting_service";
 
         String SOURCE_DISPLAY_NAME = "source_display_name";
         String LEGACY_SOURCE_DISPLAY_NAME = "sourceDisplayName";

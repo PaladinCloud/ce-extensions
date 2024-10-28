@@ -55,15 +55,15 @@ public class MergeAssetsTests {
             .loadDate(startTime)
             .idField("id")
             .docIdFields(List.of("id"))
-            .reportingSource(dataSource)
+            .dataSource(dataSource)
             .displayName(type)
             .tags(List.of())
             .type(type)
             .accountIdToNameFn((_) -> null)
             .assetState(AssetState.MANAGED)
             .resourceNameField("resource_name")
-            .opinionSource(opinionSource)
-            .opinionService(opinionSource == null ? null : "vulnerabilities")
+            .reportingSource(opinionSource)
+            .reportingService(opinionSource == null ? null : "vulnerabilities")
             .build();
     }
 

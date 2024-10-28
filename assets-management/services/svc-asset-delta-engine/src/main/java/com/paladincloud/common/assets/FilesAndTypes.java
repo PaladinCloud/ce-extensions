@@ -90,7 +90,7 @@ public class FilesAndTypes {
      * From the path "s3:/some/paths/aws-ec2.data", this will return "ec2" And from
      * "s3:/some/paths/aws-ec2-ssminfo.data", this will return "ec2-ssminfo"
      *
-     * @param path - and S3 path
+     * @param path - an S3 path
      * @return - the likely type or null
      */
     private static String getFullTypeFromPath(String path) {

@@ -1,13 +1,11 @@
 package com.paladincloud.commons.assets;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.paladincloud.common.AssetDocumentFields;
 import com.paladincloud.common.assets.AssetDocumentHelper;
 import com.paladincloud.common.assets.AssetState;
 import com.paladincloud.common.util.JsonHelper;
@@ -18,29 +16,27 @@ import org.junit.jupiter.api.Test;
 
 public class AssetDocumentHelperOpinionTests {
 
-    static private AssetDocumentHelper getHelper(String opinionSource, String idField,
-        String resourceNameField, AssetState assetState) {
+    static private AssetDocumentHelper getHelper() {
         return AssetDocumentHelper.builder()
             .loadDate(ZonedDateTime.now())
-            .idField(idField)
-            .docIdFields(List.of("projectId", "region", idField))
-            .reportingSource("gcp")
+            .idField("resource_id")
+            .docIdFields(List.of("projectId", "region", "resource_id"))
+            .dataSource("gcp")
             .displayName("vm instance")
             .tags(List.of())
             .type("vminstance")
             .accountIdToNameFn((_) -> null)
-            .assetState(assetState)
-            .resourceNameField(resourceNameField)
-            .opinionSource(opinionSource)
-            .opinionService("assets")
+            .assetState(AssetState.MANAGED)
+            .resourceNameField("resource_name")
+            .reportingSource("secondary")
+            .reportingService("assets")
             .build();
     }
 
     @Test
     void opinionPopulatedFromMapper() throws JsonProcessingException {
         var mapperData = JsonHelper.mapFromString(getOpinionMapperDocument());
-        AssetDocumentHelper helper = getHelper("secondary", "resource_id", "resource_name",
-            AssetState.MANAGED);
+        AssetDocumentHelper helper = getHelper();
         var dto = helper.createFrom(mapperData);
 
         var dtoAsMap = JsonHelper.mapFromString(JsonHelper.objectMapper.writeValueAsString(dto));
@@ -73,8 +69,7 @@ public class AssetDocumentHelperOpinionTests {
         var mapperData = JsonHelper.mapFromString(getOpinionMapperDocument());
 
         // Get the existing  document (the one from OpenSearch, for instance)
-        AssetDocumentHelper helper = getHelper("secondary", "resource_id", "resource_name",
-            AssetState.MANAGED);
+        AssetDocumentHelper helper = getHelper();
         var dto = helper.createFrom(mapperData);
 
         var newRawData = "{\"temperature\":\"chilly\"}";
@@ -97,8 +92,9 @@ public class AssetDocumentHelperOpinionTests {
                 "account_id": "central-run-3433",
                 "account_name": "main",
                 "projectId": "central-run-3433",
-                "source": "secondary",
-                "reporting_source": "gcp",
+                "source": "gcp",
+                "reporting_source": "secondary",
+                "reporting_service": "assets",
                 "source_display_name": "GCP",
                 "region": "us-central1-a",
                 "_entityType": "vminstance",

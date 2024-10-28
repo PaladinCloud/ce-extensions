@@ -3,6 +3,7 @@ package com.paladincloud.common.assets;
 import static java.util.Map.entry;
 
 import com.paladincloud.common.AssetDocumentFields;
+import com.paladincloud.common.assets.AssetDocumentHelper.MapperFields;
 import com.paladincloud.common.assets.FilesAndTypes.SupportingType;
 import com.paladincloud.common.aws.DatabaseHelper;
 import com.paladincloud.common.config.AssetTypes;
@@ -31,9 +32,7 @@ import org.apache.logging.log4j.Logger;
 public class Assets {
 
     private static final Logger LOGGER = LogManager.getLogger(Assets.class);
-
     private static final String DATA_SHIPPER_INDEX = "datashipper";
-
     private final AssetTypes assetTypes;
     private final AssetRepository assetRepository;
     private final MapperRepository mapperRepository;
@@ -51,10 +50,6 @@ public class Assets {
         this.assetStateHelper = assetStateHelper;
     }
 
-    private static String assetsPathPrefix(String dataSource) {
-        return STR."\{ConfigService.get(ConfigConstants.S3.DATA_PATH)}/\{dataSource}-";
-    }
-
     private List<Map<String, Object>> fetchMapperFiles(String bucket, String path,
         String dataSource, String type) {
         try {
@@ -66,23 +61,49 @@ public class Assets {
         }
     }
 
-    public void process(String dataSource, String reportingSource, String opinionService) {
-        var isOpinion = !dataSource.equalsIgnoreCase(reportingSource);
+    private ReportingInfo identifyReportingSource(String bucket, List<String> allMapperFiles) {
+        ReportingInfo info = null;
+        for (String mapperFile : allMapperFiles) {
+            try {
+                var records = mapperRepository.fetchFile(bucket, mapperFile);
+                if (!records.isEmpty()) {
+                    var firstRecord = records.getFirst();
+                    var source = firstRecord.get(MapperFields.REPORTING_SOURCE);
+                    var service = firstRecord.get(MapperFields.REPORTING_SERVICE);
+                    info = new ReportingInfo(source != null ? source.toString() : null,
+                        service != null ? service.toString() : null);
+                    break;
+                }
+            } catch (IOException e) {
+                throw new JobException(STR."Failed loading mapper file: \{mapperFile}", e);
+            }
+        }
+
+        return info;
+    }
+
+    public void process(String dataSource, String mapperPath) {
+        // dataSource is the underlying source of the data (gcp, aws, azure) while reporting source
+        // is only set if it's different. It's different for secondary sources reporting data
+        // (qualys, rapid7); in addition, reporting service is also set only if the data is from
+        // a secondary source.
+        // The reporting source and service are determined from values in the mapper file
+
         var bucket = ConfigService.get(ConfigConstants.S3.BUCKET_NAME);
-        var allFilenames = mapperRepository.listFiles(bucket, assetsPathPrefix(reportingSource));
-        var types = assetTypes.getTypesWithDisplayName(reportingSource);
+        var allFilenames = mapperRepository.listFiles(bucket, mapperPath);
+        var types = assetTypes.getTypesWithDisplayName(dataSource);
         var fileTypes = FilesAndTypes.matchFilesAndTypes(allFilenames, types.keySet());
         if (!fileTypes.unknownFiles.isEmpty()) {
             LOGGER.warn("Unknown files: {}", fileTypes.unknownFiles);
         }
 
         if (types.isEmpty()) {
-            LOGGER.info("There are no types to process for reportingSource: {}", reportingSource);
+            LOGGER.info("There are no types to process for dataSource: {}", dataSource);
             return;
         }
 
         if (allFilenames.isEmpty()) {
-            LOGGER.info("There are no files to process for reportingSource: {}", reportingSource);
+            LOGGER.info("There are no files to process for dataSource: {}", dataSource);
             return;
         }
 
@@ -96,28 +117,32 @@ public class Assets {
                     var displayName = types.get(type);
                     var indexName = StringHelper.indexName(dataSource, type);
 
+                    var latestAssets = fetchMapperFiles(bucket, filename, dataSource, type);
+                    var reportingInfo = identifyReportingSource(bucket, allFilenames);
+                    var isOpinion = !dataSource.equalsIgnoreCase(reportingInfo.source);
+
                     String primaryIndexName;
                     Map<String, AssetDTO> existingPrimaryAssets = Collections.emptyMap();
                     if (isOpinion) {
-                        primaryIndexName = StringHelper.indexName(reportingSource, type);
+                        primaryIndexName = StringHelper.indexName(dataSource, type);
                         existingPrimaryAssets = assetRepository.getAssets(primaryIndexName, true,
                             Collections.emptyList());
-                        indexName = StringHelper.opinionIndexName(reportingSource, type);
+                        indexName = StringHelper.opinionIndexName(reportingInfo.source, type);
                     } else {
                         primaryIndexName = null;
                     }
 
                     var existingAssets = assetRepository.getAssets(indexName, !isOpinion,
                         Collections.emptyList());
-                    var latestAssets = fetchMapperFiles(bucket, filename, dataSource, type);
                     var tags = (fileTypes.tagFiles.containsKey(type)) ? fetchMapperFiles(bucket,
                         fileTypes.tagFiles.get(type), dataSource, type)
                         : new ArrayList<Map<String, Object>>();
 
                     if (isOpinion) {
                         LOGGER.info(
-                            "The data source is {}; the reporting source is {}; {} assets were found in the primary index {}",
-                            dataSource, reportingSource, existingPrimaryAssets.size(),
+                            "dataSource={}; reportingSource={}; reportingService={}; {} assets were found in the primary index {}",
+                            dataSource, reportingInfo.source, reportingInfo.service,
+                            existingPrimaryAssets.size(),
                             primaryIndexName);
                     }
                     LOGGER.info("For {}, {} assets and {} tags were fetched from S3 and {} "
@@ -125,15 +150,16 @@ public class Assets {
                         tags.size(), existingAssets.size());
 
                     var docIdFields = Arrays.stream(
-                        assetTypes.getKeyForType(reportingSource, type).split(",")).toList();
-                    var idColumn = assetTypes.getIdForType(reportingSource, type);
+                        assetTypes.getKeyForType(dataSource, type).split(",")).toList();
+                    var idColumn = assetTypes.getIdForType(dataSource, type);
 
                     // Merge stored assets and mapped assets
                     var assetCreator = AssetDocumentHelper.builder().loadDate(startTime)
-                        .idField(idColumn).docIdFields(docIdFields).reportingSource(reportingSource)
+                        .idField(idColumn).docIdFields(docIdFields)
+                        .dataSource(dataSource)
+                        .reportingService(reportingInfo.service)
                         .displayName(displayName).tags(tags).type(type)
-                        .accountIdToNameFn(this::accountIdToName).opinionSource(dataSource)
-                        .opinionService(opinionService)
+                        .accountIdToNameFn(this::accountIdToName).reportingSource(dataSource)
                         .assetState(assetStateHelper.get(dataSource, type));
                     var mergeResponse = MergeAssets.process(assetCreator.build(), existingAssets,
                         latestAssets, existingPrimaryAssets);
@@ -331,5 +357,9 @@ public class Assets {
             relations.put(parentType, relationsList);
             assetRepository.updateTypeRelations(indexName, parentType, relations);
         }
+    }
+
+    record ReportingInfo(String source, String service) {
+
     }
 }

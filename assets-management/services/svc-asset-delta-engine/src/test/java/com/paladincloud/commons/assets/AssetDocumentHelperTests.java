@@ -24,7 +24,7 @@ public class AssetDocumentHelperTests {
             .loadDate(ZonedDateTime.now())
             .idField(idField)
             .docIdFields(List.of("accountid", "region", idField))
-            .reportingSource(dataSource)
+            .dataSource(dataSource)
             .displayName("ec2")
             .tags(List.of())
             .type("ec2")
@@ -106,16 +106,6 @@ public class AssetDocumentHelperTests {
 
         AssetDocumentHelper helper = getHelper("gcp", "_resource_id", null);
         helper.updateFrom(mappedAsMap, dto);
-    }
-
-    @Test
-    void opinionDtoIsFullyPopulated() throws JsonProcessingException {
-        AssetDocumentHelper helper = getHelper("secondary", "_resourceid", null);
-        var mappedAsMap = JsonHelper.mapFromString(getSampleOpinionDocument());
-        var dto = helper.createFrom(mappedAsMap);
-        assertNotNull(dto);
-
-//        assertEquals("secondary", dto.getReportingSource());
     }
 
     private String getV2PrimaryMapperDocument() {
@@ -225,34 +215,6 @@ public class AssetDocumentHelperTests {
                 ],
                 "status": "TERMINATED"
 
-            }""".trim();
-    }
-
-    private String getSampleOpinionDocument() {
-        return """
-            {
-                "_resourceid": "i-76",
-                "_resourcename": "ABD-DEF",
-                "_cloudType": "aws",
-                "reporting_source": "aws",
-                "_entitytype": "server",
-                "lastSeenTime": "2024-07-19T05:23:44Z",
-                "osBuild": "20348",
-                "serialNumber": "007",
-                "publicIpAddress": "74.313.911.257",
-                "discoverydate": "2024-07-25 16:32:26+0000",
-                "systemProductName": "HVM domU",
-                "externalId": "ext-7e86",
-                "accountid": "64",
-                "externalAccountId": "ext-7e86-3924",
-                "osVersion": "Windows Server 2022",
-                "provisionStatus": "Provisioned",
-                "firstSeenTime": "2024-05-07T10:15:19Z",
-                "osType": "Windows",
-                "systemManufacturer": "Xen",
-                "reducedFunctionalityMode": "no",
-                "region": "us-2",
-                "status": "normal"
             }""".trim();
     }
 
