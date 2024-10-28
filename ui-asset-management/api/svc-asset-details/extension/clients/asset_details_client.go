@@ -67,7 +67,7 @@ func (c *AssetDetailsClient) GetAssetDetails(ctx context.Context, tenantId, asse
 	result, err := c.elasticSearchClient.FetchAssetDetails(ctx, tenantId, allSources, assetId, 1)
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to fetch asset details: %w", err)
 	}
 
 	sourceArr := (*result)["hits"].(map[string]interface{})["hits"].([]interface{})

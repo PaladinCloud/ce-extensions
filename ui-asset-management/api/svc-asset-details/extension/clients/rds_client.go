@@ -49,7 +49,7 @@ func (r *RdsClient) CreateNewClient(ctx context.Context, tenantId string) (*sql.
 
 	rdsCredentials, _ := r.secretsClient.GetRdsSecret(ctx, r.secretIdPrefix, tenantId)
 	if rdsCredentials == nil {
-		return nil, fmt.Errorf("RDS credentials are nil")
+		return nil, fmt.Errorf("rds credentials are nil")
 	}
 
 	var (
@@ -75,7 +75,7 @@ func (r *RdsClient) CreateNewClient(ctx context.Context, tenantId string) (*sql.
 		return nil, nil
 	}
 
-	fmt.Println("connected to rds successfully!")
+	log.Println("connected to rds successfully!")
 	r.rdsClientCache.Store(tenantId, db) // store db in cache
 	return db, nil
 }

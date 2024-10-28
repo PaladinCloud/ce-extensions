@@ -18,7 +18,7 @@ package clients
 
 import (
 	"context"
-	"fmt"
+	"log"
 	"testing"
 )
 
@@ -37,12 +37,12 @@ func TestNewRDSClient(t *testing.T) {
 	response, err := client.FetchMandatoryTags(ctx, tenantId)
 
 	if err != nil {
-		t.Errorf("Error while fetching RDS Instance: %v", err)
+		t.Errorf("Error while fetching RDS Instance: %+v", err)
 	}
 
 	if response == nil {
 		t.Errorf("Expected response to be not nil")
 	}
 
-	fmt.Printf("Successfully fetched RDS Instance %+v\n", response)
+	log.Printf("Successfully fetched RDS Instance %+v\n", response)
 }

@@ -68,7 +68,7 @@ func NewDynamoDBClient(ctx context.Context, useAssumeRole bool, assumeRoleArn, r
 		svc = dynamodb.NewFromConfig(cfg)
 	}
 
-	fmt.Println("initialized dynamodb client")
+	log.Println("initialized dynamodb client")
 	return &DynamodbClient{
 		region:                  region,
 		client:                  svc,

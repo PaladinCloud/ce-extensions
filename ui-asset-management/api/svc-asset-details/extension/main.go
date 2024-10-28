@@ -40,9 +40,9 @@ var (
 )
 
 func main() {
-	fmt.Printf("starting extension - %s\n", extensionName)
+	log.Printf("starting extension - %s\n", extensionName)
 
-	fmt.Println("loading configuration")
+	log.Println("loading configuration")
 	configuration, err := clients.LoadConfigurationDetails()
 	if err != nil {
 		log.Fatalf("failed to load configuratio %+v", err)
