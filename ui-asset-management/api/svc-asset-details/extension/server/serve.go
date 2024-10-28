@@ -19,6 +19,7 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -44,7 +45,7 @@ func Start(port string, server *HttpServer, enableExtension bool) {
 }
 
 // Method that responds back with the cached values
-func startHTTPServer(port string, httpConfig *HttpServer) {
+func startHTTPServer(port string, httpConfig *HttpServer) error {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
@@ -52,11 +53,11 @@ func startHTTPServer(port string, httpConfig *HttpServer) {
 
 	err := http.ListenAndServe(fmt.Sprintf(":%s", port), r)
 	if err != nil {
-		fmt.Errorf("error starting the server: %+v", err)
+		log.Printf("error starting the server %+v", err)
 		os.Exit(0)
 	}
 
-	fmt.Printf("server started on %s\n", port)
+	log.Printf("server started on [%s]\n", port)
 }
 
 func handleValue(config *HttpServer) http.HandlerFunc {
@@ -64,9 +65,9 @@ func handleValue(config *HttpServer) http.HandlerFunc {
 		tenantId := chi.URLParam(r, "tenantId")
 		assetId, err := url.QueryUnescape(chi.URLParam(r, "assetId"))
 
-		fmt.Printf("fetching asset details for tenant id: %s, asset id: %s\n", tenantId, assetId)
+		log.Printf("fetching asset details for tenant id [%s] asset id [%s]\n", tenantId, assetId)
 		if err != nil {
-			fmt.Errorf("error decoding the assetId from url path")
+			log.Println("error decoding the assetId from url path")
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -74,7 +75,7 @@ func handleValue(config *HttpServer) http.HandlerFunc {
 		assetDetails, err := config.AssetDetailsClient.GetAssetDetails(r.Context(), tenantId, assetId)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
-			return
+			w.Write([]byte(err.Error()))
 		}
 
 		b, _ := json.Marshal(assetDetails)

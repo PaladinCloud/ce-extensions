@@ -62,9 +62,9 @@ const (
 	// Shutdown is a shutdown event for the environment
 	Shutdown EventType = "SHUTDOWN"
 
-	extensionNameHeader      = "Lambda-Extension-Name"
-	extensionIdentiferHeader = "Lambda-Extension-Identifier"
-	extensionErrorType       = "Lambda-Extension-Function-Error-Type"
+	extensionNameHeader       = "Lambda-Extension-Name"
+	extensionIdentifierHeader = "Lambda-Extension-Identifier"
+	extensionErrorType        = "Lambda-Extension-Function-Error-Type"
 )
 
 // Client is a simple client for the Lambda Extensions API
@@ -116,7 +116,7 @@ func (e *Client) Register(ctx context.Context, filename string) (*RegisterRespon
 	if err != nil {
 		return nil, err
 	}
-	e.extensionID = httpRes.Header.Get(extensionIdentiferHeader)
+	e.extensionID = httpRes.Header.Get(extensionIdentifierHeader)
 	print(e.extensionID)
 	return &res, nil
 }
@@ -130,7 +130,7 @@ func (e *Client) NextEvent(ctx context.Context) (*NextEventResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	httpReq.Header.Set(extensionIdentiferHeader, e.extensionID)
+	httpReq.Header.Set(extensionIdentifierHeader, e.extensionID)
 	httpRes, err := e.httpClient.Do(httpReq)
 	if err != nil {
 		return nil, err
@@ -160,7 +160,7 @@ func (e *Client) InitError(ctx context.Context, errorType string) (*StatusRespon
 	if err != nil {
 		return nil, err
 	}
-	httpReq.Header.Set(extensionIdentiferHeader, e.extensionID)
+	httpReq.Header.Set(extensionIdentifierHeader, e.extensionID)
 	httpReq.Header.Set(extensionErrorType, errorType)
 	httpRes, err := e.httpClient.Do(httpReq)
 	if err != nil {
@@ -191,7 +191,7 @@ func (e *Client) ExitError(ctx context.Context, errorType string) (*StatusRespon
 	if err != nil {
 		return nil, err
 	}
-	httpReq.Header.Set(extensionIdentiferHeader, e.extensionID)
+	httpReq.Header.Set(extensionIdentifierHeader, e.extensionID)
 	httpReq.Header.Set(extensionErrorType, errorType)
 	httpRes, err := e.httpClient.Do(httpReq)
 	if err != nil {

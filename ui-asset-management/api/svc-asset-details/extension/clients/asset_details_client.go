@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"reflect"
 	"strings"
 	"svc-asset-details-layer/models"
@@ -16,15 +17,28 @@ type AssetDetailsClient struct {
 	rdsClient           *RdsClient
 }
 
-func NewAssetDetailsClient(ctx context.Context, config *Configuration) *AssetDetailsClient {
-	dynamodbClient, _ := NewDynamoDBClient(ctx, config.UseAssumeRole, config.AssumeRoleArn, config.Region, config.TenantConfigOutputTable, config.TenantTablePartitionKey)
-	secretsClient, _ := NewSecretsClient(ctx, config.UseAssumeRole, config.AssumeRoleArn, config.Region)
+func NewAssetDetailsClient(ctx context.Context, config *Configuration) (*AssetDetailsClient, error) {
+	dynamodbClient, err := NewDynamoDBClient(ctx, config.UseAssumeRole, config.AssumeRoleArn, config.Region, config.TenantConfigOutputTable, config.TenantTablePartitionKey)
+	if err != nil {
+		return nil, err
+	}
+
+	secretsClient, err := NewSecretsClient(ctx, config.UseAssumeRole, config.AssumeRoleArn, config.Region)
+	if err != nil {
+		return nil, err
+	}
+
+	opensearchClient := NewElasticSearchClient(dynamodbClient)
+	rdsClient, err := NewRdsClient(secretsClient, config.SecretIdPrefix)
+	if err != nil {
+		return nil, err
+	}
 
 	return &AssetDetailsClient{
 		configuration:       config,
-		elasticSearchClient: NewElasticSearchClient(dynamodbClient),
-		rdsClient:           NewRdsClient(secretsClient, config.SecretIdPrefix),
-	}
+		elasticSearchClient: opensearchClient,
+		rdsClient:           rdsClient,
+	}, nil
 }
 
 // TODO: migrate to asset model v2 when available
@@ -49,7 +63,7 @@ func (c *AssetDetailsClient) GetAssetDetails(ctx context.Context, tenantId, asse
 		return nil, fmt.Errorf("assetId must be present")
 	}
 
-	fmt.Println("starting to fetch asset details")
+	log.Println("starting to fetch asset details")
 	result, err := c.elasticSearchClient.FetchAssetDetails(ctx, tenantId, allSources, assetId, 1)
 
 	if err != nil {
@@ -58,14 +72,13 @@ func (c *AssetDetailsClient) GetAssetDetails(ctx context.Context, tenantId, asse
 
 	sourceArr := (*result)["hits"].(map[string]interface{})["hits"].([]interface{})
 	if len(sourceArr) > 0 {
-		fmt.Printf("found asset details for asset id: %s\n", assetId)
+		log.Printf("found asset details for asset id: %s\n", assetId)
 		assetDetails := sourceArr[0].(map[string]interface{})["_source"].(map[string]interface{})
 		mandatoryTags, err := c.rdsClient.FetchMandatoryTags(ctx, tenantId)
 		if err != nil {
-			return nil, fmt.Errorf("failed to fetch mandatory tags: %v", err)
+			return nil, fmt.Errorf("failed to fetch mandatory tags: %w", err)
 		}
 
-		var primaryProvider string
 		var tags map[string]string
 		var commonFields map[string]string
 		if val, present := assetDetails["tags"]; present && reflect.ValueOf(assetDetails["tags"]).Kind() == reflect.Map {
@@ -94,15 +107,21 @@ func (c *AssetDetailsClient) GetAssetDetails(ctx context.Context, tenantId, asse
 			}
 		}
 
+		var primaryProvider string
 		if val, present := assetDetails["primaryProvider"]; present {
 			commonFields = c.buildCommonFields(assetDetails)
 			primaryProvider = fmt.Sprintf("%v", val)
-		} else if val, present := assetDetails["rawData"]; present {
+		} else if v, p := assetDetails["rawData"]; p {
 			commonFields = c.buildCommonFields(assetDetails)
-			primaryProvider = fmt.Sprintf("%v", val)
+			primaryProvider = fmt.Sprintf("%v", v)
 		} else {
 			commonFields = c.buildCommonFieldsLegacy(assetDetails)
-			primaryProvider, _ = c.buildPrimaryProviderForLegacyAssetModel(assetDetails)
+			primaryProviderModel, err := c.buildPrimaryProviderForLegacyAssetModel(assetDetails)
+			if err != nil {
+				return nil, fmt.Errorf("failed to build primary provider: %w", err)
+			}
+
+			primaryProvider = primaryProviderModel
 		}
 
 		return &models.Response{Data: models.AssetDetails{
@@ -151,28 +170,10 @@ func (c *AssetDetailsClient) buildCommonFields(assetDetails map[string]interface
 }
 
 func (c *AssetDetailsClient) buildCommonFieldsLegacy(assetDetails map[string]interface{}) map[string]string {
-	commonFields := map[string]string{}
+	commonFields := c.buildCommonFields(assetDetails)
 
-	if v, ok := assetDetails["accountid"]; ok {
-		commonFields[accountId] = v.(string)
-	}
-	if v, ok := assetDetails["accountname"]; ok {
-		commonFields[accountName] = v.(string)
-	}
-	if v, ok := assetDetails[cloudType]; ok {
-		commonFields[source] = v.(string)
-	}
-	if v, ok := assetDetails[region]; ok {
-		commonFields[region] = v.(string)
-	}
 	if v, ok := assetDetails[cloudType]; ok {
 		commonFields[sourceName] = v.(string)
-	}
-	if v, ok := assetDetails[entitytype]; ok {
-		commonFields[targetType] = v.(string)
-	}
-	if v, ok := assetDetails["targettypedisplayname"]; ok {
-		commonFields[targetTypeName] = v.(string)
 	}
 
 	return commonFields
@@ -185,7 +186,6 @@ func (c *AssetDetailsClient) buildPrimaryProviderForLegacyAssetModel(assetDetail
 
 	primaryProviderJson, err := json.Marshal(assetDetails)
 	if err != nil {
-		fmt.Errorf("error while formatting legacy asset details to json string: %+v", err)
 		return "", err
 	}
 
@@ -202,6 +202,7 @@ func (c *AssetDetailsClient) buildTagsForLegacyAssetModel(assetDetails map[strin
 			if source == "gcp" {
 				tagKey = strings.ToLower(tagKey)
 			}
+
 			tagsKvPairs[tagKey] = value.(string)
 		}
 	}

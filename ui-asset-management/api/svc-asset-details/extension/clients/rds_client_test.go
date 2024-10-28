@@ -33,7 +33,7 @@ func TestNewRDSClient(t *testing.T) {
 
 	secretsClient, _ := NewSecretsClient(ctx, useAssumeRole, assumeRoleArn, region)
 
-	client := NewRdsClient(secretsClient, secretIdPrefix)
+	client, _ := NewRdsClient(secretsClient, secretIdPrefix)
 	response, err := client.FetchMandatoryTags(ctx, tenantId)
 
 	if err != nil {

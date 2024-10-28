@@ -20,6 +20,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"svc-asset-details-layer/models"
 	"sync"
 
@@ -30,23 +31,26 @@ import (
 type RdsClient struct {
 	secretIdPrefix string
 	secretsClient  *SecretsClient
-	rdsClientCache sync.Map // Replaced with sync.Map
+	rdsClientCache sync.Map
 }
 
-func NewRdsClient(secretsClient *SecretsClient, secretIdPrefix string) *RdsClient {
+func NewRdsClient(secretsClient *SecretsClient, secretIdPrefix string) (*RdsClient, error) {
 	return &RdsClient{
 		secretIdPrefix: secretIdPrefix,
 		secretsClient:  secretsClient,
-	}
+	}, nil
 }
 
-func (r *RdsClient) CreateNewClient(ctx context.Context, tenantId string) *sql.DB {
+func (r *RdsClient) CreateNewClient(ctx context.Context, tenantId string) (*sql.DB, error) {
 	// check if the client is already created
 	if db, ok := r.rdsClientCache.Load(tenantId); ok {
-		return db.(*sql.DB) // type assert to *sql.DB
+		return db.(*sql.DB), nil // type assert to *sql.DB
 	}
 
 	rdsCredentials, _ := r.secretsClient.GetRdsSecret(ctx, r.secretIdPrefix, tenantId)
+	if rdsCredentials == nil {
+		return nil, fmt.Errorf("RDS credentials are nil")
+	}
 
 	var (
 		dbUser     = rdsCredentials.DbUsername
@@ -62,24 +66,27 @@ func (r *RdsClient) CreateNewClient(ctx context.Context, tenantId string) *sql.D
 	// open a connection to the database
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
-		return nil
+		return nil, nil
 	}
 
 	// check if the database is reachable
 	err = db.Ping()
 	if err != nil {
-		return nil
+		return nil, nil
 	}
 
 	fmt.Println("connected to rds successfully!")
 	r.rdsClientCache.Store(tenantId, db) // store db in cache
-	return db
+	return db, nil
 }
 
 func (r *RdsClient) FetchMandatoryTags(ctx context.Context, tenantId string) ([]models.Tag, error) {
-	dbClient := r.CreateNewClient(ctx, tenantId)
+	dbClient, err := r.CreateNewClient(ctx, tenantId)
+	if err != nil {
+		return nil, err
+	}
 
-	fmt.Println("getting mandatory tags from rds")
+	log.Println("getting mandatory tags from rds")
 	query := `
 		select opt.optionName as tagName
                 from pac_v2_ui_options opt join pac_v2_ui_filters fil on opt.filterId= fil.filterId 
