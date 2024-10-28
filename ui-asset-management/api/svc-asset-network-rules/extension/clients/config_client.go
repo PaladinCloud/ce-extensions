@@ -33,7 +33,7 @@ type Configuration struct {
 	SecretIdPrefix          string
 }
 
-func LoadConfigurationDetails() (*Configuration, error) {
+func LoadConfigurationDetails() *Configuration {
 	enableExtension := parseEnableExtension()
 	useAssumeRole, assumeRoleArn := parseAssumeRole()
 
@@ -51,7 +51,7 @@ func LoadConfigurationDetails() (*Configuration, error) {
 		TenantConfigOutputTable: tenantConfigOutputTable,
 		TenantTablePartitionKey: tenantTablePartitionKey,
 		SecretIdPrefix:          secretIdPrefix,
-	}, nil
+	}
 }
 
 func getEnvVariable(name string) string {
