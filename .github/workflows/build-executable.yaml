@@ -38,7 +38,7 @@ jobs:
       - name: Display is_release
         run: |
           is_release="${{ steps.check_branch.outputs.is_release }}"
-          echo " It is an release branch: $is_release"
+          echo "It is a release branch: $is_release"
 
 
   # Extracting Version
@@ -93,7 +93,7 @@ jobs:
           java-version: 21
           java-distribution: temurin
           maven-version: 3.9.9
-      - name: Execute an Makefile target
+      - name: Execute a Makefile target
         run: make package-all
       - name: Upload dist folder as an artifact
         uses: actions/upload-artifact@v4
@@ -130,8 +130,8 @@ jobs:
            aws s3 cp --recursive . s3://${{ secrets.AWS_BUCKET_DEV }}/vlatest/dev/
 
   # Deploy Lambda Layer to QA
-  qa-lambda-layer:
-    name: Deploy Lambda Layer to QA
+  PushBuildQA:
+    name: Push JAR to QA
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release-v')
     environment: 'SaaSQA'
@@ -164,3 +164,24 @@ jobs:
         run: |
           cd dist
           aws s3 cp --recursive . s3://${{ secrets.AWS_BUCKET_QA }}/${{ needs.extract_version.outputs.version }}/qa/
+
+  # Trigger Workflow in Repository installer
+  trigger_repo_b_workflow:
+    name: Trigger Workflow Dev Worfklow in installer repo
+    runs-on: ubuntu-latest
+    needs:
+      - PushBuildDev
+    if: success()  # Only triggers if previous jobs were successful
+    steps:
+      - name: Trigger Workflow in installer repo 
+        env:
+          REPO_B_OWNER: PaladinCloud  # Replace with Repo B owner
+          REPO_B_NAME: installer # Replace with Repo B name
+          WORKFLOW_FILE_NAME: deploy-dev.yaml  # Replace with Repo B workflow filename
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Ensure this token has access to Repo B
+        run: |
+          curl -X POST \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/$REPO_B_OWNER/$REPO_B_NAME/actions/workflows/$WORKFLOW_FILE_NAME/dispatches \
+            -d '{"ref": "main}'  # Adjust branch if necessary
