@@ -225,6 +225,11 @@ public class ElasticSearchHelper {
                     if (docId == null) {
                         docId = hit.source.getLegacyDocId();
                     }
+                    if (docId == null) {
+                        LOGGER.error(
+                            "error occurred in: Asset missing both docId values: endPoint={} OpenSearch id={}",
+                            endPoint, hit.id);
+                    }
                     results.put(docId, hit.source);
                 }
             }
