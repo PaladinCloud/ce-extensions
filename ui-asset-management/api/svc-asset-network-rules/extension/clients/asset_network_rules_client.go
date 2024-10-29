@@ -58,7 +58,7 @@ func (c *AssetNetworkRulesClient) GetPortRuleDetails(ctx context.Context, tenant
 
 		assetDetails := getResults(result)
 		if len(assetDetails) == 0 {
-			return nil, fmt.Errorf("asset detials not found for asset id [%s]", assetId)
+			return nil, fmt.Errorf("asset details not found for asset id [%s]", assetId)
 		}
 
 		assetDetail := assetDetails[0].(map[string]interface{})["_source"].(map[string]interface{})

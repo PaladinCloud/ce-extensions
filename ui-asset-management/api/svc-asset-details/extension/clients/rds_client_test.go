@@ -18,7 +18,6 @@ package clients
 
 import (
 	"context"
-	"log"
 	"testing"
 )
 
@@ -47,5 +46,5 @@ func TestNewRDSClient(t *testing.T) {
 		t.Errorf("Expected response to be not nil")
 	}
 
-	log.Printf("Successfully fetched RDS Instance %+v\n", response)
+	t.Logf("Successfully fetched RDS Instance %+v", response)
 }

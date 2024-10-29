@@ -58,9 +58,13 @@ func (r *RdsClient) CreateNewRdsClient(ctx context.Context, tenantId string) (*s
 		return nil, fmt.Errorf("invalid rds client type in cache")
 	}
 
-	rdsCredentials, _ := r.secretsClient.GetRdsSecret(ctx, r.secretIdPrefix, tenantId)
+	rdsCredentials, err := r.secretsClient.GetRdsSecret(ctx, r.secretIdPrefix, tenantId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get rds credentials %w", err)
+	}
+
 	if rdsCredentials == nil {
-		return nil, fmt.Errorf("rds credentials are nil")
+		return nil, fmt.Errorf("rds credentials are missing")
 	}
 
 	var (
@@ -77,16 +81,16 @@ func (r *RdsClient) CreateNewRdsClient(ctx context.Context, tenantId string) (*s
 	// open a connection to the database
 	rds, err := sql.Open("mysql", dsn)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open database connection: %w", err)
+		return nil, fmt.Errorf("failed to open database connection %w", err)
 	}
 
 	// check if the database is reachable
 	err = rds.Ping()
 	if err != nil {
-		return nil, fmt.Errorf("database ping failed: %w", err)
+		return nil, fmt.Errorf("database ping failed %w", err)
 	}
 
-	log.Println("connected to rds successfully!")
+	log.Println("connected to rds successfully")
 	r.rdsClientCache.Store(tenantId, rds) // store rds in cache
 	return rds, nil
 }
