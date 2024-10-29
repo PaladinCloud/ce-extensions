@@ -52,12 +52,9 @@ func startHTTPServer(port string, httpConfig *HttpServer) {
 	r.Use(middleware.Recoverer)
 	r.Get("/tenant/{tenantId}/assetgroups/{ag}/assets/count", handleValue(httpConfig))
 
-	srv := &http.Server{
-		Addr:    fmt.Sprintf(":%s", port),
-		Handler: r,
-	}
-	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		log.Printf("error starting the server: %v\n", err)
+	log.Printf("starting server on port [%s]\n", port)
+	if err := http.ListenAndServe(fmt.Sprintf(":%s", port), r); err != nil {
+		log.Printf("server error: %v", err)
 		os.Exit(1)
 	}
 

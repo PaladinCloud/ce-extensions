@@ -52,13 +52,13 @@ func startHTTPServer(port string, httpConfig *HttpServer) {
 	r.Use(middleware.Recoverer)
 	r.Get("/tenant/{tenantId}/targets/{targetType}/assets/{assetId}/network-rules", handleValue(httpConfig))
 
-	err := http.ListenAndServe(fmt.Sprintf(":%s", port), r)
-	if err != nil {
-		log.Printf("error starting the server %+v", err)
+	log.Printf("starting server on port [%s]\n", port)
+	if err := http.ListenAndServe(fmt.Sprintf(":%s", port), r); err != nil {
+		log.Printf("server error: %v", err)
 		os.Exit(1)
 	}
 
-	log.Printf("server started on [%s]\n", port)
+	log.Printf("server started on %s\n", port)
 }
 
 func handleValue(config *HttpServer) http.HandlerFunc {
