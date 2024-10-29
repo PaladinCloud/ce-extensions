@@ -182,7 +182,7 @@ public class Assets {
                     }
 
                     // Each document needs to be updated, regardless of which state it is in
-                    mergeResponse.getExistingAssets().forEach((_, value) -> {
+                    mergeResponse.getExistingAssets().values().forEach(value -> {
                         try {
                             batchIndexer.add(
                                 BatchItem.documentEntry(finalIndexName, value.getDocId(),
@@ -192,7 +192,7 @@ public class Assets {
                         }
                     });
 
-                    mergeResponse.getNewPrimaryAssets().forEach((_, value) -> {
+                    mergeResponse.getNewPrimaryAssets().values().forEach(value -> {
                         try {
                             batchIndexer.add(
                                 BatchItem.documentEntry(primaryIndexName, value.getDocId(),

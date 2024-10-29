@@ -30,6 +30,7 @@ public class MergeAssets {
      * existing documents will be updated in place. In addition, this instance will track and
      * provide the new document ids and the deleted document ids.
      *
+     * @param assetHelper    - the document builder/updater
      * @param existingAssets - the documents in the repository (OpenSearch)
      * @param latestAssets   - the mapper documents
      * @param primaryAssets  - may be null; for secondary sources, all the existing primary assets.
@@ -62,8 +63,7 @@ public class MergeAssets {
         });
 
         existingAssets.forEach((key, value) -> {
-            if (!response.updatedAssets.containsKey(key) && !response.newAssets.containsKey(
-                key)) {
+            if (!isAssetProcessed(key, response)) {
                 if (assetHelper.isPrimarySource()) {
                     var assetState = value.getAssetState();
                     if (assetState == null || !assetState.equals(AssetState.SUSPICIOUS)) {
@@ -88,7 +88,7 @@ public class MergeAssets {
         if (primaryAssets != null) {
             var activeAssets = new HashMap<>(response.getUpdatedAssets());
             activeAssets.putAll(response.getNewAssets());
-            activeAssets.forEach((key, _) -> {
+            activeAssets.keySet().forEach(key -> {
                 if (!primaryAssets.containsKey(key)) {
                     var data = latestAssetsDataMap.get(key);
                     if (data == null) {
@@ -101,6 +101,10 @@ public class MergeAssets {
             });
         }
         return response;
+    }
+
+    static private boolean isAssetProcessed(String key, MergeAssets mergeAssets) {
+        return mergeAssets.updatedAssets.containsKey(key) || mergeAssets.newAssets.containsKey(key);
     }
 
     public Map<String, AssetDTO> getExistingAssets() {
