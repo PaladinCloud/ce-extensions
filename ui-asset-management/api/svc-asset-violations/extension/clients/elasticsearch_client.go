@@ -21,6 +21,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"svc-asset-violations-layer/models"
 	"sync"
 
@@ -33,7 +34,7 @@ type ElasticSearchClient struct {
 }
 
 func NewElasticSearchClient(dynamodbClient *DynamodbClient) *ElasticSearchClient {
-	fmt.Println("initialized opensearch client")
+	log.Println("initialized opensearch client")
 	return &ElasticSearchClient{
 		dynamodbClient: dynamodbClient,
 	}
@@ -63,7 +64,7 @@ func (c *ElasticSearchClient) CreateNewElasticSearchClient(ctx context.Context, 
 
 func (c *ElasticSearchClient) FetchAssetViolations(ctx context.Context, tenantId, ag, assetId string) (*models.PolicyViolationsMap, error) {
 	query := buildQuery(assetId)
-	fmt.Printf("Query: %+v\n", query)
+	log.Printf("Query: %+v\n", query)
 
 	esRequest := map[string]interface{}{
 		"size":    1000,
@@ -76,7 +77,7 @@ func (c *ElasticSearchClient) FetchAssetViolations(ctx context.Context, tenantId
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode opensearch client request: %+v", err)
 	}
-	fmt.Printf("opensearch client request: %s\n", buffer.String())
+	log.Printf("opensearch client request: %s\n", buffer.String())
 
 	client, err := c.CreateNewElasticSearchClient(ctx, tenantId)
 	if err != nil {
@@ -110,7 +111,7 @@ func (c *ElasticSearchClient) FetchAssetViolations(ctx context.Context, tenantId
 
 	var policyViolations = models.PolicyViolationsMap{}
 	if len(sourceArr) > 0 {
-		fmt.Printf("found %d violations for asset id: %s\n", len(sourceArr), assetId)
+		log.Printf("found [%d] violations for asset id [%s]\n", len(sourceArr), assetId)
 
 		policyViolations.PolicyViolationsMap = make(map[string]interface{}, len(sourceArr))
 		// Put the violations in map with policyId as key

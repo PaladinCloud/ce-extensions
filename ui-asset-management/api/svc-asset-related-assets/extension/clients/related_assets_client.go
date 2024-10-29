@@ -17,10 +17,13 @@ type RelatedAssetsClient struct {
 func NewRelatedAssetsClient(ctx context.Context, config *Configuration) (*RelatedAssetsClient, error) {
 	dynamodbClient, err := NewDynamoDBClient(ctx, config.UseAssumeRole, config.AssumeRoleArn, config.Region, config.TenantConfigOutputTable, config.TenantTablePartitionKey)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating dynamodb client %w", err)
 	}
 
-	return &RelatedAssetsClient{elasticSearchClient: NewElasticSearchClient(dynamodbClient)}, nil
+	opensearchClient := NewElasticSearchClient(dynamodbClient)
+	return &RelatedAssetsClient{
+		elasticSearchClient: opensearchClient,
+	}, nil
 }
 
 const (

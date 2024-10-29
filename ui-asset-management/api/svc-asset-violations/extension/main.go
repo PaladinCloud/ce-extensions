@@ -19,6 +19,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -39,22 +40,31 @@ var (
 )
 
 func main() {
-	fmt.Printf("starting - %s\n", extensionName)
+	log.Printf("starting extension - %s\n", extensionName)
 
-	fmt.Println("loading configuration")
-	configuration := clients.LoadConfigurationDetails()
-	fmt.Println("configuration loaded successfully")
+	log.Println("loading configuration")
+	configuration, err := clients.LoadConfigurationDetails()
+	if err != nil {
+		log.Fatalf("failed to load configuratio %+v", err)
+	}
 
-	startMain(configuration)
+	err2 := startMain(configuration)
+	if err2 != nil {
+		log.Fatalf("failed to start main %+v", err2)
+	}
 }
 
-func startMain(configuration *clients.Configuration) {
+func startMain(configuration *clients.Configuration) error {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	fmt.Println("initializing http server")
+	log.Println("initializing http server")
+	assetViolationsClient, err := clients.NewAssetViolationsClient(ctx, configuration)
+	if err != nil {
+		return fmt.Errorf("error creating asset violations client: %w", err)
+	}
 	httpServerClient = &server.HttpServer{
 		Configuration:         configuration,
-		AssetViolationsClient: clients.NewAssetViolationsClient(ctx, configuration),
+		AssetViolationsClient: assetViolationsClient,
 	}
 	fmt.Println("http server initialized successfully!")
 
@@ -83,6 +93,8 @@ func startMain(configuration *clients.Configuration) {
 		// Will block until shutdown event is received or cancelled via the context.
 		processEvents(ctx)
 	}
+
+	return nil
 }
 
 func processEvents(ctx context.Context) {

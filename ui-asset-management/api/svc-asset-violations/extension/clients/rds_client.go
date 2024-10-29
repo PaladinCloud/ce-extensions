@@ -101,7 +101,7 @@ func (r *RdsClient) GetPolicies(ctx context.Context, tenantId, targetType string
 		return nil, fmt.Errorf("failed to create rds client %w", err)
 	}
 
-	fmt.Println("getting policies from rds")
+	log.Println("getting policies from rds")
 	query := `
 		SELECT 
 			p.policyId,

@@ -17,7 +17,7 @@ type ElasticSearchClient struct {
 }
 
 func NewElasticSearchClient(dynamodbClient *DynamodbClient) *ElasticSearchClient {
-	fmt.Println("initialized opensearch client")
+	log.Println("initialized opensearch client")
 	return &ElasticSearchClient{
 		dynamodbClient: dynamodbClient,
 	}

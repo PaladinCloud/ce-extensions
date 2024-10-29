@@ -20,18 +20,18 @@ type AssetDetailsClient struct {
 func NewAssetDetailsClient(ctx context.Context, config *Configuration) (*AssetDetailsClient, error) {
 	dynamodbClient, err := NewDynamoDBClient(ctx, config.UseAssumeRole, config.AssumeRoleArn, config.Region, config.TenantConfigOutputTable, config.TenantTablePartitionKey)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating dynamodb client %w", err)
 	}
 
 	secretsClient, err := NewSecretsClient(ctx, config.UseAssumeRole, config.AssumeRoleArn, config.Region)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating secrets client %w", err)
 	}
 
 	opensearchClient := NewElasticSearchClient(dynamodbClient)
 	rdsClient, err := NewRdsClient(secretsClient, config.SecretIdPrefix)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating rds client %w", err)
 	}
 
 	return &AssetDetailsClient{

@@ -16,11 +16,12 @@ type AssetNetworkRulesClient struct {
 func NewAssetNetworkRulesClient(ctx context.Context, config *Configuration) (*AssetNetworkRulesClient, error) {
 	dynamodbClient, err := NewDynamoDBClient(ctx, config.UseAssumeRole, config.AssumeRoleArn, config.Region, config.TenantConfigOutputTable, config.TenantTablePartitionKey)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating dynamodb client %w", err)
 	}
 
+	opensearchClient := NewElasticSearchClient(dynamodbClient)
 	return &AssetNetworkRulesClient{
-		elasticSearchClient: NewElasticSearchClient(dynamodbClient),
+		elasticSearchClient: opensearchClient,
 	}, nil
 }
 
