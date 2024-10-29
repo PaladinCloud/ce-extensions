@@ -91,7 +91,7 @@ func (r *RdsClient) CreateNewRdsClient(ctx context.Context, tenantId string) (*s
 		return nil, fmt.Errorf("database ping failed %w", err)
 	}
 
-	log.Println("connected to rds successfully")
+	log.Printf("connected to rds successfully for tenantId [%s]\n", tenantId)
 	r.rdsClientCache.Store(tenantId, rds) // store rds in cache
 	return rds, nil
 }
