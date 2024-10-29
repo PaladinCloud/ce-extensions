@@ -181,27 +181,26 @@ jobs:
           fi
 
   # Trigger Workflow in Repository installer
-  trigger_repo_b_workflow:
-    name: Trigger Workflow Dev Worfklow in installer repo
+  trigger_repo_installer_workflow:
+    name: Trigger Workflow in Installer Repo
     runs-on: ubuntu-latest
+    environment: 'SaaSDEV'
     needs:
       - PushBuildDev
     if: success()  # Only triggers if previous jobs were successful
     steps:
-      - name: Trigger Workflow in installer repo 
+      - name: Trigger Workflow in installer repo
         env:
-          REPO_B_OWNER: PaladinCloud  # Replace with Repo B owner
-          REPO_B_NAME: installer # Replace with Repo B name
-          WORKFLOW_FILE_NAME: deploy-dev.yaml  # Replace with Repo B workflow filename
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Ensure this token has access to Repo B
         run: |
           response=$(curl -X POST \
             -H "Authorization: Bearer $GITHUB_TOKEN" \
-            -H "Accept: application/vnd.github.v3json" \
-            "https://api.github.com/repos/${REPO_B_OWNER}/${REPO_B_NAME}/actions/workflows/${WORKFLOW_FILE_NAME}/dispatches" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ secrets.REPO_OWNER }}/${{ secrets.REPO_NAME }}/actions/workflows/${{ secrets.WORKFLOW_FILE_NAME_DEV }}/dispatches" \
             -d '{"ref": "main"}' \
             -w "%{http_code}" \
             -o /dev/null)
+          
           if [ "$response" -ne 204 ]; then
             echo "Error: Failed to trigger workflow (HTTP status: $response)"
             exit 1
