@@ -48,10 +48,14 @@ func NewRdsClient(secretsClient *SecretsClient, secretIdPrefix string) (*RdsClie
 	}, nil
 }
 
-func (r *RdsClient) CreateNewClient(ctx context.Context, tenantId string) (*sql.DB, error) {
+func (r *RdsClient) CreateNewRdsClient(ctx context.Context, tenantId string) (*sql.DB, error) {
 	// check if the client is already created
 	if db, ok := r.rdsClientCache.Load(tenantId); ok {
-		return db.(*sql.DB), nil // type assert to *sql.DB
+		if dbClient, ok := db.(*sql.DB); ok {
+			return dbClient, nil
+		}
+
+		return nil, fmt.Errorf("invalid rds client type in cache")
 	}
 
 	rdsCredentials, _ := r.secretsClient.GetRdsSecret(ctx, r.secretIdPrefix, tenantId)
@@ -71,24 +75,24 @@ func (r *RdsClient) CreateNewClient(ctx context.Context, tenantId string) (*sql.
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", dbUser, dbPassword, dbHost, dbPort, dbName)
 
 	// open a connection to the database
-	db, err := sql.Open("mysql", dsn)
+	rds, err := sql.Open("mysql", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database connection: %w", err)
 	}
 
 	// check if the database is reachable
-	err = db.Ping()
+	err = rds.Ping()
 	if err != nil {
 		return nil, fmt.Errorf("database ping failed: %w", err)
 	}
 
 	log.Println("connected to rds successfully!")
-	r.rdsClientCache.Store(tenantId, db) // store db in cache
-	return db, nil
+	r.rdsClientCache.Store(tenantId, rds) // store rds in cache
+	return rds, nil
 }
 
 func (r *RdsClient) FetchMandatoryTags(ctx context.Context, tenantId string) ([]models.Tag, error) {
-	dbClient, err := r.CreateNewClient(ctx, tenantId)
+	rdsClient, err := r.CreateNewRdsClient(ctx, tenantId)
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +104,7 @@ func (r *RdsClient) FetchMandatoryTags(ctx context.Context, tenantId string) ([]
                 and opt.optionValue like '%tags%' and fil.filterName='AssetListing';
 	`
 	var tags []models.Tag
-	if err := sqlscan.Select(ctx, dbClient, &tags, query); err != nil {
+	if err := sqlscan.Select(ctx, rdsClient, &tags, query); err != nil {
 		return nil, err
 	}
 
@@ -110,8 +114,8 @@ func (r *RdsClient) FetchMandatoryTags(ctx context.Context, tenantId string) ([]
 func (r *RdsClient) CloseClient() {
 	// close all connections in the cache
 	r.rdsClientCache.Range(func(key, value interface{}) bool {
-		db := value.(*sql.DB)
-		db.Close()
+		rds := value.(*sql.DB)
+		rds.Close()
 		r.rdsClientCache.Delete(key)
 		return true
 	})
