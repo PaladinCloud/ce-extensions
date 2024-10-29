@@ -189,19 +189,17 @@ jobs:
       - PushBuildDev
     if: success()  # Only triggers if previous jobs were successful
     steps:
-      - name: Trigger Workflow in installer repo
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Ensure this token has access to Repo B
-        run: |
-          response=$(curl -X POST \
-            -H "Authorization: Bearer $GITHUB_TOKEN" \
-            -H "Accept: application/vnd.github.v3+json" \
-            "https://api.github.com/repos/${{ secrets.REPO_OWNER }}/${{ secrets.REPO_NAME }}/actions/workflows/${{ secrets.WORKFLOW_FILE_NAME_DEV }}/dispatches" \
-            -d '{"ref": "main"}' \
-            -w "%{http_code}" \
-            -o /dev/null)
-          
-          if [ "$response" -ne 204 ]; then
-            echo "Error: Failed to trigger workflow (HTTP status: $response)"
-            exit 1
-          fi
+      - name: Trigger Deploy Workflow in Installer Repo
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.PALADINCLOUD_SECERT }}  # Ensure this token has access to Repo B
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: 'PaladinCloud',               // Replace with your GitHub repo owner
+              repo: 'installer',                    // Replace with your repo name
+              workflow_id: 'deploy-dev.yaml',      // Replace with your workflow filename
+              ref: 'main',                          // Branch to trigger the workflow on
+              inputs: {
+                environment: 'dev'                 // Set environment, can also be dynamic
+              }
+            });
