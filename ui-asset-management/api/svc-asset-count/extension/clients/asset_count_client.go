@@ -19,6 +19,7 @@ package clients
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 	"svc-asset-count-layer/models"
 )
@@ -45,10 +46,7 @@ func NewAssetCountClient(ctx context.Context, config *Configuration) (*AssetCoun
 }
 
 const (
-	success     = "success"
-	awsProvider = "aws"
-	gcp         = "gcp"
-	azure       = "azure"
+	success = "success"
 )
 
 func (c *AssetCountClient) GetAssetCountForAssetGroup(ctx context.Context, tenantId, ag, domain string) (*models.AssetStateCountResponse, error) {
@@ -58,9 +56,18 @@ func (c *AssetCountClient) GetAssetCountForAssetGroup(ctx context.Context, tenan
 
 	var targetTypesFromDB *[]models.TargetTableProjection
 	var err error
-	if ag == awsProvider || ag == gcp || ag == azure {
-		targetTypesFromDB, err = c.rdsClient.GetAllTargetTypes(ctx, tenantId, ag)
 
+	plugins, err := c.rdsClient.GetCloudProviders(ctx, tenantId)
+	cloudProviders := make([]string, 0, len(*plugins))
+	for _, plugin := range *plugins {
+		cloudProviders = append(cloudProviders, plugin.Provider)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	if slices.Contains(cloudProviders, ag) {
+		targetTypesFromDB, err = c.rdsClient.GetAllTargetTypes(ctx, tenantId, ag)
 	} else if ag == "ds-all" || ag == "*" {
 		targetTypesFromDB, err = c.rdsClient.GetAllTargetTypes(ctx, tenantId, "")
 	} else {
@@ -85,6 +92,9 @@ func (c *AssetCountClient) GetAssetCountForAssetGroup(ctx context.Context, tenan
 	}
 
 	assetStateCounts, err := c.processAssetStateCountBuckets(assetStateCountBuckets)
+	if err != nil {
+		return nil, err
+	}
 	return &models.AssetStateCountResponse{Data: models.AssetStateCountData{AssetStateNameCounts: *assetStateCounts}, Message: success}, nil
 }
 

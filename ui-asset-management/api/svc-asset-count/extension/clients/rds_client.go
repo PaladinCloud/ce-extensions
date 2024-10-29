@@ -167,6 +167,25 @@ func (r *RdsClient) GetConfiguredTargetTypes(ctx context.Context, agTargetTypes 
 	return &targetTypes, nil
 }
 
+func (r *RdsClient) GetCloudProviders(ctx context.Context, tenantId string) (*[]models.PluginsTableProjection, error) {
+	dbClient, err := r.CreateNewClient(ctx, tenantId)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("fetching cloud providers from plugins table")
+
+	query := `
+	SELECT source FROM plugins WHERE type='Cloud Provider';
+	`
+
+	var plugins []models.PluginsTableProjection
+	if err := sqlscan.Select(ctx, dbClient, &plugins, query); err != nil {
+		return nil, err
+	}
+
+	return &plugins, nil
+}
+
 func (r *RdsClient) CloseClient() {
 	// close all connections in the cache
 	r.rdsClientCache.Range(func(key, value interface{}) bool {
