@@ -45,7 +45,7 @@ func main() {
 	log.Println("loading configuration")
 	configuration, err := clients.LoadConfigurationDetails()
 	if err != nil {
-		log.Fatalf("failed to load configuratio %+v", err)
+		log.Fatalf("failed to load aws configuratio %+v", err)
 	}
 
 	err2 := startMain(configuration)

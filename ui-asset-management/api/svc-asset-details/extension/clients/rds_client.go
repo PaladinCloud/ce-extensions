@@ -98,7 +98,7 @@ func (r *RdsClient) CreateNewRdsClient(ctx context.Context, tenantId string) (*s
 func (r *RdsClient) FetchMandatoryTags(ctx context.Context, tenantId string) ([]models.Tag, error) {
 	rdsClient, err := r.CreateNewRdsClient(ctx, tenantId)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create rds client %w", err)
 	}
 
 	log.Println("getting mandatory tags from rds")
@@ -109,7 +109,7 @@ func (r *RdsClient) FetchMandatoryTags(ctx context.Context, tenantId string) ([]
 	`
 	var tags []models.Tag
 	if err := sqlscan.Select(ctx, rdsClient, &tags, query); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to fetch mandatory tags %w", err)
 	}
 
 	return tags, nil

@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"svc-asset-related-assets-layer/models"
 	"sync"
 
@@ -32,12 +33,12 @@ func (c *ElasticSearchClient) CreateNewElasticSearchClient(ctx context.Context, 
 	// If not found, proceed to create a new client
 	esDomainProperties, err := c.dynamodbClient.GetOpenSearchDomain(ctx, tenantId)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error getting opensearch domain properties for tenant id [%s] %w", tenantId, err)
 	}
 
 	client, err := elasticsearch.NewClient(elasticsearch.Config{Addresses: []string{"https://" + esDomainProperties.Endpoint}})
 	if err != nil {
-		return nil, fmt.Errorf("error creating opensearch client for tenant id: [%s] %w", tenantId, err)
+		return nil, fmt.Errorf("error creating opensearch client for tenant id [%s] %w", tenantId, err)
 	}
 
 	// Store the new client in the cache
@@ -67,7 +68,7 @@ func (c *ElasticSearchClient) FetchAssetDetails(ctx context.Context, tenantId, a
 
 	client, err := c.CreateNewElasticSearchClient(ctx, tenantId)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating opensearch client for tenant id [%s] %w", tenantId, err)
 	}
 	response, err := client.Search(client.Search.WithIndex(ag), client.Search.WithBody(&buffer))
 
@@ -95,7 +96,7 @@ func (c *ElasticSearchClient) FetchRelatedAssets(ctx context.Context, docTypes [
 		}
 		jsonBytes, err := json.Marshal(searchQuery)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error marshalling related asset query %w", err)
 		}
 		esRequest += "{}\n" + string(jsonBytes) + "\n"
 	}
@@ -115,7 +116,7 @@ func (c *ElasticSearchClient) FetchMultipleAssetsByResourceId(ctx context.Contex
 		}
 		jsonBytes, err := json.Marshal(searchQuery)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error marshalling related asset query %w", err)
 		}
 		esRequest += "{}\n" + string(jsonBytes) + "\n"
 	}
@@ -130,7 +131,7 @@ func (c *ElasticSearchClient) fetchFromOpensearch(ctx context.Context, tenantId,
 
 	client, err := c.CreateNewElasticSearchClient(ctx, tenantId)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating opensearch client for tenant id [%s] %w", tenantId, err)
 	}
 	response, err := client.Msearch(bytes.NewReader([]byte(esQuery)), client.Msearch.WithIndex(esIndex))
 

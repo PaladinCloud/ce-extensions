@@ -68,7 +68,7 @@ func (c *RelatedAssetsClient) GetRelatedAssetsDetails(ctx context.Context, tenan
 	log.Println("fetching asset details")
 	result, err := c.elasticSearchClient.FetchAssetDetails(ctx, tenantId, allSources, assetId)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to fetch asset details %w", err)
 	}
 
 	assetDetails := getResults(result)
@@ -85,7 +85,7 @@ func (c *RelatedAssetsClient) GetRelatedAssetsDetails(ctx context.Context, tenan
 		log.Println("fetching related assets")
 		esResponse, err2 := c.elasticSearchClient.FetchRelatedAssets(ctx, relatedAssetDocTypes[targetType], tenantId, allSources, v.(string))
 		if err2 != nil {
-			return nil, err2
+			return nil, fmt.Errorf("failed to fetch related assets %w", err2)
 		}
 
 		for _, response := range (*esResponse)["responses"].([]interface{}) {
@@ -108,7 +108,7 @@ func (c *RelatedAssetsClient) GetRelatedAssetsDetails(ctx context.Context, tenan
 		log.Println("fetching asset details of related assets")
 		relatedAssetDetails, err2 := c.elasticSearchClient.FetchMultipleAssetsByResourceId(ctx, tenantId, allSources, allRelatedAssets)
 		if err2 != nil {
-			return nil, err2
+			return nil, fmt.Errorf("failed to fetch related asset details %w", err2)
 		}
 
 		for _, response := range (*relatedAssetDetails)["responses"].([]interface{}) {

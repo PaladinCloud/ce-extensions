@@ -116,6 +116,6 @@ func (d *DynamodbClient) GetOpenSearchDomain(ctx context.Context, tenantId strin
 		return nil, fmt.Errorf("failed to unmarshal [%s] %w", projectionExpression, err)
 	}
 
-	log.Printf("%s endpoint fetched from tenant config: [%s]\n", projectionExpression, output.EsDomain.Endpoint)
+	log.Printf("%s endpoint fetched from tenant config [%s]\n", projectionExpression, output.EsDomain.Endpoint)
 	return &output.EsDomain, nil
 }

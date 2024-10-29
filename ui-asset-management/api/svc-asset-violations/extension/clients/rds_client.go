@@ -127,7 +127,7 @@ func (r *RdsClient) GetPolicies(ctx context.Context, tenantId, targetType string
 	formattedQuery := fmt.Sprintf(query, targetType)
 	var policies []models.Policy
 	if err := sqlscan.Select(ctx, rdsClient, &policies, formattedQuery); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get policies from rds %w", err)
 	}
 
 	return policies, nil

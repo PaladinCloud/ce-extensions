@@ -36,29 +36,29 @@ type Configuration struct {
 func LoadConfigurationDetails() (*Configuration, error) {
 	enableExtension, err := parseEnableExtension()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error parsing ENABLE_EXTENSION %w", err)
 	}
 	useAssumeRole, assumeRoleArn, err := parseAssumeRole()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error parsing ASSUME_ROLE_ARN %w", err)
 	}
 
 	// Load the region and other configuration details and fail if not set
 	region, err := getEnvVariable("REGION")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error getting REGION %w", err)
 	}
 	tenantConfigOutputTable, err := getEnvVariable("TENANT_CONFIG_OUTPUT_TABLE")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error getting TENANT_CONFIG_OUTPUT_TABLE %w", err)
 	}
 	tenantTablePartitionKey, err := getEnvVariable("TENANT_TABLE_PARTITION_KEY")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error getting TENANT_TABLE_PARTITION_KEY %w", err)
 	}
 	secretIdPrefix, err := getEnvVariable("SECRET_NAME_PREFIX")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error getting SECRET_NAME_PREFIX %w", err)
 	}
 
 	return &Configuration{

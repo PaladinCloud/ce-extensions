@@ -118,7 +118,7 @@ func (c *AssetNetworkRulesClient) GetPortRuleDetails(ctx context.Context, tenant
 	} else if targetType == sg {
 		result, err := c.elasticSearchClient.FetchChildResourcesDetails(ctx, tenantId, allSources, targetType, assetId)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error fetching child resources details %w", err)
 		}
 
 		sgRules := getResults(result)

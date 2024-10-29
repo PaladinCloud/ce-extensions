@@ -45,7 +45,7 @@ func NewSecretsClient(ctx context.Context, useAssumeRole bool, assumeRoleArn, re
 	// Load the default configuration with region
 	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(region))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error loading AWS config %w", err)
 	}
 
 	var svc *secretsmanager.Client
