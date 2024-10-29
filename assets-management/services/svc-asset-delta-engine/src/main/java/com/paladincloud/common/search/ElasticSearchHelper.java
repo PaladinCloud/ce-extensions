@@ -229,8 +229,9 @@ public class ElasticSearchHelper {
                         LOGGER.error(
                             "error occurred in: Asset missing both docId values: endPoint={} OpenSearch id={}",
                             endPoint, hit.id);
+                    } else {
+                        results.put(docId, hit.source);
                     }
-                    results.put(docId, hit.source);
                 }
             }
             return response.scrollId;
