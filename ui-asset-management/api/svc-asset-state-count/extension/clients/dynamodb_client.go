@@ -20,7 +20,7 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"svc-asset-count-layer/models"
+	"svc-asset-state-count-layer/models"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"

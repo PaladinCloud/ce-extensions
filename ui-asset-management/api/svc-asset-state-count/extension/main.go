@@ -23,9 +23,9 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"svc-asset-count-layer/clients"
-	"svc-asset-count-layer/extension"
-	"svc-asset-count-layer/server"
+	"svc-asset-state-count-layer/clients"
+	"svc-asset-state-count-layer/extension"
+	"svc-asset-state-count-layer/server"
 
 	"syscall"
 )

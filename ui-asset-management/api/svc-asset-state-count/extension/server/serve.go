@@ -22,8 +22,8 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"svc-asset-count-layer/clients"
-	"svc-asset-count-layer/models"
+	"svc-asset-state-count-layer/clients"
+	"svc-asset-state-count-layer/models"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"

@@ -2,6 +2,7 @@
 SERVICE_BIN_DIR := bin/service
 EXTENSIONS_BIN_DIR := bin/layers/bin/extensions
 EXTENSIONS_ZIP_DIR := bin/layers/bin/
+DESCRIPTION := "Asset state count service layer"
 
 LAMBDA_LAYER_NAME := svc-asset-state-count
 

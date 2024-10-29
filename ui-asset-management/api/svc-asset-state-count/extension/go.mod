@@ -1,4 +1,4 @@
-module svc-asset-count-layer
+module svc-asset-state-count-layer
 
 go 1.22.1
 

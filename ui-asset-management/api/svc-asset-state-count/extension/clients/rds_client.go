@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
-	"svc-asset-count-layer/models"
+	"svc-asset-state-count-layer/models"
 	"sync"
 
 	"github.com/georgysavva/scany/sqlscan"

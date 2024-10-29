@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
-	"svc-asset-count-layer/models"
+	"svc-asset-state-count-layer/models"
 )
 
 type AssetCountClient struct {

@@ -17,7 +17,7 @@
 package main
 
 import (
-	"svc-asset-count-layer/clients"
+	"svc-asset-state-count-layer/clients"
 	"testing"
 )
 

@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"log"
-	"svc-asset-count-layer/models"
+	"svc-asset-state-count-layer/models"
 
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
