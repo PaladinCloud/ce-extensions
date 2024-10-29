@@ -91,7 +91,6 @@ func (c *ElasticSearchClient) FetchAssetDetails(ctx context.Context, tenantId, a
 }
 
 func buildQuery(assetId string) map[string]interface{} {
-
 	assetIdFilter := map[string]interface{}{
 		"term": map[string]interface{}{
 			"_id": assetId,
