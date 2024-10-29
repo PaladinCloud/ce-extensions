@@ -84,7 +84,7 @@ func handleValue(config *HttpServer) http.HandlerFunc {
 		assetCounts, err := config.AssetCountClient.GetAssetCountForAssetGroup(r.Context(), tenantId, ag, domain)
 		if err != nil {
 			log.Println(err)
-			errorResponse := getErrorResponse(assetCounts.Message)
+			errorResponse := getErrorResponse(err.Error())
 			failureResponse, marshalErr := json.Marshal(errorResponse)
 			if marshalErr != nil {
 				http.Error(w, `{"message":"internal server error"}`, http.StatusInternalServerError)
