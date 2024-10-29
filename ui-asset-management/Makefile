@@ -46,6 +46,6 @@ move-zips: create-dist-dir
 create-dist-dir:
 	@echo "Creating distribution directories..."
 	@mkdir -p $(DIST_DIR_VIOLATIONS) || (echo "ERROR: Failed to create $(DIST_DIR_VIOLATIONS)" && exit 1)
- 	@mkdir -p $(DIST_DIR_NETWORK) || (echo "ERROR: Failed to create $(DIST_DIR_NETWORK)" && exit 1)
+	@mkdir -p $(DIST_DIR_NETWORK) || (echo "ERROR: Failed to create $(DIST_DIR_NETWORK)" && exit 1)
 	@mkdir -p $(DIST_DIR_DETAILS) || (echo "ERROR: Failed to create $(DIST_DIR_DETAILS)" && exit 1)
 	@echo "Distribution directories created successfully"
