@@ -19,6 +19,7 @@ package clients
 import (
 	"context"
 	"fmt"
+	"log"
 	"svc-asset-violations-layer/models"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -66,7 +67,7 @@ func NewDynamoDBClient(ctx context.Context, useAssumeRole bool, assumeRoleArn, r
 		svc = dynamodb.NewFromConfig(cfg)
 	}
 
-	fmt.Println("initialized dynamodb client")
+	log.Println("initialized dynamodb client")
 	return &DynamodbClient{
 		region:                  region,
 		client:                  svc,
@@ -76,7 +77,7 @@ func NewDynamoDBClient(ctx context.Context, useAssumeRole bool, assumeRoleArn, r
 }
 
 func (d *DynamodbClient) GetOpenSearchDomain(ctx context.Context, tenantId string) (*models.OpenSearchDomainProperties, error) {
-	fmt.Printf("fetching tenant configs for tenantId: %s\n", tenantId)
+	log.Printf("fetching tenant configs for tenant id [%s]\n", tenantId)
 	const projectionExpression = "datastore_es_ESDomain"
 
 	key := struct {
@@ -112,9 +113,9 @@ func (d *DynamodbClient) GetOpenSearchDomain(ctx context.Context, tenantId strin
 		output models.TenantOutput
 	)
 	if err := attributevalue.UnmarshalMap(result.Item, &output); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal %s: %+v", projectionExpression, err)
+		return nil, fmt.Errorf("failed to unmarshal [%s] %w", projectionExpression, err)
 	}
 
-	fmt.Printf("%s endpoint fetched from tenant config: %s\n", projectionExpression, output.EsDomain.Endpoint)
+	log.Printf("%s endpoint fetched from tenant config [%s]\n", projectionExpression, output.EsDomain.Endpoint)
 	return &output.EsDomain, nil
 }

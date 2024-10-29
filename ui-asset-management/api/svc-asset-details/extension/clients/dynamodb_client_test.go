@@ -33,12 +33,12 @@ func TestNewDynamoDBClient(t *testing.T) {
 
 	client, err := NewDynamoDBClient(ctx, useAssumeRole, assumeRole, region, tenantConfigTable, tenantConfigTablePartitionKey)
 	if err != nil {
-		t.Fatalf("Failed to create DynamoDB client: %v", err)
+		t.Fatalf("Failed to create DynamoDB client: %+v", err)
 	}
 
 	response, err := client.GetOpenSearchDomain(ctx, tenantId)
 	if err != nil {
-		t.Fatalf("Error while fetching OpenSearch Domain: %v", err)
+		t.Fatalf("Error while fetching OpenSearch Domain: %+v", err)
 	}
 
 	if response == nil {

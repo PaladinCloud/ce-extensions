@@ -126,6 +126,6 @@
       permissions:
         requireS3: false
         requireDynamoDB: true
-        requireSecretsManager: false
+        requireSecretsManager: true
       layers:
         - name: svc-asset-count-layer

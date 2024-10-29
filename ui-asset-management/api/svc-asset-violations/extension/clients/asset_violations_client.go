@@ -19,6 +19,7 @@ package clients
 import (
 	"context"
 	"fmt"
+	"log"
 	"math"
 	"strconv"
 	"strings"
@@ -30,14 +31,27 @@ type AssetViolationsClient struct {
 	rdsClient           *RdsClient
 }
 
-func NewAssetViolationsClient(ctx context.Context, config *Configuration) *AssetViolationsClient {
-	dynamodbClient, _ := NewDynamoDBClient(ctx, config.UseAssumeRole, config.AssumeRoleArn, config.Region, config.TenantConfigOutputTable, config.TenantTablePartitionKey)
-	secretsClient, _ := NewSecretsClient(ctx, config.UseAssumeRole, config.AssumeRoleArn, config.Region)
+func NewAssetViolationsClient(ctx context.Context, config *Configuration) (*AssetViolationsClient, error) {
+	dynamodbClient, err := NewDynamoDBClient(ctx, config.UseAssumeRole, config.AssumeRoleArn, config.Region, config.TenantConfigOutputTable, config.TenantTablePartitionKey)
+	if err != nil {
+		return nil, fmt.Errorf("error creating dynamodb client %w", err)
+	}
+
+	secretsClient, err := NewSecretsClient(ctx, config.UseAssumeRole, config.AssumeRoleArn, config.Region)
+	if err != nil {
+		return nil, fmt.Errorf("error creating secrets client %w", err)
+	}
+
+	opensearchClient := NewElasticSearchClient(dynamodbClient)
+	rdsClient, err := NewRdsClient(secretsClient, config.SecretIdPrefix)
+	if err != nil {
+		return nil, fmt.Errorf("error creating rds client %w", err)
+	}
 
 	return &AssetViolationsClient{
-		elasticSearchClient: NewElasticSearchClient(dynamodbClient),
-		rdsClient:           NewRdsClient(secretsClient, config.SecretIdPrefix),
-	}
+		elasticSearchClient: opensearchClient,
+		rdsClient:           rdsClient,
+	}, nil
 }
 
 const (
@@ -68,24 +82,20 @@ func (c *AssetViolationsClient) GetAssetViolations(ctx context.Context, targetTy
 	// fetch all the relevant policies for the target type
 	policies, err := c.rdsClient.GetPolicies(ctx, tenantId, targetType)
 	if err != nil {
-		return nil, fmt.Errorf("error fetching policies from rds for target type: " + targetType)
+		return nil, fmt.Errorf("error fetching policies from rds for target type [%s] ", targetType)
 	}
 
 	if policies == nil || len(policies) == 0 {
-		fmt.Printf("no policies for given target type: %s\n", targetType)
+		log.Printf("no policies for given target type [%s]\n", targetType)
 		return &models.AssetViolations{Data: models.PolicyViolations{Coverage: unmanaged}, Message: success}, nil
 	}
 
-	fmt.Printf("got %s policies for target type: %s\n", strconv.Itoa(len(policies)), targetType)
-
-	if err != nil {
-		return nil, err
-	}
+	log.Printf("got [%s] policies for target type [%s]\n", strconv.Itoa(len(policies)), targetType)
 
 	// fetch violations for the asset
 	policyViolationMap, err := c.elasticSearchClient.FetchAssetViolations(ctx, tenantId, allSources, assetId)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error fetching asset violations from elasticsearch for assetId [%s] ", assetId)
 	}
 
 	policyViolations := assemblePolicyViolations(policies, *policyViolationMap)

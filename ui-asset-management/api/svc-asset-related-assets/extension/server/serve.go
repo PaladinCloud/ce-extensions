@@ -19,6 +19,7 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -53,31 +54,33 @@ func startHTTPServer(port string, httpConfig *HttpServer) {
 
 	err := http.ListenAndServe(fmt.Sprintf(":%s", port), r)
 	if err != nil {
-		fmt.Errorf("error starting the server: %+v", err)
-		os.Exit(0)
+		log.Printf("error starting the server %+v", err)
+		os.Exit(1)
 	}
 
-	fmt.Printf("server started on %s\n", port)
+	log.Printf("server started on [%s]\n", port)
 }
 
 func handleValue(config *HttpServer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tenantId := chi.URLParam(r, "tenantId")
 		targetType := chi.URLParam(r, "targetType")
+
 		assetId, err := url.QueryUnescape(chi.URLParam(r, "assetId"))
 		if err != nil {
-			fmt.Errorf("error decoding the asset id from url path")
+			log.Println("error decoding the asset id from url path")
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
-		assetDetails, err := config.RelatedAssetsClient.GetRelatedAssetsDetails(r.Context(), tenantId, targetType, assetId)
+		log.Printf("fetching related assets for tenant id [%s] asset id [%s]\n", tenantId, assetId)
+		relatedAssets, err := config.RelatedAssetsClient.GetRelatedAssetsDetails(r.Context(), tenantId, targetType, assetId)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
 
-		b, _ := json.Marshal(assetDetails)
+		b, _ := json.Marshal(relatedAssets)
 		w.Write(b)
 	}
 }
