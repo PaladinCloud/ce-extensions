@@ -19,10 +19,11 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
-	"svc-asset-count-layer/clients"
-	"svc-asset-count-layer/models"
+	"svc-asset-state-count-layer/clients"
+	"svc-asset-state-count-layer/models"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -36,10 +37,10 @@ type HttpServer struct {
 // Start begins running the sidecar
 func Start(port string, server *HttpServer, enableExtension bool) {
 	if enableExtension {
-		println("starting the server in background")
+		log.Println("starting the server in background")
 		go startHTTPServer(port, server)
 	} else {
-		println("starting the server")
+		log.Println("starting the server")
 		startHTTPServer(port, server)
 	}
 }
@@ -51,16 +52,13 @@ func startHTTPServer(port string, httpConfig *HttpServer) {
 	r.Use(middleware.Recoverer)
 	r.Get("/tenant/{tenantId}/assetgroups/{ag}/assets/count", handleValue(httpConfig))
 
-	srv := &http.Server{
-		Addr:    fmt.Sprintf(":%s", port),
-		Handler: r,
-	}
-	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		fmt.Printf("error starting the server: %v\n", err)
+	log.Printf("starting server on port [%s]\n", port)
+	if err := http.ListenAndServe(fmt.Sprintf(":%s", port), r); err != nil {
+		log.Printf("server error: %v", err)
 		os.Exit(1)
 	}
 
-	fmt.Printf("server started on %s\n", port)
+	log.Printf("server started on %s\n", port)
 }
 
 func handleValue(config *HttpServer) http.HandlerFunc {
@@ -70,31 +68,43 @@ func handleValue(config *HttpServer) http.HandlerFunc {
 		ag := chi.URLParam(r, "ag")
 		domain := r.URL.Query().Get("domain")
 
-		errorResponse := &models.AssetStateCountResponse{Data: models.AssetStateCountData{AssetStateNameCounts: []models.AssetStateCount{}}}
 		if tenantId == "" || ag == "" {
-			errorResponse.Message = "missing required parameters"
+			log.Println("missing required tenant id and/or asset group parameter(s)")
+			errorResponse := getErrorResponse("missing required tenant id and/or asset group parameter(s)")
 			responseForBadRequest, marshalErr := json.Marshal(errorResponse)
 			if marshalErr != nil {
 				http.Error(w, `{"message":"internal server error"}`, http.StatusInternalServerError)
 				return
 			}
+
 			http.Error(w, string(responseForBadRequest), http.StatusBadRequest)
 			return
 		}
 
 		assetCounts, err := config.AssetCountClient.GetAssetCountForAssetGroup(r.Context(), tenantId, ag, domain)
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
+			errorResponse := getErrorResponse(err.Error())
 			failureResponse, marshalErr := json.Marshal(errorResponse)
 			if marshalErr != nil {
 				http.Error(w, `{"message":"internal server error"}`, http.StatusInternalServerError)
 				return
 			}
+
 			http.Error(w, string(failureResponse), http.StatusNotFound)
 			return
 		}
 
 		b, _ := json.Marshal(assetCounts)
 		w.Write(b)
+	}
+}
+
+func getErrorResponse(errMsg string) models.AssetStateCountResponse {
+	return models.AssetStateCountResponse{
+		Message: errMsg,
+		Data: models.AssetStateCountData{
+			AssetStateNameCounts: []models.AssetStateCount{},
+		},
 	}
 }

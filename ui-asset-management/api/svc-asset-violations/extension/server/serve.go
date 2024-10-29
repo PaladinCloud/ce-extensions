@@ -19,6 +19,7 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -36,10 +37,10 @@ type HttpServer struct {
 // Start begins running the sidecar
 func Start(port string, server *HttpServer, enableExtension bool) {
 	if enableExtension {
-		println("starting the server in background")
+		log.Println("starting the server in background")
 		go startHTTPServer(port, server)
 	} else {
-		println("starting the server")
+		log.Println("starting the server")
 		startHTTPServer(port, server)
 	}
 }
@@ -51,13 +52,13 @@ func startHTTPServer(port string, httpConfig *HttpServer) {
 	r.Use(middleware.Recoverer)
 	r.Get("/tenant/{tenantId}/targets/{targetType}/assets/{assetId}/violations", handleValue(httpConfig))
 
-	err := http.ListenAndServe(fmt.Sprintf(":%s", port), r)
-	if err != nil {
-		fmt.Errorf("error starting the server: %+v", err)
-		os.Exit(0)
+	log.Printf("starting server on port [%s]\n", port)
+	if err := http.ListenAndServe(fmt.Sprintf(":%s", port), r); err != nil {
+		log.Printf("server error: %v", err)
+		os.Exit(1)
 	}
 
-	fmt.Printf("server started on %s\n", port)
+	log.Printf("server started on %s\n", port)
 }
 
 func handleValue(config *HttpServer) http.HandlerFunc {
@@ -66,13 +67,14 @@ func handleValue(config *HttpServer) http.HandlerFunc {
 		targetType := chi.URLParam(r, "targetType")
 		assetId, err := url.QueryUnescape(chi.URLParam(r, "assetId"))
 		if err != nil {
-			fmt.Errorf("error decoding the assetId from url path")
+			log.Println("error decoding the assetId from url path")
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
 		assetDetails, err := config.AssetViolationsClient.GetAssetViolations(r.Context(), targetType, tenantId, assetId)
 		if err != nil {
+			log.Println(err)
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}

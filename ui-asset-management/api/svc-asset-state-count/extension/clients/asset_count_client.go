@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
-	"svc-asset-count-layer/models"
+	"svc-asset-state-count-layer/models"
 )
 
 type AssetCountClient struct {
@@ -30,18 +30,25 @@ type AssetCountClient struct {
 }
 
 func NewAssetCountClient(ctx context.Context, config *Configuration) (*AssetCountClient, error) {
-	dynamodbClient, err := NewDynamoDBClient(ctx, config.UseAssumeRole, config.AssumeRoleArn, config.Region, config.TenantConfigOutputTable)
+	dynamodbClient, err := NewDynamoDBClient(ctx, config.UseAssumeRole, config.AssumeRoleArn, config.Region, config.TenantConfigOutputTable, config.TenantTablePartitionKey)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating dynamodb client %w", err)
 	}
+
 	secretsClient, err := NewSecretsClient(ctx, config.UseAssumeRole, config.AssumeRoleArn, config.Region)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating secrets client %w", err)
+	}
+
+	opensearchClient := NewElasticSearchClient(dynamodbClient)
+	rdsClient, err := NewRdsClient(secretsClient, config.SecretIdPrefix)
+	if err != nil {
+		return nil, fmt.Errorf("error creating rds client %w", err)
 	}
 
 	return &AssetCountClient{
-		elasticSearchClient: NewElasticSearchClient(dynamodbClient),
-		rdsClient:           NewRdsClient(secretsClient, config.SecretIdPrefix),
+		elasticSearchClient: opensearchClient,
+		rdsClient:           rdsClient,
 	}, nil
 }
 
@@ -58,28 +65,37 @@ func (c *AssetCountClient) GetAssetCountForAssetGroup(ctx context.Context, tenan
 	var err error
 
 	plugins, err := c.rdsClient.GetCloudProviders(ctx, tenantId)
+	if err != nil {
+		return nil, fmt.Errorf("error fetching cloud providers %w", err)
+	}
+
 	cloudProviders := make([]string, 0, len(*plugins))
 	for _, plugin := range *plugins {
 		cloudProviders = append(cloudProviders, plugin.Provider)
 	}
-	if err != nil {
-		return nil, err
-	}
 
 	if slices.Contains(cloudProviders, ag) {
 		targetTypesFromDB, err = c.rdsClient.GetAllTargetTypes(ctx, tenantId, ag)
+		if err != nil {
+			return nil, fmt.Errorf("error fetching target types for cloud provider %w", err)
+		}
 	} else if ag == "ds-all" || ag == "*" {
 		targetTypesFromDB, err = c.rdsClient.GetAllTargetTypes(ctx, tenantId, "")
+		if err != nil {
+			return nil, fmt.Errorf("error fetching all target types %w", err)
+		}
 	} else {
 		// fetch asset types for the asset group from OS
 		targetTypesFromDB, err = c.fetchAssetTypesForAssetGroup(ctx, tenantId, ag, domain)
+		if err != nil {
+			return nil, fmt.Errorf("error fetching target types for asset group %w", err)
+		}
 	}
-	if err != nil {
-		return nil, err
-	}
+
 	if targetTypesFromDB == nil || len(*targetTypesFromDB) == 0 {
-		return nil, fmt.Errorf("no valid target types found for this asset group: %s", ag)
+		return nil, fmt.Errorf("no valid target types found for this asset group [%s]", ag)
 	}
+
 	validTargetTypes := make([]string, 0, len(*targetTypesFromDB))
 	for _, targetType := range *targetTypesFromDB {
 		validTargetTypes = append(validTargetTypes, targetType.Type)
@@ -93,9 +109,13 @@ func (c *AssetCountClient) GetAssetCountForAssetGroup(ctx context.Context, tenan
 
 	assetStateCounts, err := c.processAssetStateCountBuckets(assetStateCountBuckets)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error processing asset state count buckets %w", err)
 	}
-	return &models.AssetStateCountResponse{Data: models.AssetStateCountData{AssetStateNameCounts: *assetStateCounts}, Message: success}, nil
+	return &models.AssetStateCountResponse{
+		Data: models.AssetStateCountData{
+			AssetStateNameCounts: *assetStateCounts},
+		Message: success,
+	}, nil
 }
 
 func (c *AssetCountClient) fetchAssetTypesForAssetGroup(ctx context.Context, tenantId, ag, domain string) (*[]models.TargetTableProjection, error) {
@@ -104,8 +124,9 @@ func (c *AssetCountClient) fetchAssetTypesForAssetGroup(ctx context.Context, ten
 		return nil, err
 	}
 	if agAssetTypeResponse == nil || len(*agAssetTypeResponse) == 0 {
-		return nil, fmt.Errorf("no asset types for this asset group: %s", ag)
+		return nil, fmt.Errorf("no asset types for this asset group [%s]", ag)
 	}
+
 	targetTypesForAg := make([]string, 0, len(*agAssetTypeResponse))
 	for k, _ := range *agAssetTypeResponse {
 		underscoreIndex := strings.Index(k, "_")

@@ -66,30 +66,28 @@ func startMain(configuration *clients.Configuration) error {
 		Configuration:         configuration,
 		AssetViolationsClient: assetViolationsClient,
 	}
-	fmt.Println("http server initialized successfully!")
 
-	fmt.Printf("starting http server on port: %s\n", port)
+	log.Printf("starting http server on port [%s]\n", port)
 	server.Start(port, httpServerClient, configuration.EnableExtension)
 
 	if configuration.EnableExtension {
-		fmt.Println("registering extension client", extensionName, lambdaRuntimeAPI)
+		log.Printf("registering extension client [%s] [%s]\n", extensionName, lambdaRuntimeAPI)
 		sigs := make(chan os.Signal, 1)
 		signal.Notify(sigs, syscall.SIGTERM, syscall.SIGINT)
 		go func() {
 			s := <-sigs
 			cancel()
-			fmt.Println("received", s)
-			fmt.Println("exiting")
+			log.Println("received", s)
+			log.Println("exiting")
 		}()
 
 		// Register the extension client with the Lambda runtime
-		res, err := extensionClient.Register(ctx, extensionName)
-		if err != nil {
-			fmt.Errorf("unable to register extension: %+v", err)
+		res, err2 := extensionClient.Register(ctx, extensionName)
+		if err2 != nil {
+			return fmt.Errorf("failed to register extension client: %w", err2)
 		}
 
-		fmt.Println("client registered:", res)
-
+		log.Printf("registered extension client: %+v\n", res)
 		// Will block until shutdown event is received or cancelled via the context.
 		processEvents(ctx)
 	}
@@ -97,20 +95,19 @@ func startMain(configuration *clients.Configuration) error {
 	return nil
 }
 
-func processEvents(ctx context.Context) {
-	fmt.Println("starting processing events")
+func processEvents(ctx context.Context) error {
+	log.Println("starting processing events")
 	for {
 		select {
 		case <-ctx.Done():
-			fmt.Println("context done, exiting event loop")
-			return
+			log.Println("context done, exiting event loop")
+			return nil
 		default:
-			fmt.Println("waiting for next event...")
+			log.Println("waiting for next event...")
 			// Fetch the next event and check for errors.
 			_, err := extensionClient.NextEvent(ctx)
 			if err != nil {
-				fmt.Errorf("error fetching next event: %+v", err)
-				return
+				return fmt.Errorf("error fetching next event: %w", err)
 			}
 		}
 	}

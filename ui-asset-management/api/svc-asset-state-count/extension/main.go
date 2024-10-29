@@ -19,12 +19,13 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"path/filepath"
-	"svc-asset-count-layer/clients"
-	"svc-asset-count-layer/extension"
-	"svc-asset-count-layer/server"
+	"svc-asset-state-count-layer/clients"
+	"svc-asset-state-count-layer/extension"
+	"svc-asset-state-count-layer/server"
 
 	"syscall"
 )
@@ -39,76 +40,75 @@ var (
 )
 
 func main() {
-	fmt.Printf("starting - %s\n", extensionName)
+	log.Printf("starting extension - %s\n", extensionName)
 
-	fmt.Println("loading configuration")
+	log.Println("loading configuration")
 	configuration, err := clients.LoadConfigurationDetails()
 	if err != nil {
-		fmt.Println(err)
-		return
+		log.Fatalf("failed to load aws configuratio %+v", err)
 	}
-	fmt.Println("configuration loaded successfully")
 
-	startMain(configuration)
+	err2 := startMain(configuration)
+	if err2 != nil {
+		log.Fatalf("failed to start main %+v", err2)
+	}
 }
 
-func startMain(configuration *clients.Configuration) {
+func startMain(configuration *clients.Configuration) error {
 	ctx, cancel := context.WithCancel(context.Background())
+
+	log.Println("initializing http server")
 	assetCountClient, err := clients.NewAssetCountClient(ctx, configuration)
 	if err != nil {
-		fmt.Println(err)
-		return
+		return fmt.Errorf("failed to initialize asset count client %w", err)
 	}
 
-	fmt.Println("initializing http server")
 	httpServerClient = &server.HttpServer{
 		Configuration:    configuration,
 		AssetCountClient: assetCountClient,
 	}
-	fmt.Println("http server initialized successfully!")
 
-	fmt.Printf("starting http server on port: %s\n", port)
+	log.Printf("starting http server on port [%s]\n", port)
 	server.Start(port, httpServerClient, configuration.EnableExtension)
 
 	if configuration.EnableExtension {
-		fmt.Println("registering extension client", extensionName, lambdaRuntimeAPI)
+		log.Printf("registering extension client [%s] [%s]\n", extensionName, lambdaRuntimeAPI)
 		sigs := make(chan os.Signal, 1)
 		signal.Notify(sigs, syscall.SIGTERM, syscall.SIGINT)
 		go func() {
 			s := <-sigs
 			cancel()
-			fmt.Println("received", s)
-			fmt.Println("exiting")
+			log.Println("received", s)
+			log.Println("exiting")
 		}()
 
 		// Register the extension client with the Lambda runtime
-		res, err := extensionClient.Register(ctx, extensionName)
-		if err != nil {
-			fmt.Printf("unable to register extension: %+v\n", err)
-			return
+		res, err2 := extensionClient.Register(ctx, extensionName)
+		if err2 != nil {
+			return fmt.Errorf("failed to register extension client: %w", err2)
 		}
 
-		fmt.Println("client registered:", res)
-
+		log.Printf("registered extension client: %+v\n", res)
 		// Will block until shutdown event is received or cancelled via the context.
 		processEvents(ctx)
 	}
+
+	return nil
 }
 
-func processEvents(ctx context.Context) {
-	fmt.Println("starting processing events")
+func processEvents(ctx context.Context) error {
+	log.Println("starting processing events")
 	for {
 		select {
 		case <-ctx.Done():
-			fmt.Println("context done, exiting event loop")
-			return
+			log.Println("context done, exiting event loop")
+			return nil
 		default:
-			fmt.Println("waiting for next event...")
+			log.Println("waiting for next event...")
 			// Fetch the next event and check for errors.
 			_, err := extensionClient.NextEvent(ctx)
 			if err != nil {
-				fmt.Printf("error fetching next event: %+v\n", err)
-				return
+				return fmt.Errorf("error fetching next event: %w", err)
 			}
 		}
 	}

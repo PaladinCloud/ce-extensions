@@ -103,9 +103,9 @@
         requireSecretsManager: false
       layers:
         - name: svc-asset-related-assets-layer
-- serviceName: svc-asset-count
+- serviceName: svc-asset-state-count
   apiConfig:
-    method: POST
+    method: GET
     path: "/api/v2/assetgroups/{ag}/assets/count"
     requireAuth: true
     requireOptionsMethod: true
@@ -128,4 +128,4 @@
         requireDynamoDB: true
         requireSecretsManager: true
       layers:
-        - name: svc-asset-count-layer
+        - name: svc-asset-state-count-layer

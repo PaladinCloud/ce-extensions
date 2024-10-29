@@ -20,8 +20,9 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"strings"
-	"svc-asset-count-layer/models"
+	"svc-asset-state-count-layer/models"
 	"sync"
 
 	"github.com/georgysavva/scany/sqlscan"
@@ -34,25 +35,37 @@ type RdsClient struct {
 	rdsClientCache sync.Map
 }
 
-func NewRdsClient(secretsClient *SecretsClient, secretIdPrefix string) *RdsClient {
+func NewRdsClient(secretsClient *SecretsClient, secretIdPrefix string) (*RdsClient, error) {
+	if secretsClient == nil {
+		return nil, fmt.Errorf("secretsClient cannot be nil")
+	}
+	if secretIdPrefix == "" {
+		return nil, fmt.Errorf("secretIdPrefix cannot be empty")
+	}
+
 	return &RdsClient{
 		secretIdPrefix: secretIdPrefix,
 		secretsClient:  secretsClient,
-	}
+	}, nil
 }
 
-func (r *RdsClient) CreateNewClient(ctx context.Context, tenantId string) (*sql.DB, error) {
+func (r *RdsClient) CreateNewRdsClient(ctx context.Context, tenantId string) (*sql.DB, error) {
 	// check if the client is already created
 	if db, ok := r.rdsClientCache.Load(tenantId); ok {
-		return db.(*sql.DB), nil // type assert to *sql.DB
+		if dbClient, ok := db.(*sql.DB); ok {
+			return dbClient, nil
+		}
+
+		return nil, fmt.Errorf("invalid rds client type in cache")
 	}
 
 	rdsCredentials, err := r.secretsClient.GetRdsSecret(ctx, r.secretIdPrefix, tenantId)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get RDS credentials: %v", err)
+		return nil, fmt.Errorf("failed to get rds credentials %w", err)
 	}
+
 	if rdsCredentials == nil {
-		return nil, fmt.Errorf("RDS credentials are nil")
+		return nil, fmt.Errorf("rds credentials are missing")
 	}
 
 	var (
@@ -67,28 +80,27 @@ func (r *RdsClient) CreateNewClient(ctx context.Context, tenantId string) (*sql.
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", dbUser, dbPassword, dbHost, dbPort, dbName)
 
 	// open a connection to the database
-	db, err := sql.Open("mysql", dsn)
+	rds, err := sql.Open("mysql", dsn)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open database connection: %v", err)
+		return nil, fmt.Errorf("failed to open database connection %w", err)
 	}
 
 	// check if the database is reachable
-	err = db.Ping()
+	err = rds.Ping()
 	if err != nil {
-		return nil, fmt.Errorf("failed to ping database: %v", err)
+		return nil, fmt.Errorf("database ping failed %w", err)
 	}
 
-	fmt.Println("connected to rds successfully!")
-	r.rdsClientCache.Store(tenantId, db) // store db in cache
-	return db, nil
+	log.Printf("connected to rds successfully for tenantId [%s]\n", tenantId)
+	r.rdsClientCache.Store(tenantId, rds) // store rds in cache
+	return rds, nil
 }
 
 func (r *RdsClient) GetAllTargetTypes(ctx context.Context, tenantId, dataSource string) (*[]models.TargetTableProjection, error) {
-	dbClient, err := r.CreateNewClient(ctx, tenantId)
+	rdsClient, err := r.CreateNewRdsClient(ctx, tenantId)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create rds client %w", err)
 	}
-	fmt.Println("getting all target types from rds")
 
 	query := `
 	SELECT 
@@ -109,19 +121,18 @@ func (r *RdsClient) GetAllTargetTypes(ctx context.Context, tenantId, dataSource 
 	query += " AND dataSourceName IN (select distinct platform from cf_Accounts where accountStatus='configured') ORDER BY LOWER (displayName) ASC;"
 
 	var policies []models.TargetTableProjection
-	if err := sqlscan.Select(ctx, dbClient, &policies, query, args...); err != nil {
-		return nil, err
+	if err2 := sqlscan.Select(ctx, rdsClient, &policies, query, args...); err2 != nil {
+		return nil, fmt.Errorf("failed to fetch target types %w", err2)
 	}
 
 	return &policies, nil
 }
 
 func (r *RdsClient) GetConfiguredTargetTypes(ctx context.Context, agTargetTypes []string, domain, provider, tenantId string) (*[]models.TargetTableProjection, error) {
-	dbClient, err := r.CreateNewClient(ctx, tenantId)
+	rdsClient, err := r.CreateNewRdsClient(ctx, tenantId)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create rds client %w", err)
 	}
-	fmt.Println("getting configured target types by asset group")
 
 	query := `
 	SELECT 
@@ -138,7 +149,7 @@ func (r *RdsClient) GetConfiguredTargetTypes(ctx context.Context, agTargetTypes 
 		targetName in ('%s')
 	`
 	placeholders := make([]string, len(agTargetTypes))
-	args := []interface{}{}
+	var args []interface{}
 
 	for i, targetType := range agTargetTypes {
 		placeholders[i] = "?"
@@ -160,27 +171,26 @@ func (r *RdsClient) GetConfiguredTargetTypes(ctx context.Context, agTargetTypes 
 	formattedQuery := fmt.Sprintf(query, strings.Join(agTargetTypes, "','"))
 
 	var targetTypes []models.TargetTableProjection
-	if err := sqlscan.Select(ctx, dbClient, &targetTypes, formattedQuery, args...); err != nil {
-		return nil, err
+	if err2 := sqlscan.Select(ctx, rdsClient, &targetTypes, formattedQuery, args...); err2 != nil {
+		return nil, fmt.Errorf("failed to fetch target types %w", err2)
 	}
 
 	return &targetTypes, nil
 }
 
 func (r *RdsClient) GetCloudProviders(ctx context.Context, tenantId string) (*[]models.PluginsTableProjection, error) {
-	dbClient, err := r.CreateNewClient(ctx, tenantId)
+	rdsClient, err := r.CreateNewRdsClient(ctx, tenantId)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create rds client %w", err)
 	}
-	fmt.Println("fetching cloud providers from plugins table")
 
 	query := `
 	SELECT source FROM plugins WHERE type='Cloud Provider';
 	`
 
 	var plugins []models.PluginsTableProjection
-	if err := sqlscan.Select(ctx, dbClient, &plugins, query); err != nil {
-		return nil, err
+	if err2 := sqlscan.Select(ctx, rdsClient, &plugins, query); err2 != nil {
+		return nil, fmt.Errorf("failed to fetch cloud providers %w", err2)
 	}
 
 	return &plugins, nil
@@ -189,8 +199,8 @@ func (r *RdsClient) GetCloudProviders(ctx context.Context, tenantId string) (*[]
 func (r *RdsClient) CloseClient() {
 	// close all connections in the cache
 	r.rdsClientCache.Range(func(key, value interface{}) bool {
-		db := value.(*sql.DB)
-		db.Close()
+		rds := value.(*sql.DB)
+		rds.Close()
 		r.rdsClientCache.Delete(key)
 		return true
 	})

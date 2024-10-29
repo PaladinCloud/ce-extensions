@@ -21,6 +21,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"sync"
 
 	"github.com/elastic/go-elasticsearch/v7"
@@ -32,7 +33,7 @@ type ElasticSearchClient struct {
 }
 
 func NewElasticSearchClient(dynamodbClient *DynamodbClient) *ElasticSearchClient {
-	fmt.Println("initialized opensearch client")
+	log.Println("initialized opensearch client")
 	return &ElasticSearchClient{
 		dynamodbClient: dynamodbClient,
 	}
@@ -55,12 +56,12 @@ func (c *ElasticSearchClient) CreateNewElasticSearchClient(ctx context.Context, 
 	// If not found, proceed to create a new client
 	esDomainProperties, err := c.dynamodbClient.GetOpenSearchDomain(ctx, tenantId)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error getting opensearch domain properties for tenant id [%s] %w", tenantId, err)
 	}
 
 	client, err := elasticsearch.NewClient(elasticsearch.Config{Addresses: []string{"https://" + esDomainProperties.Endpoint}})
 	if err != nil {
-		return nil, fmt.Errorf("error creating opensearch client for tenant id: %s. err: %+v", tenantId, err)
+		return nil, fmt.Errorf("error creating opensearch client for tenant id [%s] %w", tenantId, err)
 	}
 
 	// Store the new client in the cache
@@ -69,8 +70,7 @@ func (c *ElasticSearchClient) CreateNewElasticSearchClient(ctx context.Context, 
 }
 
 func (c *ElasticSearchClient) FetchAssetTypesForAssetGroup(ctx context.Context, tenantId, ag string) (*map[string]interface{}, error) {
-
-	fmt.Printf("fetching target types for asset group: %s from opensearch", ag)
+	log.Printf("fetching target types for asset group [%s] from opensearch", ag)
 
 	client, err := c.CreateNewElasticSearchClient(ctx, tenantId)
 	if err != nil {
@@ -79,18 +79,18 @@ func (c *ElasticSearchClient) FetchAssetTypesForAssetGroup(ctx context.Context, 
 	response, err := client.Indices.GetAlias(client.Indices.GetAlias.WithName(ag), client.Indices.GetAlias.WithContext(ctx))
 
 	if err != nil {
-		return nil, fmt.Errorf("error getting target types from opensearch client for asset group: %s. err: %+v", ag, err)
+		return nil, fmt.Errorf("error getting target types from opensearch client for asset group [%s] %w", ag, err)
 	}
 	defer response.Body.Close()
 
 	if response.StatusCode != 200 {
-		return nil, fmt.Errorf("error getting target types from opensearch client for asset group: %s. err: %+v", ag, err)
+		return nil, fmt.Errorf("error getting target types from opensearch client for asset group [%s] %w", ag, err)
 	}
 
 	var result map[string]interface{}
 	err = json.NewDecoder(response.Body).Decode(&result)
 	if err != nil {
-		return nil, fmt.Errorf("error decoding response body: %+v", err)
+		return nil, fmt.Errorf("error decoding response body for asset group [%s] %w", ag, err)
 	}
 
 	return &result, nil
@@ -108,9 +108,8 @@ func (c *ElasticSearchClient) FetchAssetStateCount(ctx context.Context, tenantId
 	var buffer bytes.Buffer
 	err := json.NewEncoder(&buffer).Encode(esRequest)
 	if err != nil {
-		return nil, fmt.Errorf("failed to encode opensearch client request: %+v", err)
+		return nil, fmt.Errorf("failed to encode opensearch client request %w", err)
 	}
-	fmt.Printf("opensearch client request: %s\n", buffer.String())
 
 	client, err := c.CreateNewElasticSearchClient(ctx, tenantId)
 	if err != nil {
@@ -119,29 +118,29 @@ func (c *ElasticSearchClient) FetchAssetStateCount(ctx context.Context, tenantId
 	response, err := client.Search(client.Search.WithContext(ctx), client.Search.WithIndex(ag), client.Search.WithBody(&buffer))
 
 	if err != nil {
-		return nil, fmt.Errorf("error getting response from opensearch client for asset group: %s. err: %+v", ag, err)
+		return nil, fmt.Errorf("error getting response from opensearch client for asset group [%s] %w", ag, err)
 	}
 	defer response.Body.Close()
 
 	if response.StatusCode != 200 {
-		return nil, fmt.Errorf("error while fetching asset details from opensearch client for asset group: %s", ag)
+		return nil, fmt.Errorf("error while fetching asset details from opensearch client for asset group [%s]", ag)
 	}
 
 	var result map[string]interface{}
 	err = json.NewDecoder(response.Body).Decode(&result)
 	if err != nil {
-		return nil, fmt.Errorf("error decoding response body: %+v", err)
+		return nil, fmt.Errorf("error decoding response body %w", err)
 	}
 
 	aggregations, ok := result["aggregations"].(map[string]interface{})
 	if !ok {
 		return nil, fmt.Errorf("unexpected result structure: missing or invalid 'aggregations'")
 	}
-	name, ok := aggregations["name"].(map[string]interface{})
+	nameAggregations, ok := aggregations["name"].(map[string]interface{})
 	if !ok {
 		return nil, fmt.Errorf("unexpected result structure: missing or invalid 'aggregations.name'")
 	}
-	buckets, ok := name["buckets"].([]interface{})
+	buckets, ok := nameAggregations["buckets"].([]interface{})
 	if !ok {
 		return nil, fmt.Errorf("unexpected result structure: missing or invalid 'aggregations.name.buckets'")
 	}
@@ -184,5 +183,6 @@ func buildAggregateQuery(fieldName string) map[string]interface{} {
 			},
 		},
 	}
+
 	return query
 }
