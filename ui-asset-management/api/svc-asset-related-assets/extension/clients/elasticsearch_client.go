@@ -125,7 +125,6 @@ func (c *ElasticSearchClient) FetchMultipleAssetsByResourceId(ctx context.Contex
 }
 
 func (c *ElasticSearchClient) fetchFromOpensearch(ctx context.Context, tenantId, esIndex, esQuery string) (*map[string]interface{}, error) {
-
 	var buffer bytes.Buffer
 	json.NewEncoder(&buffer).Encode(esQuery)
 
@@ -133,8 +132,8 @@ func (c *ElasticSearchClient) fetchFromOpensearch(ctx context.Context, tenantId,
 	if err != nil {
 		return nil, fmt.Errorf("error creating opensearch client for tenant id [%s] %w", tenantId, err)
 	}
-	response, err := client.Msearch(bytes.NewReader([]byte(esQuery)), client.Msearch.WithIndex(esIndex))
 
+	response, err := client.Msearch(bytes.NewReader([]byte(esQuery)), client.Msearch.WithIndex(esIndex))
 	if err != nil {
 		return nil, fmt.Errorf("error getting related assets response from Opensearch. err: %s", err)
 	}
@@ -143,13 +142,13 @@ func (c *ElasticSearchClient) fetchFromOpensearch(ctx context.Context, tenantId,
 	if response.StatusCode != 200 {
 		return nil, fmt.Errorf("error getting related assets response from Opensearch. err: %s", err)
 	}
+
 	var result map[string]interface{}
 	json.NewDecoder(response.Body).Decode(&result)
 	return &result, nil
 }
 
 func buildDetailsQuery(assetId string) map[string]interface{} {
-
 	assetIdFilter := map[string]interface{}{
 		"term": map[string]interface{}{
 			"_id": assetId,
@@ -161,11 +160,11 @@ func buildDetailsQuery(assetId string) map[string]interface{} {
 			"must": [1]map[string]interface{}{assetIdFilter},
 		},
 	}
+
 	return query
 }
 
 func buildRelatedAssetsQuery(docType, resourceId string) map[string]interface{} {
-
 	docTypeFilter := map[string]interface{}{
 		"term": map[string]interface{}{
 			docTypeKeyword: docType,
@@ -183,11 +182,11 @@ func buildRelatedAssetsQuery(docType, resourceId string) map[string]interface{} 
 			"must": [2]map[string]interface{}{docTypeFilter, resourceIdFilter},
 		},
 	}
+
 	return query
 }
 
 func buildAssetsQuery(docType, resourceId string) map[string]interface{} {
-
 	docTypeFilter := map[string]interface{}{
 		"term": map[string]interface{}{
 			docTypeKeyword: docType,
@@ -205,5 +204,6 @@ func buildAssetsQuery(docType, resourceId string) map[string]interface{} {
 			"must": [2]map[string]interface{}{docTypeFilter, resourceIdFilter},
 		},
 	}
+
 	return query
 }

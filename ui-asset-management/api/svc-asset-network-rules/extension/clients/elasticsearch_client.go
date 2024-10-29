@@ -114,7 +114,6 @@ func (c *ElasticSearchClient) FetchChildResourcesDetails(ctx context.Context, te
 }
 
 func buildDetailsQuery(assetId string) map[string]interface{} {
-
 	assetIdFilter := map[string]interface{}{
 		"term": map[string]interface{}{
 			"_id": assetId,
@@ -131,7 +130,6 @@ func buildDetailsQuery(assetId string) map[string]interface{} {
 }
 
 func buildChildResourcesQuery(targetType string, assetId string) map[string]interface{} {
-
 	docTypeFilter := map[string]interface{}{
 		"term": map[string]interface{}{
 			docTypeKeyword: assetPortRulesDoctype[targetType],

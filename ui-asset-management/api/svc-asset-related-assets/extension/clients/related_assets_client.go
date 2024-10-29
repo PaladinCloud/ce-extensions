@@ -71,15 +71,13 @@ func (c *RelatedAssetsClient) GetRelatedAssetsDetails(ctx context.Context, tenan
 		return nil, fmt.Errorf("failed to fetch asset details %w", err)
 	}
 
-	assetDetails := getResults(result)
-	if len(assetDetails) == 0 {
-		return nil, fmt.Errorf("asset details not found for asset id [%s]", assetId)
+	assetDetails, err := extractSourceFromResult(result, assetId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to extract source from result: %w", err)
 	}
 
 	var allRelatedAssets []models.RelatedAsset
-	assetDetail := assetDetails[0].(map[string]interface{})["_source"].(map[string]interface{})
-
-	if v, ok := assetDetail[instanceid]; ok {
+	if v, ok := assetDetails[instanceid]; ok {
 
 		// fetch related assets for the asset
 		log.Println("fetching related assets")
@@ -129,11 +127,11 @@ func (c *RelatedAssetsClient) GetRelatedAssetsDetails(ctx context.Context, tenan
 			}
 		}
 
-		if v, ok := assetDetail[publicIpAddress]; ok && v != "" {
+		if v, ok := assetDetails[publicIpAddress]; ok && v != "" {
 			publicIpAsset := models.RelatedAsset{ResourceId: v.(string), AssetTypeName: publicIpAddressDisplayName}
 			allRelatedAssets = append(allRelatedAssets, publicIpAsset)
 		}
-		if v, ok := assetDetail[iamInstanceProfileArn]; ok && v != "" {
+		if v, ok := assetDetails[iamInstanceProfileArn]; ok && v != "" {
 			iamInstanceProfileArnAsset := models.RelatedAsset{ResourceId: v.(string), AssetTypeName: iamInstanceProfileArnDisplayName}
 			allRelatedAssets = append(allRelatedAssets, iamInstanceProfileArnAsset)
 		}
@@ -146,4 +144,23 @@ func (c *RelatedAssetsClient) GetRelatedAssetsDetails(ctx context.Context, tenan
 
 func getResults(esResponse *map[string]interface{}) []interface{} {
 	return (*esResponse)["hits"].(map[string]interface{})["hits"].([]interface{})
+}
+
+func extractSourceFromResult(result *map[string]interface{}, assetId string) (map[string]interface{}, error) {
+	hits, ok := (*result)["hits"].(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("unexpected response format: 'hits' key missing")
+	}
+
+	sourceArr, ok := hits["hits"].([]interface{})
+	if !ok || len(sourceArr) == 0 {
+		return nil, fmt.Errorf("asset details not found for asset id [%s]", assetId)
+	}
+
+	source, ok := sourceArr[0].(map[string]interface{})["_source"].(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("invalid source format for asset id [%s]", assetId)
+	}
+
+	return source, nil
 }

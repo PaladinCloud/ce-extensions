@@ -76,7 +76,6 @@ func (c *ElasticSearchClient) FetchAssetDetails(ctx context.Context, tenantId, a
 	}
 
 	response, err := client.Search(client.Search.WithIndex(ag), client.Search.WithBody(&buffer))
-
 	if err != nil {
 		return nil, fmt.Errorf("error getting response from opensearch client for asset id [%s] %w", assetId, err)
 	}
