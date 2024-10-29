@@ -45,7 +45,7 @@ func NewAssetDetailsClient(ctx context.Context, config *Configuration) (*AssetDe
 const (
 	allSources = "all-sources"
 	success    = "success"
-	unknown    = "Unknown"
+	empty      = ""
 )
 
 func (c *AssetDetailsClient) GetAssetDetails(ctx context.Context, tenantId, assetId string) (*models.Response, error) {
@@ -59,25 +59,17 @@ func (c *AssetDetailsClient) GetAssetDetails(ctx context.Context, tenantId, asse
 		return nil, fmt.Errorf("failed to fetch asset details: %w", err)
 	}
 
-	hits, ok := (*result)["hits"].(map[string]interface{})
-	if !ok {
-		return nil, fmt.Errorf("unexpected response format: 'hits' key missing")
+	assetDetails, err := extractSourceFromResult(result, assetId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to extract source from result: %w", err)
 	}
-
-	sourceArr, ok := hits["hits"].([]interface{})
-	if !ok || len(sourceArr) == 0 {
-		return nil, fmt.Errorf("asset details not found for asset id [%s]", assetId)
-	}
-
-	log.Printf("found asset details for asset id [%s]", assetId)
-	assetDetails := sourceArr[0].(map[string]interface{})["_source"].(map[string]interface{})
 
 	tags, err := c.extractTags(assetDetails)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to extract tags: %w", err)
 	}
 
-	isLegacy, primaryProvider, err := c.determinePrimaryProvider(assetDetails)
+	isLegacy, primaryProvider, err := c.extractPrimaryProvider(assetDetails)
 	commonFields := make(map[string]string)
 	if isLegacy {
 		commonFields = c.buildLegacyCommonFields(assetDetails)
@@ -85,7 +77,7 @@ func (c *AssetDetailsClient) GetAssetDetails(ctx context.Context, tenantId, asse
 		commonFields = c.buildCommonFields(assetDetails)
 	}
 
-	mandatoryTags, err := c.addMandatoryTags(ctx, tenantId, tags)
+	mandatoryTags, err := c.extractMandatoryTags(ctx, tenantId, tags)
 	if err != nil {
 		return nil, fmt.Errorf("failed to add mandatory tags: %w", err)
 	}
@@ -109,6 +101,25 @@ func (c *AssetDetailsClient) GetAssetDetails(ctx context.Context, tenantId, asse
 	return response, nil
 }
 
+func extractSourceFromResult(result *map[string]interface{}, assetId string) (map[string]interface{}, error) {
+	hits, ok := (*result)["hits"].(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("unexpected response format: 'hits' key missing")
+	}
+
+	sourceArr, ok := hits["hits"].([]interface{})
+	if !ok || len(sourceArr) == 0 {
+		return nil, fmt.Errorf("asset details not found for asset id [%s]", assetId)
+	}
+
+	source, ok := sourceArr[0].(map[string]interface{})["_source"].(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("invalid source format for asset id [%s]", assetId)
+	}
+
+	return source, nil
+}
+
 // Helper method to extract tags
 func (c *AssetDetailsClient) extractTags(assetDetails map[string]interface{}) (map[string]string, error) {
 	tags := make(map[string]string)
@@ -127,7 +138,7 @@ func (c *AssetDetailsClient) extractTags(assetDetails map[string]interface{}) (m
 }
 
 // Helper method to add mandatory tags
-func (c *AssetDetailsClient) addMandatoryTags(ctx context.Context, tenantId string, tags map[string]string) (map[string]string, error) {
+func (c *AssetDetailsClient) extractMandatoryTags(ctx context.Context, tenantId string, tags map[string]string) (map[string]string, error) {
 	mandatoryTagsWithValues := make(map[string]string)
 	mandatoryTags, err := c.rdsClient.FetchMandatoryTags(ctx, tenantId)
 	if err != nil {
@@ -138,31 +149,30 @@ func (c *AssetDetailsClient) addMandatoryTags(ctx context.Context, tenantId stri
 		if val, exists := tags[mandatoryTag.TagName]; exists {
 			mandatoryTagsWithValues[mandatoryTag.TagName] = val
 		} else {
-			tags[mandatoryTag.TagName] = unknown
-			mandatoryTagsWithValues[mandatoryTag.TagName] = unknown
+			tags[mandatoryTag.TagName] = empty
+			mandatoryTagsWithValues[mandatoryTag.TagName] = empty
 		}
 	}
 
 	return mandatoryTagsWithValues, nil
 }
 
-// Helper method to determine primary provider
-func (c *AssetDetailsClient) determinePrimaryProvider(assetDetails map[string]interface{}) (bool, string, error) {
-	isLegacy := false
-	if provider, ok := assetDetails[constants.PrimaryProvider]; ok {
-		return isLegacy, fmt.Sprintf("%v", provider), nil
-	} else if rawData, ok2 := assetDetails[constants.RawData]; ok2 {
-		return isLegacy, fmt.Sprintf("%v", rawData), nil
+func (c *AssetDetailsClient) buildTagsForLegacyAssetModel(assetDetails map[string]interface{}) map[string]string {
+	tagsKvPairs := map[string]string{}
+	source := assetDetails[legacy_constants.Source]
+	for key, value := range assetDetails {
+		tagsPrefix := "tags."
+		if strings.HasPrefix(key, tagsPrefix) {
+			tagKey := key[len(tagsPrefix):]
+			if source == "gcp" {
+				tagKey = strings.ToLower(tagKey)
+			}
+
+			tagsKvPairs[tagKey] = value.(string)
+		}
 	}
 
-	isLegacy = true
-	legacyPrimaryProvider := c.buildLegacyPrimaryProvider(assetDetails)
-	legacyPrimaryProviderJson, err := json.Marshal(legacyPrimaryProvider)
-	if err != nil {
-		return isLegacy, "", fmt.Errorf("failed to marshal legacy primary provider %w", err)
-	}
-
-	return isLegacy, string(legacyPrimaryProviderJson), nil
+	return tagsKvPairs
 }
 
 func (c *AssetDetailsClient) buildCommonFields(assetDetails map[string]interface{}) map[string]string {
@@ -211,6 +221,25 @@ func (c *AssetDetailsClient) getCommonField(assetDetails map[string]interface{},
 	return ""
 }
 
+// Helper method to determine primary provider
+func (c *AssetDetailsClient) extractPrimaryProvider(assetDetails map[string]interface{}) (bool, string, error) {
+	isLegacy := false
+	if provider, ok := assetDetails[constants.PrimaryProvider]; ok {
+		return isLegacy, fmt.Sprintf("%v", provider), nil
+	} else if rawData, ok2 := assetDetails[constants.RawData]; ok2 {
+		return isLegacy, fmt.Sprintf("%v", rawData), nil
+	}
+
+	isLegacy = true
+	legacyPrimaryProvider := c.buildLegacyPrimaryProvider(assetDetails)
+	legacyPrimaryProviderJson, err := json.Marshal(legacyPrimaryProvider)
+	if err != nil {
+		return isLegacy, "", fmt.Errorf("failed to marshal legacy primary provider %w", err)
+	}
+
+	return isLegacy, string(legacyPrimaryProviderJson), nil
+}
+
 func (c *AssetDetailsClient) buildLegacyPrimaryProvider(assetDetails map[string]interface{}) map[string]interface{} {
 	primaryProvider := make(map[string]interface{})
 
@@ -222,22 +251,4 @@ func (c *AssetDetailsClient) buildLegacyPrimaryProvider(assetDetails map[string]
 	}
 
 	return primaryProvider
-}
-
-func (c *AssetDetailsClient) buildTagsForLegacyAssetModel(assetDetails map[string]interface{}) map[string]string {
-	tagsKvPairs := map[string]string{}
-	source := assetDetails[legacy_constants.Source]
-	for key, value := range assetDetails {
-		tagsPrefix := "tags."
-		if strings.HasPrefix(key, tagsPrefix) {
-			tagKey := key[len(tagsPrefix):]
-			if source == "gcp" {
-				tagKey = strings.ToLower(tagKey)
-			}
-
-			tagsKvPairs[tagKey] = value.(string)
-		}
-	}
-
-	return tagsKvPairs
 }
