@@ -20,6 +20,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/google/uuid"
+	"log"
 	"svc-asset-count-layer/models"
 
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
@@ -43,7 +45,7 @@ func NewSecretsClient(ctx context.Context, useAssumeRole bool, assumeRoleArn, re
 	// Load the default configuration with region
 	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(region))
 	if err != nil {
-		return nil, fmt.Errorf("error loading AWS config: %v", err)
+		return nil, fmt.Errorf("error loading AWS config %w", err)
 	}
 
 	var svc *secretsmanager.Client
@@ -53,7 +55,7 @@ func NewSecretsClient(ctx context.Context, useAssumeRole bool, assumeRoleArn, re
 
 		// Assume the role using STS
 		creds := stscreds.NewAssumeRoleProvider(stsClient, assumeRoleArn, func(o *stscreds.AssumeRoleOptions) {
-			o.RoleSessionName = "SecretsSession"
+			o.RoleSessionName = fmt.Sprintf("SecretsSession-%s", uuid.New())
 		})
 
 		// Create a new configuration with the assumed role credentials
@@ -69,7 +71,7 @@ func NewSecretsClient(ctx context.Context, useAssumeRole bool, assumeRoleArn, re
 		svc = secretsmanager.NewFromConfig(cfg)
 	}
 
-	fmt.Println("initialized secrets client")
+	log.Println("initialized secrets client")
 	return &SecretsClient{
 		secretsClient: svc,
 	}, nil
@@ -79,7 +81,7 @@ func NewSecretsClient(ctx context.Context, useAssumeRole bool, assumeRoleArn, re
 func (r *SecretsClient) GetRdsSecret(ctx context.Context, secretIdPrefix, tenantId string) (*models.RdsSecret, error) {
 	// Create the secretId using the prefix and tenantId
 	secretId := fmt.Sprintf("%s%s", secretIdPrefix, tenantId)
-	fmt.Printf("Retrieving RDS secrets")
+	log.Printf("getting rds secrets for [%s]\n", secretId)
 
 	// Prepare the input for retrieving the secret
 	input := &secretsmanager.GetSecretValueInput{
@@ -90,7 +92,7 @@ func (r *SecretsClient) GetRdsSecret(ctx context.Context, secretIdPrefix, tenant
 	// Call Secrets Manager to retrieve the secret
 	result, err := r.secretsClient.GetSecretValue(ctx, input)
 	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve secret %s: %v", secretId, err)
+		return nil, fmt.Errorf("failed to retrieve secret value for [%s]: %w", secretId, err)
 	}
 
 	// Check if the result contains a secret string
@@ -98,14 +100,14 @@ func (r *SecretsClient) GetRdsSecret(ctx context.Context, secretIdPrefix, tenant
 	if result.SecretString != nil {
 		secretString = *result.SecretString
 	} else {
-		return nil, fmt.Errorf("secret string is nil for secret: %s", secretId)
+		return nil, fmt.Errorf("secret string is nil for secret [%s]", secretId)
 	}
 
 	// Unmarshal the secret string into the RdsSecret struct
 	var secretData models.RdsSecret
 	err = json.Unmarshal([]byte(secretString), &secretData)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal secret string: %+v", err)
+		return nil, fmt.Errorf("failed to unmarshal secret data for [%s]: %w", secretId, err)
 	}
 
 	return &secretData, nil

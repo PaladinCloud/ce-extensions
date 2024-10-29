@@ -37,10 +37,10 @@ type HttpServer struct {
 // Start begins running the sidecar
 func Start(port string, server *HttpServer, enableExtension bool) {
 	if enableExtension {
-		println("starting the server in background")
+		log.Println("starting the server in background")
 		go startHTTPServer(port, server)
 	} else {
-		println("starting the server")
+		log.Println("starting the server")
 		startHTTPServer(port, server)
 	}
 }

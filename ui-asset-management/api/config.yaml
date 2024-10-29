@@ -105,7 +105,7 @@
         - name: svc-asset-related-assets-layer
 - serviceName: svc-asset-count
   apiConfig:
-    method: POST
+    method: GET
     path: "/api/v2/assetgroups/{ag}/assets/count"
     requireAuth: true
     requireOptionsMethod: true
