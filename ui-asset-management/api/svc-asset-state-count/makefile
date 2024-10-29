@@ -3,7 +3,7 @@ SERVICE_BIN_DIR := bin/service
 EXTENSIONS_BIN_DIR := bin/layers/bin/extensions
 EXTENSIONS_ZIP_DIR := bin/layers/bin/
 
-LAMBDA_LAYER_NAME := svc-asset-count
+LAMBDA_LAYER_NAME := svc-asset-state-count
 
 # Build the extension for Lambda
 build-ext: dependencies
