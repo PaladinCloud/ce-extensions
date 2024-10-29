@@ -84,13 +84,13 @@ func (c *ElasticSearchClient) FetchAssetTypesForAssetGroup(ctx context.Context, 
 	defer response.Body.Close()
 
 	if response.StatusCode != 200 {
-		return nil, fmt.Errorf("error getting target types from opensearch client for asset group [%s] %wv", ag, err)
+		return nil, fmt.Errorf("error getting target types from opensearch client for asset group [%s] %w", ag, err)
 	}
 
 	var result map[string]interface{}
 	err = json.NewDecoder(response.Body).Decode(&result)
 	if err != nil {
-		return nil, fmt.Errorf("error decoding response body %w", err)
+		return nil, fmt.Errorf("error decoding response body for asset group [%s] %w", ag, err)
 	}
 
 	return &result, nil
