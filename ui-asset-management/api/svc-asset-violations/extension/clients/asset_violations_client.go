@@ -31,12 +31,25 @@ type AssetViolationsClient struct {
 }
 
 func NewAssetViolationsClient(ctx context.Context, config *Configuration) *AssetViolationsClient {
-	dynamodbClient, _ := NewDynamoDBClient(ctx, config.UseAssumeRole, config.AssumeRoleArn, config.Region, config.TenantConfigOutputTable, config.TenantTablePartitionKey)
-	secretsClient, _ := NewSecretsClient(ctx, config.UseAssumeRole, config.AssumeRoleArn, config.Region)
+	dynamodbClient, err := NewDynamoDBClient(ctx, config.UseAssumeRole, config.AssumeRoleArn, config.Region, config.TenantConfigOutputTable, config.TenantTablePartitionKey)
+	if err != nil {
+		return nil
+	}
+
+	secretsClient, err := NewSecretsClient(ctx, config.UseAssumeRole, config.AssumeRoleArn, config.Region)
+	if err != nil {
+		return nil
+	}
+
+	opensearchClient := NewElasticSearchClient(dynamodbClient)
+	rdsClient, err := NewRdsClient(secretsClient, config.SecretIdPrefix)
+	if err != nil {
+		return nil
+	}
 
 	return &AssetViolationsClient{
-		elasticSearchClient: NewElasticSearchClient(dynamodbClient),
-		rdsClient:           NewRdsClient(secretsClient, config.SecretIdPrefix),
+		elasticSearchClient: opensearchClient,
+		rdsClient:           rdsClient,
 	}
 }
 

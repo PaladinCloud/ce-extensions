@@ -52,7 +52,7 @@ func (c *ElasticSearchClient) CreateNewElasticSearchClient(ctx context.Context, 
 
 	client, err := elasticsearch.NewClient(elasticsearch.Config{Addresses: []string{"https://" + esDomainProperties.Endpoint}})
 	if err != nil {
-		return nil, fmt.Errorf("error creating opensearch client for tenant id [%s] %w", tenantId, err)
+		return nil, fmt.Errorf("error creating opensearch client for tenant id: [%s] %w", tenantId, err)
 	}
 
 	// Store the new client in the cache
@@ -83,7 +83,7 @@ func (c *ElasticSearchClient) FetchAssetDetails(ctx context.Context, tenantId, a
 	defer response.Body.Close()
 
 	if response.StatusCode != 200 {
-		return nil, fmt.Errorf("error while fetching asset detials from opensearch client for asset id [%s]", assetId)
+		return nil, fmt.Errorf("error while fetching asset details from opensearch client for asset id [%s]", assetId)
 	}
 	var result map[string]interface{}
 	json.NewDecoder(response.Body).Decode(&result)

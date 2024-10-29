@@ -29,7 +29,7 @@ import (
 
 type ElasticSearchClient struct {
 	dynamodbClient           *DynamodbClient
-	elasticsearchClientCache sync.Map // Replaced with sync.Map
+	elasticsearchClientCache sync.Map
 }
 
 func NewElasticSearchClient(dynamodbClient *DynamodbClient) *ElasticSearchClient {
@@ -53,7 +53,7 @@ func (c *ElasticSearchClient) CreateNewElasticSearchClient(ctx context.Context, 
 
 	client, err := elasticsearch.NewClient(elasticsearch.Config{Addresses: []string{"https://" + esDomainProperties.Endpoint}})
 	if err != nil {
-		return nil, fmt.Errorf("error creating opensearch client for tenant id: %s. err: %+v", tenantId, err)
+		return nil, fmt.Errorf("error creating opensearch client for tenant id: [%s] %w", tenantId, err)
 	}
 
 	// Store the new client in the cache

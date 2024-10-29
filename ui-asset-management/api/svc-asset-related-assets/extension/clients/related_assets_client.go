@@ -70,7 +70,7 @@ func (c *RelatedAssetsClient) GetRelatedAssetsDetails(ctx context.Context, tenan
 
 	assetDetails := getResults(result)
 	if len(assetDetails) == 0 {
-		return nil, fmt.Errorf("asset detials not found for asset id [%s]", assetId)
+		return nil, fmt.Errorf("asset details not found for asset id [%s]", assetId)
 	}
 
 	var allRelatedAssets []models.RelatedAsset
