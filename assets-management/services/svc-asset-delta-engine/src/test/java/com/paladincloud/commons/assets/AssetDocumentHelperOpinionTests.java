@@ -29,7 +29,7 @@ public class AssetDocumentHelperOpinionTests {
             .assetState(AssetState.MANAGED)
             .resourceNameField("resource_name")
             .reportingSource("secondary")
-            .reportingService("assets")
+            .reportingSourceService("assets")
             .build();
     }
 

@@ -108,7 +108,7 @@ public class AssetDocumentHelper {
     private AssetState assetState;
     private String resourceNameField;
     private String reportingSource;
-    private String reportingService;
+    private String reportingSourceService;
 
 
     public boolean isPrimarySource() {
@@ -215,7 +215,7 @@ public class AssetDocumentHelper {
         if (StringUtils.isBlank(reportingSource)) {
             throw new JobException("reportingSource is not set");
         }
-        if (StringUtils.isBlank(reportingService)) {
+        if (StringUtils.isBlank(reportingSourceService)) {
             throw new JobException("reportingService is not set");
         }
         if (dto.getOpinions() == null) {
@@ -228,7 +228,7 @@ public class AssetDocumentHelper {
         } else {
             reportingOpinions = new HashMap<>(reportingOpinions);
         }
-        reportingOpinions.put(reportingService,
+        reportingOpinions.put(reportingSourceService,
             data.getOrDefault(MapperFields.RAW_DATA, "").toString());
         var opinions = new HashMap<>(dto.getOpinions());
         opinions.put(reportingSource, reportingOpinions);
@@ -415,9 +415,9 @@ public class AssetDocumentHelper {
             // delete the document.
             var opinions = new HashMap<>(dto.getOpinions());
             var sourceOpinions = opinions.get(reportingSource);
-            if (sourceOpinions != null && sourceOpinions.containsKey(reportingService)) {
+            if (sourceOpinions != null && sourceOpinions.containsKey(reportingSourceService)) {
                 sourceOpinions = new HashMap<>(sourceOpinions);
-                sourceOpinions.remove(reportingService);
+                sourceOpinions.remove(reportingSourceService);
                 if (sourceOpinions.isEmpty()) {
                     opinions.remove(reportingSource);
                 } else {

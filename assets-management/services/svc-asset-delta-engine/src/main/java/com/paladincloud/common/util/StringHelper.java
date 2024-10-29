@@ -28,8 +28,8 @@ public class StringHelper {
         return addOptionalDevPrefix(name);
     }
 
-    public static String opinionIndexName(String reportingSource, String type) {
-        var name = STR."\{reportingSource}_\{type}_opinions";
+    public static String opinionIndexName(String dataSource, String type) {
+        var name = STR."\{dataSource}_\{type}_opinions";
         return addOptionalDevPrefix(name);
     }
 

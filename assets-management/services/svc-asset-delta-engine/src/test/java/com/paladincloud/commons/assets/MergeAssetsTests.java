@@ -63,7 +63,7 @@ public class MergeAssetsTests {
             .assetState(AssetState.MANAGED)
             .resourceNameField("resource_name")
             .reportingSource(opinionSource)
-            .reportingService(opinionSource == null ? null : "vulnerabilities")
+            .reportingSourceService(opinionSource == null ? null : "vulnerabilities")
             .build();
     }
 

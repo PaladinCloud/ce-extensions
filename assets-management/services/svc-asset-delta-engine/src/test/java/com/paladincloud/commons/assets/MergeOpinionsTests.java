@@ -106,7 +106,7 @@ public class MergeOpinionsTests {
             .assetState(AssetState.MANAGED)
             .resourceNameField("resource_name")
             .reportingSource(reportingSource)
-            .reportingService(reportingService)
+            .reportingSourceService(reportingService)
             .build();
     }
 

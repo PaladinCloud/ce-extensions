@@ -3,7 +3,6 @@ package com.paladincloud.common.assets;
 import static java.util.Map.entry;
 
 import com.paladincloud.common.AssetDocumentFields;
-import com.paladincloud.common.assets.AssetDocumentHelper.MapperFields;
 import com.paladincloud.common.assets.FilesAndTypes.SupportingType;
 import com.paladincloud.common.aws.DatabaseHelper;
 import com.paladincloud.common.config.AssetTypes;
@@ -61,28 +60,8 @@ public class Assets {
         }
     }
 
-    private ReportingInfo identifyReportingSource(String bucket, List<String> allMapperFiles) {
-        ReportingInfo info = null;
-        for (String mapperFile : allMapperFiles) {
-            try {
-                var records = mapperRepository.fetchFile(bucket, mapperFile);
-                if (!records.isEmpty()) {
-                    var firstRecord = records.getFirst();
-                    var source = firstRecord.get(MapperFields.REPORTING_SOURCE);
-                    var service = firstRecord.get(MapperFields.REPORTING_SERVICE);
-                    info = new ReportingInfo(source != null ? source.toString() : null,
-                        service != null ? service.toString() : null);
-                    break;
-                }
-            } catch (IOException e) {
-                throw new JobException(STR."Failed loading mapper file: \{mapperFile}", e);
-            }
-        }
-
-        return info;
-    }
-
-    public void process(String dataSource, String mapperPath) {
+    public void process(String dataSource, String mapperPath, String reportingSource,
+        String reportingSourceService) {
         // dataSource is the underlying source of the data (gcp, aws, azure) while reporting source
         // is only set if it's different. It's different for secondary sources reporting data
         // (qualys, rapid7); in addition, reporting service is also set only if the data is from
@@ -98,12 +77,14 @@ public class Assets {
         }
 
         if (types.isEmpty()) {
-            LOGGER.info("There are no types to process for dataSource: {}", dataSource);
+            LOGGER.info("There are no types to process for dataSource: {} at {}", dataSource,
+                mapperPath);
             return;
         }
 
         if (allFilenames.isEmpty()) {
-            LOGGER.info("There are no files to process for dataSource: {}", dataSource);
+            LOGGER.info("There are no files to process for dataSource: {} at {}", dataSource,
+                mapperPath);
             return;
         }
 
@@ -118,16 +99,16 @@ public class Assets {
                     var indexName = StringHelper.indexName(dataSource, type);
 
                     var latestAssets = fetchMapperFiles(bucket, filename, dataSource, type);
-                    var reportingInfo = identifyReportingSource(bucket, allFilenames);
-                    var isOpinion = !dataSource.equalsIgnoreCase(reportingInfo.source);
+                    var isOpinion = reportingSource != null && !dataSource.equalsIgnoreCase(reportingSource);
 
                     String primaryIndexName;
-                    Map<String, AssetDTO> existingPrimaryAssets = Collections.emptyMap();
+                    Map<String, AssetDTO> existingPrimaryAssets = null;
                     if (isOpinion) {
                         primaryIndexName = StringHelper.indexName(dataSource, type);
                         existingPrimaryAssets = assetRepository.getAssets(primaryIndexName, true,
                             Collections.emptyList());
-                        indexName = StringHelper.opinionIndexName(reportingInfo.source, type);
+                        indexName = StringHelper.opinionIndexName(dataSource, type);
+
                     } else {
                         primaryIndexName = null;
                     }
@@ -141,7 +122,7 @@ public class Assets {
                     if (isOpinion) {
                         LOGGER.info(
                             "dataSource={}; reportingSource={}; reportingService={}; {} assets were found in the primary index {}",
-                            dataSource, reportingInfo.source, reportingInfo.service,
+                            dataSource, reportingSource, reportingSourceService,
                             existingPrimaryAssets.size(),
                             primaryIndexName);
                     }
@@ -157,9 +138,10 @@ public class Assets {
                     var assetCreator = AssetDocumentHelper.builder().loadDate(startTime)
                         .idField(idColumn).docIdFields(docIdFields)
                         .dataSource(dataSource)
-                        .reportingService(reportingInfo.service)
                         .displayName(displayName).tags(tags).type(type)
-                        .accountIdToNameFn(this::accountIdToName).reportingSource(dataSource)
+                        .accountIdToNameFn(this::accountIdToName)
+                        .reportingSource(reportingSource)
+                        .reportingSourceService(reportingSourceService)
                         .assetState(assetStateHelper.get(dataSource, type));
                     var mergeResponse = MergeAssets.process(assetCreator.build(), existingAssets,
                         latestAssets, existingPrimaryAssets);
@@ -357,9 +339,5 @@ public class Assets {
             relations.put(parentType, relationsList);
             assetRepository.updateTypeRelations(indexName, parentType, relations);
         }
-    }
-
-    record ReportingInfo(String source, String service) {
-
     }
 }
