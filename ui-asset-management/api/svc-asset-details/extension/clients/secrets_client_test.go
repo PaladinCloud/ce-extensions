@@ -31,7 +31,7 @@ func TestNewSecretsClient(t *testing.T) {
 
 		_, err := NewSecretsClient(ctx, useAssumeRole, assumeRoleArn, region)
 		if err != nil {
-			t.Errorf("Error loading AWS config: %v", err)
+			t.Errorf("Error loading AWS config: %+v", err)
 		}
 	})
 }

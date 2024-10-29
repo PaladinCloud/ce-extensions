@@ -14,20 +14,26 @@
  * the License.
  */
 
-package utils
+package constants
 
-var FieldsToBeSkipped = [...]string{
-	"_cloudType",
-	"_resourceid",
-	"_docid",
-	"docId",
-	"_discoverydate",
-	"discoverydate",
-	"firstdiscoveredon",
-	"_entity",
-	"_entitytype",
-	"_loaddate",
-	"assetRiskScore",
-	"targettypedisplayname",
-	"arsLoadDate",
+const (
+	AccountId       = "accountId"
+	AccountName     = "accountName"
+	Source          = "source"
+	SourceName      = "sourceName"
+	TargetType      = "targetType"
+	TargetTypeName  = "targetTypeName"
+	Region          = "region"
+	PrimaryProvider = "primaryProvider"
+	RawData         = "rawData"
+)
+
+var CommonFields = []string{
+	AccountId,
+	AccountName,
+	Source,
+	SourceName,
+	TargetType,
+	TargetTypeName,
+	Region,
 }
