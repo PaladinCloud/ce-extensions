@@ -24,10 +24,10 @@ build-and-copy: create-dist-dir
 # Maven build target
 .PHONY: mvn-build
 mvn-build:
-	cd services/$(SERVICE_NAME); \
-	mvn clean install \
+	cd services/$(SERVICE_NAME) || { echo "Error: Failed to change to service directory"; exit 1; }; \
+	mvn clean install -B \
 		-DskipTests=true \
-		-Dmaven.javadoc.skip=true
+		-Dmaven.javadoc.skip=true || { echo "Error: Maven build failed"; exit 1; }
 	@if [ ! -f "services/$(SERVICE_NAME)/$(ARTIFACT_PATH)" ]; then \
 		echo "Error: Maven build failed to create $(ARTIFACT_PATH)"; \
 		exit 1; \
