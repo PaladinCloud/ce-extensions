@@ -23,8 +23,8 @@ public class ElasticAssetRepository implements AssetRepository {
     }
 
     @Override
-    public Map<String, AssetDTO> getLatestAssets(String indexName, List<String> filters) {
-        return elasticSearch.getLatestAssets(indexName, filters);
+    public Map<String, AssetDTO> getAssets(String indexName, boolean latestOnly, List<String> filters) {
+        return elasticSearch.getAssets(indexName, latestOnly, filters);
     }
 
     @Override

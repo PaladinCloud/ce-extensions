@@ -25,7 +25,6 @@ public class AssetDocumentHelperTests {
             .idField(idField)
             .docIdFields(List.of("accountid", "region", idField))
             .dataSource(dataSource)
-            .isCloud(true)
             .displayName("ec2")
             .tags(List.of())
             .type("ec2")
@@ -45,8 +44,8 @@ public class AssetDocumentHelperTests {
         var expectedMap = JsonHelper.mapFromString(getSamplePrimaryAssetDocument());
 
         assertNotNull(dto);
-        assertNotNull(dtoAsMap.get(AssetDocumentFields.LEGACY_LOAD_DATE));
-        assertFalse(dtoAsMap.get(AssetDocumentFields.LEGACY_LOAD_DATE).toString().isBlank());
+        assertNotNull(dtoAsMap.get(AssetDocumentFields.LOAD_DATE));
+        assertFalse(dtoAsMap.get(AssetDocumentFields.LOAD_DATE).toString().isBlank());
         assertNotNull(dtoAsMap.get(AssetDocumentFields.PRIMARY_PROVIDER));
         assertEquals(mapperData.get("rawData"), dtoAsMap.get(AssetDocumentFields.PRIMARY_PROVIDER));
 
@@ -69,8 +68,8 @@ public class AssetDocumentHelperTests {
         var expectedMap = JsonHelper.mapFromString(getSamplePrimaryAssetDocument());
 
         assertNotNull(dto);
-        assertNotNull(dtoAsMap.get(AssetDocumentFields.LEGACY_LOAD_DATE));
-        assertFalse(dtoAsMap.get(AssetDocumentFields.LEGACY_LOAD_DATE).toString().isBlank());
+        assertNotNull(dtoAsMap.get(AssetDocumentFields.LOAD_DATE));
+        assertFalse(dtoAsMap.get(AssetDocumentFields.LOAD_DATE).toString().isBlank());
         assertNotNull(dtoAsMap.get(AssetDocumentFields.PRIMARY_PROVIDER));
         assertEquals(mapperData.get("rawData"), dtoAsMap.get(AssetDocumentFields.PRIMARY_PROVIDER));
 
@@ -87,13 +86,13 @@ public class AssetDocumentHelperTests {
         var mappedAsMap = JsonHelper.mapFromString(getLegacyPrimaryMapperDocument());
         var dto = getHelper("gcp", "_resource_id", null).createFrom(mappedAsMap);
 
-        mappedAsMap.put(AssetDocumentFields.LEGACY_ACCOUNT_NAME, "new account name");
+        mappedAsMap.put(AssetDocumentFields.ACCOUNT_NAME, "new account name");
 
         AssetDocumentHelper helper = getHelper("gcp", "_resource_id", null);
         helper.updateFrom(mappedAsMap, dto);
 
         assertEquals("new account name", dto.getLegacyAccountName());
-        assertTrue(dto.isLegacyIsLatest());
+        assertTrue(dto.getIsLatest());
     }
 
     /**
@@ -109,21 +108,11 @@ public class AssetDocumentHelperTests {
         helper.updateFrom(mappedAsMap, dto);
     }
 
-    @Test
-void secondaryDtoIsFullyPopulated() throws JsonProcessingException {
-        AssetDocumentHelper helper = getHelper("secondary", "_resourceid", null);
-        var mappedAsMap = JsonHelper.mapFromString(getSampleSecondaryDocument());
-        var dto = helper.createFrom(mappedAsMap);
-        assertNotNull(dto);
-
-//        assertEquals("secondary", dto.getReportingSource());
-    }
-
     private String getV2PrimaryMapperDocument() {
         return """
             {
                 "rawData": "{\\"auto_restart\\":true,\\"can_ip_forward\\":false,\\"confidential_computing\\":false,\\"description\\":\\"\\",\\"disks\\":[{\\"id\\":\\"0\\",\\"projectId\\":\\"xyz\\",\\"projectName\\":\\"Project\\",\\"name\\":\\"instance-abc\\",\\"sizeInGb\\":50,\\"type\\":\\"PERSISTENT\\",\\"autoDelete\\":true,\\"hasSha256\\":false,\\"hasKMSKeyName\\":false,\\"labels\\":null,\\"region\\":\\"\\"}],\\"emails\\":[\\"fubar@developer.gserviceaccount.com\\"],\\"id\\":17,\\"item_interfaces\\":[{\\"key\\":\\"enable-oslogin\\",\\"value\\":\\"true\\"}],\\"labels\\":{},\\"machine_type\\":\\"https://www.googleapis.com/compute/v1/projects/xyz/zones/z/machineTypes/e2-standard-2\\",\\"name\\":\\"instance-abc\\",\\"network_interfaces\\":[{\\"id\\":\\"100.128.100.189\\",\\"name\\":\\"nic0\\",\\"network\\":\\"https://www.googleapis.com/compute/v1/projects/xyz/global/networks/default\\",\\"accessConfig\\":[{\\"id\\":\\"External NAT\\",\\"name\\":\\"External NAT\\",\\"natIp\\":null,\\"projectName\\":\\"Project\\"}]}],\\"on_host_maintainence\\":\\"MIGRATE\\",\\"project_id\\":\\"xyz\\",\\"project_name\\":\\"Project\\",\\"project_number\\":344106022091,\\"region\\":\\"r\\",\\"scopes\\":[\\"https://www.googleapis.com/auth/devstorage.read_only\\",\\"https://www.googleapis.com/auth/logging.write\\",\\"https://www.googleapis.com/auth/monitoring.write\\",\\"https://www.googleapis.com/auth/servicecontrol\\",\\"https://www.googleapis.com/auth/service.management.readonly\\",\\"https://www.googleapis.com/auth/trace.append\\"],\\"service_accounts\\":[{\\"email\\":\\"fubar@developer.gserviceaccount.com\\",\\"emailBytes\\":{},\\"scopeList\\":[\\"https://www.googleapis.com/auth/devstorage.read_only\\",\\"https://www.googleapis.com/auth/logging.write\\",\\"https://www.googleapis.com/auth/monitoring.write\\",\\"https://www.googleapis.com/auth/servicecontrol\\",\\"https://www.googleapis.com/auth/service.management.readonly\\",\\"https://www.googleapis.com/auth/trace.append\\"]}],\\"shielded_instance_config\\":{\\"enableVtpm\\":true,\\"enableIntegrityMonitoring\\":true},\\"status\\":\\"TERMINATED\\"}",
-                "_lastDiscoveryDate": "2024-09-05 14:57:00+0000",
+                "_lastScanDate": "2024-09-05 14:57:00+0000",
                 "resource_id": "17",
                 "resource_name": "instance-abc",
                 "account_id": "abc",
@@ -187,6 +176,7 @@ void secondaryDtoIsFullyPopulated() throws JsonProcessingException {
                 "confidentialComputing": false,
                 "canIPForward": false,
                 "_cloudType": "gcp",
+                "reporting_source": "gcp",
                 "tags": { "environment": "test" },
                 "networkInterfaces": [
                     {
@@ -228,33 +218,6 @@ void secondaryDtoIsFullyPopulated() throws JsonProcessingException {
             }""".trim();
     }
 
-    private String getSampleSecondaryDocument() {
-        return """
-            {
-                "_resourceid": "i-76",
-                "_resourcename": "ABD-DEF",
-                "_cloudType": "aws",
-                "_entitytype": "server",
-                "lastSeenTime": "2024-07-19T05:23:44Z",
-                "osBuild": "20348",
-                "serialNumber": "007",
-                "publicIpAddress": "74.313.911.257",
-                "discoverydate": "2024-07-25 16:32:26+0000",
-                "systemProductName": "HVM domU",
-                "externalId": "ext-7e86",
-                "accountid": "64",
-                "externalAccountId": "ext-7e86-3924",
-                "osVersion": "Windows Server 2022",
-                "provisionStatus": "Provisioned",
-                "firstSeenTime": "2024-05-07T10:15:19Z",
-                "osType": "Windows",
-                "systemManufacturer": "Xen",
-                "reducedFunctionalityMode": "no",
-                "region": "us-2",
-                "status": "normal"
-            }""".trim();
-    }
-
     /**
      * This is the expected DTO, converted to a map converted to a JSON string
      *
@@ -274,10 +237,8 @@ void secondaryDtoIsFullyPopulated() throws JsonProcessingException {
                 "_resourcename": "instance-abc",
                 "_resourceid": "17",
                 "sourceDisplayName": "GCP",
-                "assetIdDisplayName": null,
                 "targettypedisplayname": "ec2",
                 "accountid": "xyz",
-                "accountname": null,
                 "discoverydate": "2024-09-05 14:57:00+0000",
                 "firstdiscoveredon": "2024-09-05 14:57:00+0000",
                 "ec2_relations": "ec2"

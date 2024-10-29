@@ -34,6 +34,11 @@ public class ElasticBatch implements AssetRepository.Batch {
         checkForPush();
     }
 
+    public void cancel() {
+        LOGGER.info("Canceling batch with {} items", batchItems.size());
+        batchItems.clear();
+    }
+
     public void flush() throws IOException {
         push();
     }
@@ -60,8 +65,10 @@ public class ElasticBatch implements AssetRepository.Batch {
         for (var batchData : batchItems) {
             payload.append(batchData.actionMetaData);
             payload.append("\n");
-            payload.append(batchData.document);
-            payload.append("\n");
+            if (batchData.document != null) {
+                payload.append(batchData.document);
+                payload.append("\n");
+            }
         }
 
         var response = elasticSearch.invokeCheckAndConvert(ElasticBulkResponse.class,
@@ -86,6 +93,13 @@ public class ElasticBatch implements AssetRepository.Batch {
         private BatchItem(String actionMetaData, String document) {
             this.actionMetaData = actionMetaData;
             this.document = document;
+        }
+
+        static public BatchItem deleteEntry(String indexName, String docId) {
+            var actionInfo = STR."""
+                { "delete": { "_index": "\{indexName}", "_id": "\{docId}" } }
+                """.trim();
+            return new BatchItem(actionInfo, null);
         }
 
         static public BatchItem documentEntry(String indexName, String docId,

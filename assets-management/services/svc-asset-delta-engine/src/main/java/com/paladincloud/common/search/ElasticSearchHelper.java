@@ -155,8 +155,20 @@ public class ElasticSearchHelper {
      * @param indexName the index name
      * @return the asset documents
      */
-    public Map<String, AssetDTO> getLatestAssets(String indexName, List<String> filters) {
-        int totalDocumentCount = getDocumentCount(indexName);
+    public Map<String, AssetDTO> getAssets(String indexName, boolean latestOnly,
+        List<String> filters) {
+        String query;
+        if (latestOnly) {
+            query = """
+                {"query":{"match":{"latest":true}}}
+                """;
+        } else {
+            query = """
+                {"query": {"match_all": {}}}
+                """;
+        }
+
+        int totalDocumentCount = getDocumentCount(indexName, query);
         boolean scroll = totalDocumentCount > ElasticSearchHelper.MAX_RETURNED_RESULTS;
 
         var filterPath = new StringBuilder();
@@ -168,17 +180,15 @@ public class ElasticSearchHelper {
             filterPath.deleteCharAt(filterPath.length() - 1);
         }
 
-        String endPoint = STR."\{indexName}/_search?scroll=1m\{filterPath}&size=\{Math.min(totalDocumentCount,
+        String endPoint = STR."\{indexName}/_search?scroll=1m\{filterPath}&size=\{Math.min(
+            totalDocumentCount,
             ElasticSearchHelper.MAX_RETURNED_RESULTS)}";
         if (totalDocumentCount == 0) {
             endPoint = STR."\{indexName}/_search?scroll=1m";
         }
 
-        String payLoad = """
-            {"query":{"match":{"latest":true}}}
-            """;
         Map<String, AssetDTO> results = new HashMap<>();
-        String scrollId = fetchAssetAndScrollId(endPoint, results, payLoad);
+        String scrollId = fetchAssetAndScrollId(endPoint, results, query);
 
         if (scroll) {
             totalDocumentCount -= ElasticSearchHelper.MAX_RETURNED_RESULTS;
@@ -209,9 +219,17 @@ public class ElasticSearchHelper {
                 endPoint, payLoad);
             if (response.hits != null && response.hits.hits != null) {
                 for (var hit : response.hits.hits) {
-                    // NOTE: This needs to be the legacy doc id in order for matches of pre-migrated
-                    // assets.
-                    results.put(hit.source.getLegacyDocId(), hit.source);
+                    var docId = hit.source.getDocId();
+                    if (docId == null) {
+                        docId = hit.source.getLegacyDocId();
+                    }
+                    if (docId == null) {
+                        LOGGER.error(
+                            "error occurred in: Asset missing both docId values: endPoint={} OpenSearch id={}",
+                            endPoint, hit.id);
+                    } else {
+                        results.put(docId, hit.source);
+                    }
                 }
             }
             return response.scrollId;
@@ -246,12 +264,10 @@ public class ElasticSearchHelper {
      * @param indexName the index name
      * @return the type count
      */
-    private int getDocumentCount(String indexName) {
+    private int getDocumentCount(String indexName, String query) {
         try {
             var response = invokeAndCheck(HttpMethod.GET,
-                STR."\{indexName}/_count?filter_path=count", """
-                    {"query":{"match":{"latest":true}}}
-                    """);
+                STR."\{indexName}/_count?filter_path=count", query);
             return new ObjectMapper().readTree(response.getBody()).at("/count").asInt();
         } catch (IOException e) {
             throw new JobException(STR."Error getting document count in \{indexName}", e);

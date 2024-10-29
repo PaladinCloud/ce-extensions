@@ -31,7 +31,8 @@ public class AssetTypes {
 
 
     @Inject
-    public AssetTypes(ElasticSearchHelper elasticSearch, DatabaseHelper database, AssetGroups assetGroups) {
+    public AssetTypes(ElasticSearchHelper elasticSearch, DatabaseHelper database,
+        AssetGroups assetGroups) {
         this.elasticSearch = elasticSearch;
         this.database = database;
         this.assetGroups = assetGroups;
@@ -118,10 +119,53 @@ public class AssetTypes {
         var types = getTypes(dataSource);
         for (var type : types) {
             var indexName = StringHelper.indexName(dataSource, type);
-            if (elasticSearch.indexMissing(indexName)) {
+            if (ensureIndexExists(indexName, false, type, dataSource)) {
                 newAssets.add(indexName);
+            }
+        }
 
-                var payload = STR."""
+        assetGroups.createDefaultGroup(dataSource);
+        assetGroups.updateImpactedAliases(newAssets.stream().toList(), dataSource);
+
+        setupOpinionIndexes(dataSource);
+
+        try {
+            elasticSearch.createIndex("exceptions");
+        } catch (IOException e) {
+            throw new JobException("Error while creating the 'exceptions' index", e);
+        }
+    }
+
+    private void setupOpinionIndexes(String dataSource) {
+        var types = getTypes(dataSource);
+        for (var type : types) {
+            var indexName = StringHelper.opinionIndexName(dataSource, type);
+            ensureIndexExists(indexName, true, null, null);
+        }
+    }
+
+    private boolean ensureIndexExists(String indexName, boolean isOpinion, String type, String dataSource) {
+        if (elasticSearch.indexMissing(indexName)) {
+            LOGGER.info("Creating index '{}'", indexName);
+            var additionalProperties = "";
+            if (!isOpinion) {
+                additionalProperties = STR."""
+                ,
+                "properties": {
+                    "\{type}_relations": {
+                        "type": "join",
+                        "relations": {
+                            "\{type}": ["issue_\{type}"],
+                            "issue_\{type}": [
+                                "issue_\{type}_audit",
+                                "issue_\{type}_comment",
+                                "issue_\{type}_exception"]
+                        }
+                    }
+                }
+                """.trim();
+            }
+            var payload = STR."""
                     {
                         "settings": {
                             "number_of_shards": 1,
@@ -132,43 +176,28 @@ public class AssetTypes {
                             }
                         },
                         "mappings": {
-                            "dynamic": true,
-                            "properties": {
-                                "\{type}_relations": {
-                                    "type": "join",
-                                    "relations": {
-                                        "\{type}": ["issue_\{type}"],
-                                        "issue_\{type}": [
-                                            "issue_\{type}_audit",
-                                            "issue_\{type}_comment",
-                                            "issue_\{type}_exception"]
-                                    }
-                                }
-                            }
+                            "dynamic": true
+                            \{additionalProperties}
                         }
                     }
                     """;
 
-                try {
-
-                    elasticSearch.invokeAndCheck(HttpMethod.PUT, indexName, payload);
-                    elasticSearch.invokeAndCheck(HttpMethod.PUT, STR."/\{indexName}/_alias/\{dataSource}",
+            try {
+                elasticSearch.invokeAndCheck(HttpMethod.PUT, indexName, payload);
+                if (!isOpinion) {
+                    elasticSearch.invokeAndCheck(HttpMethod.PUT,
+                        STR."/\{indexName}/_alias/\{dataSource}",
                         null);
-                    elasticSearch.invokeAndCheck(HttpMethod.PUT, STR."/\{indexName}/_alias/ds-all", null);
-                } catch (IOException e) {
-                    throw new JobException(
-                        STR."Error while creating the index '\{indexName}' using '\{payload}'", e);
+                    elasticSearch.invokeAndCheck(HttpMethod.PUT, STR."/\{indexName}/_alias/ds-all",
+                        null);
                 }
+                return true;
+            } catch (IOException e) {
+                throw new JobException(
+                    STR."Error while creating the index '\{indexName}' using '\{payload}'", e);
             }
         }
 
-        assetGroups.createDefaultGroup(dataSource);
-        assetGroups.updateImpactedAliases(newAssets.stream().toList(), dataSource);
-
-        try {
-            elasticSearch.createIndex("exceptions");
-        } catch (IOException e) {
-            throw new JobException("Error while creating the 'exceptions' index", e);
-        }
+        return false;
     }
 }

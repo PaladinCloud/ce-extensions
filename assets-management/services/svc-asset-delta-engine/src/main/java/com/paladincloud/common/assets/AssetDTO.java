@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonFormat.Shape;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.paladincloud.common.AssetDocumentFields;
 import java.time.ZonedDateTime;
@@ -12,6 +13,7 @@ import java.util.Map;
 import lombok.Getter;
 import lombok.Setter;
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class AssetDTO {
 
     /**
@@ -60,12 +62,12 @@ public class AssetDTO {
     @Getter
     @Setter
     @JsonProperty(AssetDocumentFields.IS_ENTITY)
-    private boolean isEntity;
+    private Boolean isEntity;
 
     @Getter
     @Setter
     @JsonProperty(AssetDocumentFields.IS_LATEST)
-    private boolean isLatest;
+    private Boolean isLatest;
 
     /**
      * Managed by the asset-shipper; this is the earliest discovery date there are records for. The
@@ -84,8 +86,8 @@ public class AssetDTO {
     @Setter
     @Getter
     @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd HH:mm:00Z")
-    @JsonProperty(AssetDocumentFields.LAST_DISCOVERY_DATE)
-    private ZonedDateTime lastDiscoveryDate;
+    @JsonProperty(AssetDocumentFields.LAST_SCAN_DATE)
+    private ZonedDateTime lastScanDate;
 
     /**
      * The date the item was loaded/saved into the repository: The format is "yyyy-MM-dd HH:mm:00Z"
@@ -129,18 +131,18 @@ public class AssetDTO {
     @Setter
     @JsonProperty(AssetDocumentFields.LEGACY_IS_ENTITY)
     @JsonFormat(shape = Shape.STRING)
-    private boolean legacyIsEntity;
+    private Boolean legacyIsEntity;
 
     @Getter
     @Setter
     @JsonProperty(AssetDocumentFields.LEGACY_IS_LATEST)
-    private boolean legacyIsLatest;
+    private Boolean legacyIsLatest;
 
     @Setter
     @Getter
     @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd HH:mm:00Z")
-    @JsonProperty(AssetDocumentFields.LEGACY_LAST_DISCOVERY_DATE)
-    private ZonedDateTime legacyLastDiscoveryDate;
+    @JsonProperty(AssetDocumentFields.LEGACY_LAST_SCAN_DATE)
+    private ZonedDateTime legacyLastScanDate;
 
     @Setter
     @Getter
@@ -176,7 +178,6 @@ public class AssetDTO {
     @JsonProperty(AssetDocumentFields.SOURCE)
     private String source;
 
-
     @Setter
     @Getter
     @JsonProperty(AssetDocumentFields.SOURCE_DISPLAY_NAME)
@@ -207,10 +208,19 @@ public class AssetDTO {
     @JsonProperty(AssetDocumentFields.PRIMARY_PROVIDER)
     private String primaryProvider;
 
+    @Setter
+    @Getter
+    @JsonProperty(AssetDocumentFields.OPINIONS)
+    private Map<String,Map<String, String>> opinions;
+
 
     // ---------------------------------------------------------------------------------------------
     // LEGACY TOP LEVEL FIELDS
     // ---------------------------------------------------------------------------------------------
+    @Setter
+    @Getter
+    @JsonProperty(AssetDocumentFields.LEGACY_SOURCE_DISPLAY_NAME)
+    private String legacySourceDisplayName;
     @Setter
     @Getter
     @JsonProperty(AssetDocumentFields.LEGACY_RESOURCE_ID)
