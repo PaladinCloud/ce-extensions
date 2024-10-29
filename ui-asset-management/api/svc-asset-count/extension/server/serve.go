@@ -51,10 +51,13 @@ func startHTTPServer(port string, httpConfig *HttpServer) {
 	r.Use(middleware.Recoverer)
 	r.Get("/tenant/{tenantId}/assetgroups/{ag}/assets/count", handleValue(httpConfig))
 
-	err := http.ListenAndServe(fmt.Sprintf(":%s", port), r)
-	if err != nil {
-		fmt.Errorf("error starting the server: %+v", err)
-		os.Exit(0)
+	srv := &http.Server{
+		Addr:    fmt.Sprintf(":%s", port),
+		Handler: r,
+	}
+	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		fmt.Printf("error starting the server: %v\n", err)
+		os.Exit(1)
 	}
 
 	fmt.Printf("server started on %s\n", port)
@@ -62,19 +65,36 @@ func startHTTPServer(port string, httpConfig *HttpServer) {
 
 func handleValue(config *HttpServer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
 		tenantId := chi.URLParam(r, "tenantId")
 		ag := chi.URLParam(r, "ag")
 		domain := r.URL.Query().Get("domain")
 
-		assetDetails, err := config.AssetCountClient.GetAssetCountForAssetGroup(r.Context(), tenantId, ag, domain)
-		assetDetailsFailureResponse, _ := json.Marshal(models.AssetStateCountResponse{Data: models.AssetStateCountData{AssetStateNameCounts: []models.AssetStateCount{}}, Message: "failure"})
-		if err != nil {
-			fmt.Println(err)
-			http.Error(w, string(assetDetailsFailureResponse), http.StatusNotFound)
+		errorResponse := &models.AssetStateCountResponse{Data: models.AssetStateCountData{AssetStateNameCounts: []models.AssetStateCount{}}}
+		if tenantId == "" || ag == "" {
+			errorResponse.Message = "missing required parameters"
+			responseForBadRequest, marshalErr := json.Marshal(errorResponse)
+			if marshalErr != nil {
+				http.Error(w, `{"message":"internal server error"}`, http.StatusInternalServerError)
+				return
+			}
+			http.Error(w, string(responseForBadRequest), http.StatusBadRequest)
 			return
 		}
 
-		b, _ := json.Marshal(assetDetails)
+		assetCounts, err := config.AssetCountClient.GetAssetCountForAssetGroup(r.Context(), tenantId, ag, domain)
+		if err != nil {
+			fmt.Println(err)
+			failureResponse, marshalErr := json.Marshal(errorResponse)
+			if marshalErr != nil {
+				http.Error(w, `{"message":"internal server error"}`, http.StatusInternalServerError)
+				return
+			}
+			http.Error(w, string(failureResponse), http.StatusNotFound)
+			return
+		}
+
+		b, _ := json.Marshal(assetCounts)
 		w.Write(b)
 	}
 }

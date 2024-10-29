@@ -18,9 +18,9 @@ package clients
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"strconv"
+	"strings"
 )
 
 type Configuration struct {
@@ -33,30 +33,35 @@ type Configuration struct {
 	SecretIdPrefix          string
 }
 
-func LoadConfigurationDetails() *Configuration {
-	enableExtensionStr := os.Getenv("ENABLE_EXTENSION")
-	enableExtension, err := strconv.ParseBool(enableExtensionStr)
+func LoadConfigurationDetails() (*Configuration, error) {
+	enableExtension, err := parseEnableExtension()
 	if err != nil {
-		// When we deploy the lambda + extension, set the default runtime to enable extension
-		fmt.Println("ENABLE_EXTENSION environment variable not set, defaulting to true")
-		enableExtension = true
+		return nil, fmt.Errorf("failed to parse ENABLE_EXTENSION: %w", err)
 	}
 
 	// We only want to use assume role if config dynamodb and secrets manager is in a different account
-	assumeRoleArn := os.Getenv("ASSUME_ROLE_ARN")
-	useAssumeRole := false
-	if assumeRoleArn != "" {
-		fmt.Printf("using ASSUME_ROLE_ARN to assume role: %s\n", assumeRoleArn)
-		useAssumeRole = true
-	} else {
-		fmt.Println("ASSUME_ROLE_ARN environment variable not set, defaulting to false")
+	useAssumeRole, assumeRoleArn, err := parseAssumeRole()
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse ASSUME_ROLE_ARN: %w", err)
 	}
 
 	// Load the region and other configuration details and fail if not set
-	region := getEnvVariable("REGION")
-	tenantConfigOutputTable := getEnvVariable("TENANT_CONFIG_OUTPUT_TABLE")
-	tenantTablePartitionKey := getEnvVariable("TENANT_TABLE_PARTITION_KEY")
-	secretIdPrefix := getEnvVariable("SECRET_NAME_PREFIX")
+	region, err := getEnvVariable("REGION")
+	if err != nil {
+		return nil, err
+	}
+	tenantConfigOutputTable, err := getEnvVariable("TENANT_CONFIG_OUTPUT_TABLE")
+	if err != nil {
+		return nil, err
+	}
+	tenantTablePartitionKey, err := getEnvVariable("TENANT_TABLE_PARTITION_KEY")
+	if err != nil {
+		return nil, err
+	}
+	secretIdPrefix, err := getEnvVariable("SECRET_NAME_PREFIX")
+	if err != nil {
+		return nil, err
+	}
 
 	return &Configuration{
 		EnableExtension:         enableExtension,
@@ -66,14 +71,35 @@ func LoadConfigurationDetails() *Configuration {
 		TenantConfigOutputTable: tenantConfigOutputTable,
 		TenantTablePartitionKey: tenantTablePartitionKey,
 		SecretIdPrefix:          secretIdPrefix,
-	}
+	}, nil
 }
 
-func getEnvVariable(name string) string {
+func getEnvVariable(name string) (string, error) {
 	value := os.Getenv(name)
 	if value == "" {
-		log.Fatalf("environment variable %s must be set", name)
+		return "", fmt.Errorf("required environment variable %s is not set", name)
 	}
 
-	return value
+	return value, nil
+}
+
+func parseEnableExtension() (bool, error) {
+	if val := os.Getenv("ENABLE_EXTENSION"); val != "" {
+		return strconv.ParseBool(val)
+	}
+	return true, nil
+}
+
+func parseAssumeRole() (bool, string, error) {
+	arn := os.Getenv("ASSUME_ROLE_ARN")
+	if arn == "" {
+		fmt.Println("ASSUME_ROLE_ARN environment variable not set, defaulting to false")
+		return false, "", nil
+	}
+	// Validate ARN format
+	if !strings.HasPrefix(arn, "arn:aws:iam::") {
+		return false, "", fmt.Errorf("invalid role ARN format: %s", arn)
+	}
+	fmt.Printf("using ASSUME_ROLE_ARN to assume role: %s\n", arn)
+	return true, arn, nil
 }

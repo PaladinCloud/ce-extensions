@@ -28,7 +28,7 @@ import (
 
 type ElasticSearchClient struct {
 	dynamodbClient           *DynamodbClient
-	elasticsearchClientCache sync.Map // Replaced with sync.Map
+	elasticsearchClientCache sync.Map
 }
 
 func NewElasticSearchClient(dynamodbClient *DynamodbClient) *ElasticSearchClient {
@@ -116,7 +116,7 @@ func (c *ElasticSearchClient) FetchAssetStateCount(ctx context.Context, tenantId
 	if err != nil {
 		return nil, err
 	}
-	response, err := client.Search(client.Search.WithIndex(ag), client.Search.WithBody(&buffer))
+	response, err := client.Search(client.Search.WithContext(ctx), client.Search.WithIndex(ag), client.Search.WithBody(&buffer))
 
 	if err != nil {
 		return nil, fmt.Errorf("error getting response from opensearch client for asset group: %s. err: %+v", ag, err)

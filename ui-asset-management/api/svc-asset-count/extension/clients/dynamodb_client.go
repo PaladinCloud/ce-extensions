@@ -32,12 +32,11 @@ import (
 type DynamodbClient struct {
 	region                  string
 	tenantConfigOutputTable string
-	tenantTablePartitionKey string
 	client                  *dynamodb.Client
 }
 
 // NewDynamoDBClient inits a DynamoDB session to be used throughout the services
-func NewDynamoDBClient(ctx context.Context, useAssumeRole bool, assumeRoleArn, region, tenantConfigOutputTable, tenantTablePartitionKey string) (*DynamodbClient, error) {
+func NewDynamoDBClient(ctx context.Context, useAssumeRole bool, assumeRoleArn, region, tenantConfigOutputTable string) (*DynamodbClient, error) {
 	// Load the default AWS configuration
 	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(region))
 	if err != nil {
@@ -46,6 +45,9 @@ func NewDynamoDBClient(ctx context.Context, useAssumeRole bool, assumeRoleArn, r
 
 	var svc *dynamodb.Client
 	if useAssumeRole {
+		if assumeRoleArn == "" {
+			return nil, fmt.Errorf("assumeRoleArn must be provided when useAssumeRole is true")
+		}
 		// Create an STS client
 		stsClient := sts.NewFromConfig(cfg)
 
@@ -71,7 +73,6 @@ func NewDynamoDBClient(ctx context.Context, useAssumeRole bool, assumeRoleArn, r
 		region:                  region,
 		client:                  svc,
 		tenantConfigOutputTable: tenantConfigOutputTable,
-		tenantTablePartitionKey: tenantTablePartitionKey,
 	}, nil
 }
 
@@ -85,7 +86,7 @@ func (d *DynamodbClient) GetOpenSearchDomain(ctx context.Context, tenantId strin
 	avs, err := attributevalue.MarshalMap(key)
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to get item from dynamodb: %+v", err)
+		return nil, fmt.Errorf("failed to marshal key attributes: %+v", err)
 	}
 
 	// Prepare the GetItemInput with the correct table name and key

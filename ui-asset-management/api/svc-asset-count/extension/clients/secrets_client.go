@@ -43,8 +43,7 @@ func NewSecretsClient(ctx context.Context, useAssumeRole bool, assumeRoleArn, re
 	// Load the default configuration with region
 	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(region))
 	if err != nil {
-		fmt.Errorf("error loading aws config: %+v", err)
-		return nil, err
+		return nil, fmt.Errorf("error loading AWS config: %v", err)
 	}
 
 	var svc *secretsmanager.Client
@@ -80,7 +79,7 @@ func NewSecretsClient(ctx context.Context, useAssumeRole bool, assumeRoleArn, re
 func (r *SecretsClient) GetRdsSecret(ctx context.Context, secretIdPrefix, tenantId string) (*models.RdsSecret, error) {
 	// Create the secretId using the prefix and tenantId
 	secretId := fmt.Sprintf("%s%s", secretIdPrefix, tenantId)
-	fmt.Printf("getting rds secrets for %s\n", secretId)
+	fmt.Printf("Retrieving RDS secrets")
 
 	// Prepare the input for retrieving the secret
 	input := &secretsmanager.GetSecretValueInput{
@@ -91,7 +90,7 @@ func (r *SecretsClient) GetRdsSecret(ctx context.Context, secretIdPrefix, tenant
 	// Call Secrets Manager to retrieve the secret
 	result, err := r.secretsClient.GetSecretValue(ctx, input)
 	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve secret: %+v", err)
+		return nil, fmt.Errorf("failed to retrieve secret %s: %v", secretId, err)
 	}
 
 	// Check if the result contains a secret string

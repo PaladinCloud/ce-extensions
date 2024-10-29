@@ -31,7 +31,7 @@ import (
 type RdsClient struct {
 	secretIdPrefix string
 	secretsClient  *SecretsClient
-	rdsClientCache sync.Map // Replaced with sync.Map
+	rdsClientCache sync.Map
 }
 
 func NewRdsClient(secretsClient *SecretsClient, secretIdPrefix string) *RdsClient {
@@ -41,13 +41,19 @@ func NewRdsClient(secretsClient *SecretsClient, secretIdPrefix string) *RdsClien
 	}
 }
 
-func (r *RdsClient) CreateNewClient(ctx context.Context, tenantId string) *sql.DB {
+func (r *RdsClient) CreateNewClient(ctx context.Context, tenantId string) (*sql.DB, error) {
 	// check if the client is already created
 	if db, ok := r.rdsClientCache.Load(tenantId); ok {
-		return db.(*sql.DB) // type assert to *sql.DB
+		return db.(*sql.DB), nil // type assert to *sql.DB
 	}
 
-	rdsCredentials, _ := r.secretsClient.GetRdsSecret(ctx, r.secretIdPrefix, tenantId)
+	rdsCredentials, err := r.secretsClient.GetRdsSecret(ctx, r.secretIdPrefix, tenantId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get RDS credentials: %v", err)
+	}
+	if rdsCredentials == nil {
+		return nil, fmt.Errorf("RDS credentials are nil")
+	}
 
 	var (
 		dbUser     = rdsCredentials.DbUsername
@@ -63,22 +69,25 @@ func (r *RdsClient) CreateNewClient(ctx context.Context, tenantId string) *sql.D
 	// open a connection to the database
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("failed to open database connection: %v", err)
 	}
 
 	// check if the database is reachable
 	err = db.Ping()
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("failed to ping database: %v", err)
 	}
 
 	fmt.Println("connected to rds successfully!")
 	r.rdsClientCache.Store(tenantId, db) // store db in cache
-	return db
+	return db, nil
 }
 
 func (r *RdsClient) GetAllTargetTypes(ctx context.Context, tenantId, dataSource string) (*[]models.TargetTableProjection, error) {
-	dbClient := r.CreateNewClient(ctx, tenantId)
+	dbClient, err := r.CreateNewClient(ctx, tenantId)
+	if err != nil {
+		return nil, err
+	}
 	fmt.Println("getting all target types from rds")
 
 	query := `
@@ -90,16 +99,17 @@ func (r *RdsClient) GetAllTargetTypes(ctx context.Context, tenantId, dataSource 
 	FROM 
 		cf_Target 
 	WHERE
+		(status = 'active' OR status = 'enabled')
 	`
+	var args []interface{}
 	if dataSource != "" {
-		query += "lower(dataSourceName) = '" + dataSource + "' AND (status = 'active' OR status = 'enabled')"
-	} else {
-		query += "status = 'active' OR status = 'enabled'"
+		query += " AND lower(dataSourceName) = ?"
+		args = append(args, strings.ToLower(dataSource))
 	}
-	query += "AND dataSourceName IN (select distinct platform from cf_Accounts where accountStatus='configured') ORDER BY LOWER (displayName) ASC;"
+	query += " AND dataSourceName IN (select distinct platform from cf_Accounts where accountStatus='configured') ORDER BY LOWER (displayName) ASC;"
 
 	var policies []models.TargetTableProjection
-	if err := sqlscan.Select(ctx, dbClient, &policies, query); err != nil {
+	if err := sqlscan.Select(ctx, dbClient, &policies, query, args...); err != nil {
 		return nil, err
 	}
 
@@ -107,7 +117,10 @@ func (r *RdsClient) GetAllTargetTypes(ctx context.Context, tenantId, dataSource 
 }
 
 func (r *RdsClient) GetConfiguredTargetTypes(ctx context.Context, agTargetTypes []string, domain, provider, tenantId string) (*[]models.TargetTableProjection, error) {
-	dbClient := r.CreateNewClient(ctx, tenantId)
+	dbClient, err := r.CreateNewClient(ctx, tenantId)
+	if err != nil {
+		return nil, err
+	}
 	fmt.Println("getting configured target types by asset group")
 
 	query := `
@@ -124,20 +137,30 @@ func (r *RdsClient) GetConfiguredTargetTypes(ctx context.Context, agTargetTypes 
 	AND 
 		targetName in ('%s')
 	`
+	placeholders := make([]string, len(agTargetTypes))
+	args := []interface{}{}
+
+	for i, targetType := range agTargetTypes {
+		placeholders[i] = "?"
+		args = append(args, targetType)
+	}
+	query += " AND targetName IN (" + strings.Join(placeholders, ",") + ")"
 
 	if domain != "" {
-		query += " and lower(domain) = '" + strings.Trim(strings.ToLower(domain), " ") + "'"
+		query += " AND lower(domain) = ?"
+		args = append(args, strings.TrimSpace(strings.ToLower(domain)))
 	}
 	if provider != "" {
-		query += " and lower(dataSourceName) = '" + strings.Trim(strings.ToLower(provider), " ") + "'"
+		query += " AND lower(dataSourceName) = ?"
+		args = append(args, strings.TrimSpace(strings.ToLower(provider)))
 	}
 
-	query += "AND dataSourceName in (select distinct platform from cf_Accounts WHERE accountStatus='configured') ORDER BY LOWER (displayName) ASC;"
+	query += " AND dataSourceName in (select distinct platform from cf_Accounts WHERE accountStatus='configured') ORDER BY LOWER (displayName) ASC;"
 
 	formattedQuery := fmt.Sprintf(query, strings.Join(agTargetTypes, "','"))
 
 	var targetTypes []models.TargetTableProjection
-	if err := sqlscan.Select(ctx, dbClient, &targetTypes, formattedQuery); err != nil {
+	if err := sqlscan.Select(ctx, dbClient, &targetTypes, formattedQuery, args...); err != nil {
 		return nil, err
 	}
 

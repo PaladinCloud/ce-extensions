@@ -19,7 +19,6 @@ package clients
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"strings"
 	"svc-asset-count-layer/models"
 )
@@ -29,14 +28,20 @@ type AssetCountClient struct {
 	rdsClient           *RdsClient
 }
 
-func NewAssetCountClient(ctx context.Context, config *Configuration) *AssetCountClient {
-	dynamodbClient, _ := NewDynamoDBClient(ctx, config.UseAssumeRole, config.AssumeRoleArn, config.Region, config.TenantConfigOutputTable, config.TenantTablePartitionKey)
-	secretsClient, _ := NewSecretsClient(ctx, config.UseAssumeRole, config.AssumeRoleArn, config.Region)
+func NewAssetCountClient(ctx context.Context, config *Configuration) (*AssetCountClient, error) {
+	dynamodbClient, err := NewDynamoDBClient(ctx, config.UseAssumeRole, config.AssumeRoleArn, config.Region, config.TenantConfigOutputTable)
+	if err != nil {
+		return nil, err
+	}
+	secretsClient, err := NewSecretsClient(ctx, config.UseAssumeRole, config.AssumeRoleArn, config.Region)
+	if err != nil {
+		return nil, err
+	}
 
 	return &AssetCountClient{
 		elasticSearchClient: NewElasticSearchClient(dynamodbClient),
 		rdsClient:           NewRdsClient(secretsClient, config.SecretIdPrefix),
-	}
+	}, nil
 }
 
 const (
@@ -60,24 +65,7 @@ func (c *AssetCountClient) GetAssetCountForAssetGroup(ctx context.Context, tenan
 		targetTypesFromDB, err = c.rdsClient.GetAllTargetTypes(ctx, tenantId, "")
 	} else {
 		// fetch asset types for the asset group from OS
-		agAssetTypeResponse, err := c.elasticSearchClient.FetchAssetTypesForAssetGroup(ctx, tenantId, ag)
-		if err != nil {
-			return nil, err
-		}
-		if agAssetTypeResponse == nil || len(*agAssetTypeResponse) == 0 {
-			return nil, fmt.Errorf("no asset types for this asset group: %s", ag)
-		}
-		targetTypesForAg := make([]string, 0, len(*agAssetTypeResponse))
-		for k, _ := range *agAssetTypeResponse {
-			underscoreIndex := strings.Index(k, "_")
-			if underscoreIndex != -1 && underscoreIndex < len(k)-1 {
-				targetTypesForAg = append(targetTypesForAg, k[underscoreIndex+1:])
-			} else {
-				targetTypesForAg = append(targetTypesForAg, k)
-			}
-		}
-		// fetch only configured asset types from target and accounts table
-		targetTypesFromDB, err = c.rdsClient.GetConfiguredTargetTypes(ctx, targetTypesForAg, domain, "", tenantId)
+		targetTypesFromDB, err = c.fetchAssetTypesForAssetGroup(ctx, tenantId, ag, domain)
 	}
 	if err != nil {
 		return nil, err
@@ -96,20 +84,48 @@ func (c *AssetCountClient) GetAssetCountForAssetGroup(ctx context.Context, tenan
 		return nil, err
 	}
 
+	assetStateCounts, err := c.processAssetStateCountBuckets(assetStateCountBuckets)
+	return &models.AssetStateCountResponse{Data: models.AssetStateCountData{AssetStateNameCounts: *assetStateCounts}, Message: success}, nil
+}
+
+func (c *AssetCountClient) fetchAssetTypesForAssetGroup(ctx context.Context, tenantId, ag, domain string) (*[]models.TargetTableProjection, error) {
+	agAssetTypeResponse, err := c.elasticSearchClient.FetchAssetTypesForAssetGroup(ctx, tenantId, ag)
+	if err != nil {
+		return nil, err
+	}
+	if agAssetTypeResponse == nil || len(*agAssetTypeResponse) == 0 {
+		return nil, fmt.Errorf("no asset types for this asset group: %s", ag)
+	}
+	targetTypesForAg := make([]string, 0, len(*agAssetTypeResponse))
+	for k, _ := range *agAssetTypeResponse {
+		underscoreIndex := strings.Index(k, "_")
+		if underscoreIndex != -1 && underscoreIndex < len(k)-1 {
+			targetTypesForAg = append(targetTypesForAg, k[underscoreIndex+1:])
+		} else {
+			targetTypesForAg = append(targetTypesForAg, k)
+		}
+	}
+	// fetch only configured asset types from target and accounts table
+	return c.rdsClient.GetConfiguredTargetTypes(ctx, targetTypesForAg, domain, "", tenantId)
+}
+
+func (c *AssetCountClient) processAssetStateCountBuckets(assetStateCountBuckets *[]interface{}) (*[]models.AssetStateCount, error) {
 	if assetStateCountBuckets != nil && len(*assetStateCountBuckets) > 0 {
 		assetStateCounts := make([]models.AssetStateCount, 0, len(*assetStateCountBuckets))
 		for _, assetStateCountBucket := range *assetStateCountBuckets {
 			bucket := assetStateCountBucket.(map[string]interface{})
 			assetState := bucket["key"].(string)
-			countString := fmt.Sprintf("%v", bucket["doc_count"])
-			parsedCount, err := strconv.Atoi(countString)
-			if err != nil {
+			docCount, ok := bucket["doc_count"].(float64)
+			var parsedCount int
+			if !ok {
 				parsedCount = 0
+			} else {
+				parsedCount = int(docCount)
 			}
 			assetStateCounts = append(assetStateCounts, models.AssetStateCount{StateName: assetState, Count: parsedCount})
 		}
-		return &models.AssetStateCountResponse{Data: models.AssetStateCountData{AssetStateNameCounts: assetStateCounts}, Message: success}, nil
+		return &assetStateCounts, nil
 	} else {
-		return &models.AssetStateCountResponse{Data: models.AssetStateCountData{AssetStateNameCounts: []models.AssetStateCount{}}, Message: success}, nil
+		return &[]models.AssetStateCount{}, nil
 	}
 }

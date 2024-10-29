@@ -42,7 +42,11 @@ func main() {
 	fmt.Printf("starting - %s\n", extensionName)
 
 	fmt.Println("loading configuration")
-	configuration := clients.LoadConfigurationDetails()
+	configuration, err := clients.LoadConfigurationDetails()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 	fmt.Println("configuration loaded successfully")
 
 	startMain(configuration)
@@ -50,11 +54,16 @@ func main() {
 
 func startMain(configuration *clients.Configuration) {
 	ctx, cancel := context.WithCancel(context.Background())
+	assetCountClient, err := clients.NewAssetCountClient(ctx, configuration)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	fmt.Println("initializing http server")
 	httpServerClient = &server.HttpServer{
 		Configuration:    configuration,
-		AssetCountClient: clients.NewAssetCountClient(ctx, configuration),
+		AssetCountClient: assetCountClient,
 	}
 	fmt.Println("http server initialized successfully!")
 
@@ -75,7 +84,8 @@ func startMain(configuration *clients.Configuration) {
 		// Register the extension client with the Lambda runtime
 		res, err := extensionClient.Register(ctx, extensionName)
 		if err != nil {
-			fmt.Errorf("unable to register extension: %+v", err)
+			fmt.Printf("unable to register extension: %+v\n", err)
+			return
 		}
 
 		fmt.Println("client registered:", res)
@@ -97,7 +107,7 @@ func processEvents(ctx context.Context) {
 			// Fetch the next event and check for errors.
 			_, err := extensionClient.NextEvent(ctx)
 			if err != nil {
-				fmt.Errorf("error fetching next event: %+v", err)
+				fmt.Printf("error fetching next event: %+v\n", err)
 				return
 			}
 		}
