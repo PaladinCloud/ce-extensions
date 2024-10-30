@@ -43,11 +43,11 @@ jobs:
 
   # Extracting Version
   extract_version:
-    name: Extract Version
+    name : extract_version
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release-v')
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release-v') 
     outputs:
-      version: ${{ steps.extract_version.outputs.version }}
+      version: ${{ steps.extract_version.outputs.version }}   
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -60,6 +60,7 @@ jobs:
           else
             echo "Invalid branch name format"
             exit 1
+          fi
       - name: Display Version
         run: |
           version="${{ steps.extract_version.outputs.version }}"
