@@ -62,8 +62,8 @@ move-zips: create-dist-dir
 	@test -f $(ASSET_COUNT_DIR)/bin/service/lambda_function.zip || (echo "ERROR: $(ASSET_COUNT_DIR)/bin/service/lambda_function.zip not found" && exit 1)
 	@test -f $(ASSET_COUNT_DIR)/bin/layers/bin/extension.zip || (echo "ERROR: $(ASSET_COUNT_DIR)/bin/layers/bin/extension.zip not found" && exit 1)
 	@echo "Moving asset count service files..."
-	cp -v $(ASSET_COUNT_DIR)/bin/service/lambda_function.zip $(DIST_DIR_COUNT)/svc-asset-count.zip
-	cp -v $(ASSET_COUNT_DIR)/bin/layers/bin/extension.zip $(DIST_DIR_COUNT)/svc-asset-count-extension.zip
+	cp -v $(ASSET_COUNT_DIR)/bin/service/lambda_function.zip $(DIST_DIR_COUNT)/svc-asset-state-count.zip
+	cp -v $(ASSET_COUNT_DIR)/bin/layers/bin/extension.zip $(DIST_DIR_COUNT)/svc-asset-state-count-extension.zip
 
 # Create dist directory if it does not exist
 create-dist-dir:
