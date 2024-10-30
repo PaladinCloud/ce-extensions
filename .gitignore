@@ -392,3 +392,4 @@ pyrightconfig.json
 # Lambda layer artifacts
 **/bin/layers/bin/extension.zip
 **/bin/layers/bin/extensions/*-layer
+**/bin/*
