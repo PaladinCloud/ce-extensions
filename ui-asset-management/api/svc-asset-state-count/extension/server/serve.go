@@ -54,7 +54,7 @@ func startHTTPServer(port string, httpConfig *HttpServer) {
 
 	log.Printf("starting server on port [%s]\n", port)
 	if err := http.ListenAndServe(fmt.Sprintf(":%s", port), r); err != nil {
-		log.Printf("server error: %v", err)
+		logError("error starting the server", err)
 		os.Exit(1)
 	}
 
@@ -83,7 +83,7 @@ func handleValue(config *HttpServer) http.HandlerFunc {
 
 		assetCounts, err := config.AssetCountClient.GetAssetCountForAssetGroup(r.Context(), tenantId, ag, domain)
 		if err != nil {
-			log.Println(err)
+			logError("error fetching asset state count", err)
 			errorResponse := getErrorResponse(err.Error())
 			failureResponse, marshalErr := json.Marshal(errorResponse)
 			if marshalErr != nil {
@@ -107,4 +107,27 @@ func getErrorResponse(errMsg string) models.AssetStateCountResponse {
 			AssetStateNameCounts: []models.AssetStateCount{},
 		},
 	}
+}
+
+func logError(message string, err error) {
+	type ErrorOutput struct {
+		Message string `json:"message"`
+		Error   string `json:"error"`
+		Details string `json:"details,omitempty"`
+	}
+
+	errorOutput := ErrorOutput{
+		Message: message,
+		Error:   fmt.Sprintf("%T", err),
+		Details: err.Error(),
+	}
+
+	jsonOutput, jsonErr := json.MarshalIndent(errorOutput, "", "  ")
+	if jsonErr != nil {
+		// Fallback to basic logging if JSON fails
+		log.Printf("ERROR: %s: %v (JSON marshaling failed: %v)", message, err, jsonErr)
+		return
+	}
+
+	log.Printf("%s", jsonOutput)
 }
