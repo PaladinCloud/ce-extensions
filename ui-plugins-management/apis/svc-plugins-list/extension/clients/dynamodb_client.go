@@ -37,7 +37,7 @@ func NewDynamoDBClient(configuration *Configuration) *DynamodbClient {
 		Region: aws.String(configuration.Region),
 	})
 	if err != nil {
-		fmt.Errorf("error creating dynamoDB client %v", err)
+		fmt.Errorf("error creating dynamoDB client %w", err)
 	}
 
 	svc := dynamodb.New(sess)

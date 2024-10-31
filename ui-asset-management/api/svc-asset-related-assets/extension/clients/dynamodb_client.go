@@ -19,6 +19,9 @@ package clients
 import (
 	"context"
 	"fmt"
+	"log"
+	"svc-asset-related-assets-layer/models"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
@@ -26,8 +29,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/google/uuid"
-	"log"
-	"svc-asset-related-assets-layer/models"
 )
 
 const (
