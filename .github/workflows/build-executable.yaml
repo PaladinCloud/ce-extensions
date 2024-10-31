@@ -182,24 +182,27 @@ jobs:
 
   # Trigger Workflow in Repository installer
   trigger_repo_installer_workflow:
-    name: Trigger Workflow in Installer Repo
-    runs-on: ubuntu-latest
-    environment: 'SaaSDEV'
-    needs:
-      - PushBuildDev
-    if: success()  # Only triggers if previous jobs were successful
-    steps:
-      - name: Trigger Deploy Workflow in Installer Repo
-        uses: actions/github-script@v6
-        with:
-          github-token: ${{ secrets.PALADINCLOUD_SECERT }}  # Ensure this token has access to Repo B
-          script: |
-            await github.rest.actions.createWorkflowDispatch({
-              owner: 'PaladinCloud',               // Replace with your GitHub repo owner
-              repo: 'installer',                    // Replace with your repo name
-              workflow_id: 'deploy-dev.yaml',      // Replace with your workflow filename
-              ref: 'main',                          // Branch to trigger the workflow on
-              inputs: {
-                environment: 'dev'                 // Set environment, can also be dynamic
-              }
-            });
+   name: Trigger Workflow in Installer Repo
+   runs-on: ubuntu-latest
+   environment: 'SaaSDEV'
+   needs:
+     - PushBuildDev
+   if: success()  # Only triggers if previous jobs were successful
+   steps:
+    - name: Trigger Deploy Workflow in Installer Repo
+      uses: actions/github-script@v6
+      with:
+        github-token: ${{ secrets.PALADINCLOUD_SECERT }}  # Ensure this token has access to Repo B
+        script: |
+          await github.rest.actions.createWorkflowDispatch({
+            owner: 'PaladinCloud',               // GitHub repo owner
+            repo: 'installer',                   // Repo name
+            workflow_id: 'deploy.yaml',        // Workflow filename
+            ref: 'main',               // Branch to trigger the workflow on
+            inputs: {
+              environment: 'dev',                // Adjust if dynamic
+              aws_region: 'us-east-1',           // Adjust if dynamic
+              release_version: 'vlatest',        // Adjust if dynamic
+              api_gateway_account_id: ''         // Optional, use only if environment is prod
+            }
+          });

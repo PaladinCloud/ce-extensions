@@ -92,7 +92,7 @@ func (r *SecretsClient) GetRdsSecret(ctx context.Context, secretIdPrefix, tenant
 	// Call Secrets Manager to retrieve the secret
 	result, err := r.secretsClient.GetSecretValue(ctx, input)
 	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve secret value for [%s]: %w", secretId, err)
+		return nil, fmt.Errorf("failed to retrieve secret value for [%s] %w", secretId, err)
 	}
 
 	// Check if the result contains a secret string
@@ -107,7 +107,7 @@ func (r *SecretsClient) GetRdsSecret(ctx context.Context, secretIdPrefix, tenant
 	var secretData models.RdsSecret
 	err = json.Unmarshal([]byte(secretString), &secretData)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal secret data for [%s]: %w", secretId, err)
+		return nil, fmt.Errorf("failed to unmarshal secret data for [%s] %w", secretId, err)
 	}
 
 	return &secretData, nil

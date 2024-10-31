@@ -54,7 +54,7 @@ func startHTTPServer(port string, httpConfig *HttpServer) {
 
 	log.Printf("starting server on port [%s]\n", port)
 	if err := http.ListenAndServe(fmt.Sprintf(":%s", port), r); err != nil {
-		log.Printf("server error: %v", err)
+		logError("error starting the server", err)
 		os.Exit(1)
 	}
 
@@ -67,14 +67,14 @@ func handleValue(config *HttpServer) http.HandlerFunc {
 		targetType := chi.URLParam(r, "targetType")
 		assetId, err := url.QueryUnescape(chi.URLParam(r, "assetId"))
 		if err != nil {
-			log.Println("error decoding the assetId from url path")
+			logError("error decoding the asset id from url path", err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
 		assetDetails, err := config.AssetViolationsClient.GetAssetViolations(r.Context(), targetType, tenantId, assetId)
 		if err != nil {
-			log.Println(err)
+			logError("error fetching asset violations", err)
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
@@ -82,4 +82,27 @@ func handleValue(config *HttpServer) http.HandlerFunc {
 		b, _ := json.Marshal(assetDetails)
 		w.Write(b)
 	}
+}
+
+func logError(message string, err error) {
+	type ErrorOutput struct {
+		Message string `json:"message"`
+		Error   string `json:"error"`
+		Details string `json:"details,omitempty"`
+	}
+
+	errorOutput := ErrorOutput{
+		Message: message,
+		Error:   fmt.Sprintf("%T", err),
+		Details: err.Error(),
+	}
+
+	jsonOutput, jsonErr := json.MarshalIndent(errorOutput, "", "  ")
+	if jsonErr != nil {
+		// Fallback to basic logging if JSON fails
+		log.Printf("ERROR: %s: %v (JSON marshaling failed: %v)", message, err, jsonErr)
+		return
+	}
+
+	log.Printf("%s", jsonOutput)
 }
