@@ -4,6 +4,7 @@ import com.paladincloud.common.aws.DynamoDBHelper;
 import com.paladincloud.common.aws.RoleHelper;
 import com.paladincloud.common.errors.JobException;
 import com.paladincloud.common.util.JsonHelper;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.stream.Collectors;
@@ -12,6 +13,7 @@ import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient;
 import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueRequest;
 
 public class Configuration {
+
     private static final Properties properties = new Properties();
 
     public static String get(String propertyName) {
@@ -21,23 +23,20 @@ public class Configuration {
     public static String get(String propertyName, String defaultValue) {
         return properties.getProperty(propertyName, defaultValue);
     }
+
     public static void retrieveConfiguration(ConfigParams configParams) {
         if (!properties.isEmpty()) {
             return;
         }
 
-        configParams.dynamoConfigMap.put("paladincloud_app_gateway_CustomDomain",
-            "base-paladincloud-domain");
         var dynamoConfig = getTenantConfiguration(configParams);
         Configuration.setProperties(dynamoConfig);
-
-        var basePaladinApiUrl = STR."https://\{dynamoConfig.get("base-paladincloud-domain")}/api";
-        properties.put(ConfigConstants.BASE_PALADIN_CLOUD_API_URI, basePaladinApiUrl);
 
         // Database access
         var secretsMap = getSecretsWithRole(configParams);
         properties.put(ConfigConstants.DB_HOST, secretsMap.get(ConfigConstants.DB_HOST));
         properties.put(ConfigConstants.DB_PORT, secretsMap.get(ConfigConstants.DB_PORT));
+        properties.put(ConfigConstants.DB_NAME, secretsMap.get(ConfigConstants.DB_NAME));
         properties.put(ConfigConstants.DB_USERNAME, secretsMap.get(ConfigConstants.DB_USERNAME));
         properties.put(ConfigConstants.DB_PASSWORD, secretsMap.get(ConfigConstants.DB_PASSWORD));
     }
@@ -45,7 +44,8 @@ public class Configuration {
     private static Map<String, String> getSecretsWithRole(ConfigParams configParams) {
         return RoleHelper.runAs(configParams.awsRegion, null, configParams.assumeRoleArn,
             secretCredentialsProvider -> {
-                var builder = SecretsManagerClient.builder().region(Region.of(configParams.awsRegion));
+                var builder = SecretsManagerClient.builder()
+                    .region(Region.of(configParams.awsRegion));
                 if (secretCredentialsProvider != null) {
                     builder.credentialsProvider(secretCredentialsProvider);
                 }

@@ -8,10 +8,10 @@ public class AssetStateDoneHandler implements RequestHandler<SQSEvent, Integer> 
 
     @Override
     public Integer handleRequest(SQSEvent event, Context context) {
-//        var componentResolver = DaggerServerComponent.create();
+        var componentResolver = DaggerServerComponent.create();
         for (var message : event.getRecords()) {
             var args = message.getBody().split(" ");
-//            componentResolver.buildAssetSenderJob().run("AssetState", args);
+            componentResolver.buildAssetStateJob().run("AssetState", args);
         }
 
         return 0;

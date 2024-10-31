@@ -1,12 +1,13 @@
 package com.paladincloud.common.config;
 
 public interface ConfigConstants {
-    String BASE_PALADIN_CLOUD_API_URI = "base-paladincloud-api-url";
-
     String DB_HOST = "RDS_HOST";
     String DB_PORT = "RDS_PORT";
+    String DB_NAME = "DB_NAME";
     String DB_USERNAME = "DB_USERNAME";
     String DB_PASSWORD = "DB_PASSWORD";
+
+    String ELASTICSEARCH_HOST = "es-url";
 
     String TENANT_NAME = "tenant_name";
 }

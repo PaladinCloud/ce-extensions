@@ -37,7 +37,6 @@ public abstract class JobExecutor {
 
     private static final String ALERT_ERROR_PREFIX = "error occurred in";
     // Provides the query to the config service; a default is used if one isn't given.
-    private static final String CONFIG_SERVICE_QUERY = "config-query";
     private static final Logger LOGGER = LogManager.getLogger(JobExecutor.class);
     protected Map<String, String> envVars = new HashMap<>();
     protected Map<String, String> params = new HashMap<>();
@@ -50,7 +49,6 @@ public abstract class JobExecutor {
         var status = "";
         long startTime = System.nanoTime();
         try {
-            setDefaultParams();
             var allOptional = new ArrayList<>(optionalEnvironmentVariables);
             allOptional.addAll(getOptionalFields());
             envVars.putAll(getEnvironmentVariables(allOptional));
@@ -61,7 +59,8 @@ public abstract class JobExecutor {
 
             tenantId = params.get(TENANT_ID_JOB_ARGUMENT);
 
-            var dynamoConfigMap = Map.of(ConfigConstants.TENANT_NAME, "tenant_name", "es.url", "datastore_es_ESDomain.endpoint");
+            var dynamoConfigMap = Map.of(ConfigConstants.TENANT_NAME, ConfigConstants.TENANT_NAME,
+                "datastore_es_ESDomain.endpoint", ConfigConstants.ELASTICSEARCH_HOST);
 
             Configuration.retrieveConfiguration(
                 ConfigParams.builder().assumeRoleArn(assumeRoleArn).tenantId(tenantId)
@@ -92,12 +91,8 @@ public abstract class JobExecutor {
     protected abstract void execute();
 
     protected abstract List<String> getRequiredFields();
-    protected abstract List<String> getOptionalFields();
 
-    private void setDefaultParams() {
-        params.put(CONFIG_SERVICE_QUERY,
-            "select targetName,targetConfig,displayName from cf_Target where domain ='Infra & Platforms'");
-    }
+    protected abstract List<String> getOptionalFields();
 
     private Map<String, String> parseArgs(String[] args) {
         var map = new HashMap<String, String>();

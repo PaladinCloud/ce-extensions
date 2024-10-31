@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
@@ -67,11 +68,18 @@ public class DynamoDBHelper {
 
     private static Map<String, String> getFieldsFromRow(Map<String, AttributeValue> row, Map<String, String> fieldMap) {
         var configResponse = new HashMap<String, String>();
-        fieldMap.forEach((fieldName, fieldValue) -> {
+        fieldMap.forEach((fullFieldName, fieldValue) -> {
+            var fieldName = fullFieldName;;
+            var dottedName = "";
+            if (fieldName.contains(".")) {
+                fieldName = fullFieldName.substring(0, fullFieldName.lastIndexOf('.'));
+                dottedName = fullFieldName.substring(fullFieldName.lastIndexOf('.') + 1);
+            }
+
             var rowValue = row.get(fieldName);
             if (rowValue != null) {
                 if (rowValue.hasM()) {
-                    configResponse.put(fieldValue, rowValue.m().get("id").s());
+                    configResponse.put(fieldValue, rowValue.m().get(dottedName).s());
                 } else if (rowValue.type().equals(Type.S)) {
                     configResponse.put(fieldValue, rowValue.s());
                 } else {
