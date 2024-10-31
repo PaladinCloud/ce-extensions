@@ -86,7 +86,7 @@ func (d *DynamodbClient) GetOpenSearchDomain(ctx context.Context, tenantId strin
 	avs, err := attributevalue.MarshalMap(key)
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to get item from dynamodb: %w", err)
+		return nil, fmt.Errorf("failed to marshal DynamoDB key for tenant [%s] %w", tenantId, err)
 	}
 
 	// Prepare the GetItemInput with the correct table name and key
