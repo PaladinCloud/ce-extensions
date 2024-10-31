@@ -65,26 +65,47 @@ public class ElasticAssetRepository implements AssetRepository {
         elasticSearch.invokeAndCheck(HttpMethod.PUT, STR."\{indexName}/_mapping", payload);
     }
 
-    public void processLoadErrors(String indexName, String type, String loadDate, Map<String, List<Map<String, Object>>> typeToError)
-        throws IOException {
+    public void processLoadErrors(String indexName, String type, String loadDate,
+        Map<String, List<Map<String, Object>>> typeToError) throws IOException {
         if (typeToError.containsKey(type) || typeToError.containsKey("all")) {
             var errors = typeToError.get(type);
             if (errors == null) {
                 errors = typeToError.get("all");
             }
+            if (!errors.isEmpty()) {
+                var processedCount = 0;
+                var maxItems = 100;
+                long updatedItems = 0;
+                // To avoid nested query errors, do batches
+                while (processedCount < errors.size()) {
+                    var smallErrorList = errors.stream().skip(processedCount).limit(maxItems)
+                        .toList();
+                    updatedItems += processLoadErrorsByType(indexName, type, loadDate,
+                        smallErrorList);
+                    processedCount += smallErrorList.size();
+                }
 
-            var query = new StringBuilder(2048);
-            query.append(STR."""
+                LOGGER.info("Updated via load errors: {} {} - updateCount={}", indexName, type,
+                    updatedItems);
+            }
+        }
+    }
+
+    private long processLoadErrorsByType(String indexName, String type, String loadDate,
+        List<Map<String, Object>> errorList)
+        throws IOException {
+        var query = new StringBuilder(2048);
+        query.append(STR."""
                 { "script": {"inline": "ctx._source._loaddate= '\{loadDate}'" },
                 "query": {"bool": { "should": [
                 """.trim());
 
-            var shouldQuery = new ArrayList<String>();
-            errors.forEach(err -> {
-                var accountId = err.get("accountid").toString();
-                var region = err.get("region").toString();
-                if (StringUtils.isNotEmpty(accountId) && StringUtils.isNotEmpty(region)) {
-                    shouldQuery.add(STR."""
+        var shouldQuery = new ArrayList<String>();
+        errorList.forEach(err -> {
+            var accountId = err.get("accountid").toString();
+            var region = err.get("region").toString();
+            if (StringUtils.isNotEmpty(accountId) && StringUtils.isNotEmpty(region)) {
+                shouldQuery.add(STR."""
                         {
                             "bool": {
                                 "must": [
@@ -102,34 +123,34 @@ public class ElasticAssetRepository implements AssetRepository {
                             }
                         }
                         """.trim());
-                }
-            });
+            }
+        });
 
-            query.append(String.join(",", shouldQuery));
-            query.append("]");
+        query.append(String.join(",", shouldQuery));
+        query.append("]");
 
-            var arrayOpen = false;
-            if (StringUtils.isNotEmpty(type)) {
-                query.append(STR."""
+        var arrayOpen = false;
+        if (StringUtils.isNotEmpty(type)) {
+            query.append(STR."""
                     ,
                     "minimum_should_match": 1,
                     "must": [{ "match": { "docType.keyword": "\{type}" }}
                     """.trim());
-                arrayOpen = true;
-            }
-
-            query.append("""
-                ,{ "match": { "latest": true }}
-                """.trim());
-            if (arrayOpen) {
-                query.append("]");
-            }
-            query.append("}}}");
-
-            var response = elasticSearch.invokeCheckAndConvert(ElasticSearchUpdateByQueryResponse.class, HttpMethod.POST,
-                STR."\{indexName}/_update_by_query", query.toString());
-            LOGGER.info("Updated via load errors: {} {} - updateCount={}", indexName, type, response.updated);
+            arrayOpen = true;
         }
+
+        query.append("""
+            ,{ "match": { "latest": true }}
+            """.trim());
+        if (arrayOpen) {
+            query.append("]");
+        }
+        query.append("}}}");
+
+        var response = elasticSearch.invokeCheckAndConvert(ElasticSearchUpdateByQueryResponse.class,
+            HttpMethod.POST,
+            STR."\{indexName}/_update_by_query", query.toString());
+        return response.updated;
     }
 
     @Override
