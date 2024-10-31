@@ -86,26 +86,23 @@ func handleValue(config *HttpServer) http.HandlerFunc {
 
 func logError(message string, err error) {
 	type ErrorOutput struct {
-		Error   string `json:"error"`
 		Message string `json:"message"`
+		Error   string `json:"error"`
+		Details string `json:"details,omitempty"`
 	}
 
 	errorOutput := ErrorOutput{
+		Message: message,
 		Error:   fmt.Sprintf("%T", err),
-		Message: err.Error(),
+		Details: err.Error(),
 	}
 
 	jsonOutput, jsonErr := json.MarshalIndent(errorOutput, "", "  ")
 	if jsonErr != nil {
-		log.Printf("Error marshaling JSON: %v", jsonErr)
+		// Fallback to basic logging if JSON fails
+		log.Printf("ERROR: %s: %v (JSON marshaling failed: %v)", message, err, jsonErr)
 		return
 	}
 
-	if message != "" {
-		log.Printf("%s\n", message)
-	}
-
-	if err != nil {
-		log.Printf(string(jsonOutput))
-	}
+	log.Printf("%s", jsonOutput)
 }
