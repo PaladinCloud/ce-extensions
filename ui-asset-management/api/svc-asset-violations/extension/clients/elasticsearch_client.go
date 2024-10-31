@@ -91,7 +91,7 @@ func (c *ElasticSearchClient) FetchAssetViolations(ctx context.Context, tenantId
 	defer response.Body.Close()
 
 	if response.StatusCode != 200 {
-		return nil, fmt.Errorf("error while fetching asset details from opensearch client for asset id [%s]", assetId)
+		return nil, fmt.Errorf("opensearch request failed with status %d for asset id [%s] %s", response.StatusCode, assetId, response.Body)
 	}
 
 	var result map[string]interface{}
