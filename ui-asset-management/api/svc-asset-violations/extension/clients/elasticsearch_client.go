@@ -59,7 +59,7 @@ func (c *ElasticSearchClient) CreateNewElasticSearchClient(ctx context.Context, 
 
 	// Store the new client in the cache
 	c.elasticsearchClientCache.Store(tenantId, client)
-	return client, fmt.Errorf("error creating opensearch client for tenant id [%s] %w", tenantId, err)
+	return client, nil
 }
 
 func (c *ElasticSearchClient) FetchAssetViolations(ctx context.Context, tenantId, ag, assetId string) (*models.PolicyViolationsMap, error) {
@@ -75,7 +75,7 @@ func (c *ElasticSearchClient) FetchAssetViolations(ctx context.Context, tenantId
 	var buffer bytes.Buffer
 	err := json.NewEncoder(&buffer).Encode(esRequest)
 	if err != nil {
-		return nil, fmt.Errorf("failed to encode opensearch client request: %+v", err)
+		return nil, fmt.Errorf("failed to encode opensearch client request %w", err)
 	}
 	log.Printf("opensearch client request: %s\n", buffer.String())
 
@@ -86,24 +86,25 @@ func (c *ElasticSearchClient) FetchAssetViolations(ctx context.Context, tenantId
 	response, err := client.Search(client.Search.WithIndex(ag), client.Search.WithBody(&buffer))
 
 	if err != nil {
-		return nil, fmt.Errorf("error getting response from opensearch client for asset id: %s. err: %+v", assetId, err)
+		return nil, fmt.Errorf("error getting response from opensearch client for asset id: [%s] %w", assetId, err)
 	}
 	defer response.Body.Close()
 
 	if response.StatusCode != 200 {
-		return nil, fmt.Errorf("error while fetching asset details from opensearch client for asset id: %s", assetId)
+		return nil, fmt.Errorf("error while fetching asset details from opensearch client for asset id [%s]", assetId)
 	}
 
 	var result map[string]interface{}
 	err = json.NewDecoder(response.Body).Decode(&result)
 	if err != nil {
-		return nil, fmt.Errorf("error decoding response body: %+v", err)
+		return nil, fmt.Errorf("error decoding response body %w", err)
 	}
 
 	hits, ok := result["hits"].(map[string]interface{})
 	if !ok {
 		return nil, fmt.Errorf("unexpected result structure: missing or invalid 'hits'")
 	}
+
 	sourceArr, ok := hits["hits"].([]interface{})
 	if !ok {
 		return nil, fmt.Errorf("unexpected result structure: missing or invalid 'hits.hits'")

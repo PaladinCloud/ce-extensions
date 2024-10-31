@@ -82,7 +82,7 @@ func (c *AssetViolationsClient) GetAssetViolations(ctx context.Context, targetTy
 	// fetch all the relevant policies for the target type
 	policies, err := c.rdsClient.GetPolicies(ctx, tenantId, targetType)
 	if err != nil {
-		return nil, fmt.Errorf("error fetching policies from rds for target type [%s] ", targetType)
+		return nil, fmt.Errorf("error fetching policies from rds for target type [%s] %w", targetType, err)
 	}
 
 	if policies == nil || len(policies) == 0 {
@@ -95,7 +95,7 @@ func (c *AssetViolationsClient) GetAssetViolations(ctx context.Context, targetTy
 	// fetch violations for the asset
 	policyViolationMap, err := c.elasticSearchClient.FetchAssetViolations(ctx, tenantId, allSources, assetId)
 	if err != nil {
-		return nil, fmt.Errorf("error fetching asset violations from elasticsearch for assetId [%s] ", assetId)
+		return nil, fmt.Errorf("error fetching asset violations from elasticsearch for asset id [%s] %w", assetId, err)
 	}
 
 	policyViolations := assemblePolicyViolations(policies, *policyViolationMap)
