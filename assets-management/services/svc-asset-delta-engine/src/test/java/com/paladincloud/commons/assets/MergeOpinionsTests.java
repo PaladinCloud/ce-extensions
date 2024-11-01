@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.paladincloud.common.AssetDocumentFields;
 import com.paladincloud.common.assets.AssetDTO;
+import com.paladincloud.common.assets.AssetDTO.OpinionItem;
 import com.paladincloud.common.assets.AssetDocumentHelper;
 import com.paladincloud.common.assets.AssetState;
 import com.paladincloud.common.assets.MergeAssets;
@@ -41,8 +42,10 @@ public class MergeOpinionsTests {
             var asset = new AssetDTO();
             asset.setDocId(id);
             asset.setSource(reportingSource);
+            var opinionItem = new OpinionItem();
+            opinionItem.setData(rawData != null ? rawData : defaultRawData);
             asset.setOpinions(Map.of(dataSource,
-                Map.of(defaultReportingService, rawData != null ? rawData : defaultRawData)));
+                Map.of(defaultReportingService, opinionItem)));
 
             existing.put(asset.getDocId(), asset);
         });
@@ -58,7 +61,13 @@ public class MergeOpinionsTests {
         } else {
             sourceOpinion = new HashMap<>(sourceOpinion);
         }
-        sourceOpinion.put(service, rawData);
+        var serviceOpinion = sourceOpinion.get(service);
+        if (serviceOpinion == null) {
+            serviceOpinion = new OpinionItem();
+        }
+
+        serviceOpinion.setData(rawData);
+        sourceOpinion.put(service, serviceOpinion);
         opinions.put(source, sourceOpinion);
         asset.setOpinions(opinions);
     }
@@ -143,7 +152,7 @@ public class MergeOpinionsTests {
         assertNotNull(asset);
         var secondaryOpinion = asset.getOpinions().get(defaultReportingSource);
         assertNotNull(secondaryOpinion);
-        assertEquals(secondRawData, secondaryOpinion.get(defaultReportingService));
+        assertEquals(secondRawData, secondaryOpinion.get(defaultReportingService).getData());
     }
 
     // Given an existing stub and opinion, an additional opinion from the same source is added
@@ -162,8 +171,8 @@ public class MergeOpinionsTests {
         assertNotNull(asset);
         var secondaryOpinion = asset.getOpinions().get(defaultReportingSource);
         assertNotNull(secondaryOpinion);
-        assertEquals(defaultRawData, secondaryOpinion.get(defaultReportingService));
-        assertEquals(secondRawData, secondaryOpinion.get(secondReportingService));
+        assertEquals(defaultRawData, secondaryOpinion.get(defaultReportingService).getData());
+        assertEquals(secondRawData, secondaryOpinion.get(secondReportingService).getData());
     }
 
     // Given an existing stub and opinion, an additional opinion from a different source is added
@@ -184,8 +193,8 @@ public class MergeOpinionsTests {
         assertNotNull(defaultOpinion);
         var otherOpinion = asset.getOpinions().get(secondReportingSource);
         assertNotNull(otherOpinion);
-        assertEquals(defaultRawData, defaultOpinion.get(defaultReportingService));
-        assertEquals(secondRawData, otherOpinion.get(secondReportingService));
+        assertEquals(defaultRawData, defaultOpinion.get(defaultReportingService).getData());
+        assertEquals(secondRawData, otherOpinion.get(secondReportingService).getData());
     }
 
     // Given both a stub & opinion asset, the opinion is missing from the latest.

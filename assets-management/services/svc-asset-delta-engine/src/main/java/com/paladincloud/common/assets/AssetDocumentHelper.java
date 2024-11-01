@@ -1,8 +1,7 @@
 package com.paladincloud.common.assets;
 
-import static java.util.Map.entry;
-
 import com.paladincloud.common.AssetDocumentFields;
+import com.paladincloud.common.assets.AssetDTO.OpinionItem;
 import com.paladincloud.common.errors.JobException;
 import com.paladincloud.common.util.MapHelper;
 import com.paladincloud.common.util.StringHelper;
@@ -45,6 +44,9 @@ public class AssetDocumentHelper {
             MapperFields.LEGACY_ACCOUNT_ID,
             MapperFields.RAW_DATA,
             MapperFields.REPORTING_SOURCE,
+            MapperFields.REPORTING_SERVICE,
+            MapperFields.FIRST_SCAN_DATE,
+            MapperFields.LAST_SCAN_DATE,
 
             AssetDocumentFields.LEGACY_NAME,
             AssetDocumentFields.ASSET_ID_DISPLAY_NAME,
@@ -222,16 +224,32 @@ public class AssetDocumentHelper {
             dto.setOpinions(new HashMap<>());
         }
 
-        Map<String, String> reportingOpinions = dto.getOpinions().get(reportingSource);
-        if (reportingOpinions == null) {
-            reportingOpinions = new HashMap<>();
+        Map<String, OpinionItem> reportingSourceOpinions = dto.getOpinions().get(reportingSource);
+        if (reportingSourceOpinions == null) {
+            reportingSourceOpinions = new HashMap<>();
         } else {
-            reportingOpinions = new HashMap<>(reportingOpinions);
+            reportingSourceOpinions = new HashMap<>(reportingSourceOpinions);
         }
-        reportingOpinions.put(reportingSourceService,
+        var reportingServiceOpinionItem = reportingSourceOpinions.get(reportingSourceService);
+        if (reportingServiceOpinionItem == null) {
+            reportingServiceOpinionItem = new OpinionItem();
+        }
+        reportingServiceOpinionItem.setData(
             data.getOrDefault(MapperFields.RAW_DATA, "").toString());
+        OpinionItem finalReportingServiceOpinionItem = reportingServiceOpinionItem;
+
+        withValue(data, List.of(MapperFields.FIRST_SCAN_DATE), v -> {
+            finalReportingServiceOpinionItem.setFirstScanDate(TimeHelper.parseDiscoveryDate(v.toString()));
+            return v;
+        });
+        withValue(data, List.of(MapperFields.LAST_SCAN_DATE), v -> {
+            finalReportingServiceOpinionItem.setLastScanDate(TimeHelper.parseDiscoveryDate(v.toString()));
+            return v;
+        });
+
+        reportingSourceOpinions.put(reportingSourceService, reportingServiceOpinionItem);
         var opinions = new HashMap<>(dto.getOpinions());
-        opinions.put(reportingSource, reportingOpinions);
+        opinions.put(reportingSource, reportingSourceOpinions);
         dto.setOpinions(opinions);
     }
 
@@ -332,31 +350,31 @@ public class AssetDocumentHelper {
 
     private void setCommonPrimaryFields(Map<String, Object> data, AssetDTO dto, String idValue) {
         // Set some common properties in a type safe and convenient manner
-        Map<List<String>, DtoSetter> fieldSetterMap = Map.ofEntries(
-            entry(List.of(AssetDocumentFields.ACCOUNT_ID, AssetDocumentFields.LEGACY_ACCOUNT_ID),
-                v -> {
-                    dto.setAccountId(v.toString());
-                    dto.setLegacyAccountId(v.toString());
-                }),
-            entry(List.of(AssetDocumentFields.LAST_SCAN_DATE,
-                AssetDocumentFields.LEGACY_LAST_SCAN_DATE), v -> {
-                dto.setLastScanDate(TimeHelper.parseDiscoveryDate(v.toString()));
-                dto.setLegacyLastScanDate(TimeHelper.parseDiscoveryDate(v.toString()));
-            }),
-            entry(List.of(AssetDocumentFields.REGION), v -> dto.setRegion(v.toString())),
-            entry(
-                List.of(MapperFields.SOURCE_DISPLAY_NAME, MapperFields.LEGACY_SOURCE_DISPLAY_NAME),
-                v -> {
-                    dto.setSourceDisplayName(v.toString());
-                    dto.setLegacySourceDisplayName(v.toString());
-                }));
+        withValue(data,
+            List.of(AssetDocumentFields.ACCOUNT_ID, AssetDocumentFields.LEGACY_ACCOUNT_ID), v -> {
+                dto.setAccountId(v.toString());
+                dto.setLegacyAccountId(v.toString());
+                return v;
+            });
 
-        fieldSetterMap.forEach((key, value) -> {
-            var fieldValue = MapHelper.getFirstOrDefault(data, key, null);
-            if (fieldValue != null) {
-                value.set(fieldValue);
-            }
+        withValue(data, List.of(AssetDocumentFields.LAST_SCAN_DATE,
+            AssetDocumentFields.LEGACY_LAST_SCAN_DATE), v -> {
+            dto.setLastScanDate(TimeHelper.parseDiscoveryDate(v.toString()));
+            dto.setLegacyLastScanDate(TimeHelper.parseDiscoveryDate(v.toString()));
+            return v;
         });
+
+        withValue(data, List.of(AssetDocumentFields.REGION), v -> {
+            dto.setRegion(v.toString());
+            return v;
+        });
+
+        withValue(data, List.of(MapperFields.SOURCE_DISPLAY_NAME, MapperFields.LEGACY_SOURCE_DISPLAY_NAME),
+            v -> {
+                dto.setSourceDisplayName(v.toString());
+                dto.setLegacySourceDisplayName(v.toString());
+                return v;
+            });
 
         dto.setIsEntity(true);
         dto.setEntityType(type);
@@ -380,13 +398,12 @@ public class AssetDocumentHelper {
         dto.setResourceId(resourceId.toString());
         dto.setLegacyResourceId(resourceId.toString());
 
-        var accountName = MapHelper.getFirstOrDefault(data,
-            List.of(AssetDocumentFields.ACCOUNT_NAME, AssetDocumentFields.LEGACY_ACCOUNT_NAME,
-                AssetDocumentFields.SUBSCRIPTION_NAME, AssetDocumentFields.PROJECT_NAME), null);
-        if (accountName != null) {
-            dto.setAccountName(accountName.toString());
-            dto.setLegacyAccountName(accountName.toString());
-        }
+        withValue(data, List.of(AssetDocumentFields.ACCOUNT_NAME, AssetDocumentFields.LEGACY_ACCOUNT_NAME,
+            AssetDocumentFields.SUBSCRIPTION_NAME, AssetDocumentFields.PROJECT_NAME), v -> {
+            dto.setAccountName(v.toString());
+            dto.setLegacyAccountName(v.toString());
+            return v;
+        });
 
         if (data.containsKey(AssetDocumentFields.SUBSCRIPTION)) {
             dto.setAccountId(data.get(AssetDocumentFields.SUBSCRIPTION).toString());
@@ -503,6 +520,15 @@ public class AssetDocumentHelper {
         return source;
     }
 
+    private void withValue(Map<String, Object> data, List<String> key,
+        Function<Object, Object> fn) {
+        var fieldValue = MapHelper.getFirstOrDefault(data, key, null);
+        if (fieldValue != null) {
+            fn.apply(fieldValue);
+        }
+    }
+
+
     public interface MapperFields {
 
         String LEGACY_ACCOUNT_ID = "accountid";
@@ -514,6 +540,9 @@ public class AssetDocumentHelper {
 
         String SOURCE_DISPLAY_NAME = "source_display_name";
         String LEGACY_SOURCE_DISPLAY_NAME = "sourceDisplayName";
+
+        String FIRST_SCAN_DATE = "_first_scan_date";
+        String LAST_SCAN_DATE = "_last_scan_date";
     }
 
 

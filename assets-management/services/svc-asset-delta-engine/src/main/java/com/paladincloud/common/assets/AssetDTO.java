@@ -16,6 +16,25 @@ import lombok.Setter;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class AssetDTO {
 
+    @Getter
+    @Setter
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public static class OpinionItem {
+        @JsonProperty("data")
+        private String data;
+
+        @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd HH:mm:00Z")
+        @JsonProperty("firstScanDate")
+        private ZonedDateTime firstScanDate;
+
+        @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd HH:mm:00Z")
+        @JsonProperty("lastScanDate")
+        private ZonedDateTime lastScanDate;
+
+        @JsonProperty("deepLink")
+        private String deepLink;
+    }
+
     /**
      * Adds the given property and value to fields in this document. Get access to these properties
      * via {@link #getAdditionalProperties()}.
@@ -211,7 +230,7 @@ public class AssetDTO {
     @Setter
     @Getter
     @JsonProperty(AssetDocumentFields.OPINIONS)
-    private Map<String,Map<String, String>> opinions;
+    private Map<String,Map<String, OpinionItem>> opinions;
 
 
     // ---------------------------------------------------------------------------------------------

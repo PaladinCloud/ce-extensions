@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.paladincloud.common.AssetDocumentFields;
 import com.paladincloud.common.assets.AssetDTO;
+import com.paladincloud.common.assets.AssetDTO.OpinionItem;
 import com.paladincloud.common.assets.AssetState;
 import com.paladincloud.common.search.ElasticQueryAssetResponse;
 import com.paladincloud.common.util.JsonHelper;
@@ -139,7 +140,9 @@ public class AssetDTOTests {
         dto.setDocId("1");
         dto.setDocType("ec2");
         dto.setOpinions(new HashMap<>());
-        dto.getOpinions().put("secondary", Map.of("flavor", "licorice"));
+        var opinionItem = new OpinionItem();
+        opinionItem.setData("licorice");
+        dto.getOpinions().put("secondary", Map.of("flavor", opinionItem));
         return dto;
     }
 
