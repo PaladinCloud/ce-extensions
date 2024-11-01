@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.paladincloud.common.AssetDocumentFields;
 import com.paladincloud.common.assets.AssetDTO;
+import com.paladincloud.common.assets.AssetDTO.OpinionCollection;
 import com.paladincloud.common.assets.AssetDTO.OpinionItem;
 import com.paladincloud.common.assets.AssetDocumentHelper;
 import com.paladincloud.common.assets.AssetState;
@@ -42,10 +43,10 @@ public class MergeOpinionsTests {
             var asset = new AssetDTO();
             asset.setDocId(id);
             asset.setSource(reportingSource);
+            asset.setOpinions(new OpinionCollection());
             var opinionItem = new OpinionItem();
             opinionItem.setData(rawData != null ? rawData : defaultRawData);
-            asset.setOpinions(Map.of(dataSource,
-                Map.of(defaultReportingService, opinionItem)));
+            asset.getOpinions().setOpinion(dataSource, defaultReportingService, opinionItem);
 
             existing.put(asset.getDocId(), asset);
         });
@@ -54,22 +55,9 @@ public class MergeOpinionsTests {
 
     static public void addSecondOpinion(AssetDTO asset, String source, String service,
         String rawData) {
-        var opinions = new HashMap<>(asset.getOpinions());
-        var sourceOpinion = opinions.get(source);
-        if (sourceOpinion == null) {
-            sourceOpinion = new HashMap<>();
-        } else {
-            sourceOpinion = new HashMap<>(sourceOpinion);
-        }
-        var serviceOpinion = sourceOpinion.get(service);
-        if (serviceOpinion == null) {
-            serviceOpinion = new OpinionItem();
-        }
-
-        serviceOpinion.setData(rawData);
-        sourceOpinion.put(service, serviceOpinion);
-        opinions.put(source, sourceOpinion);
-        asset.setOpinions(opinions);
+        var opinionItem = new OpinionItem();
+        opinionItem.setData(rawData);
+        asset.getOpinions().setOpinion(source, service, opinionItem);
     }
 
     static public Map<String, AssetDTO> createExistingPrimary(List<String> ids,
@@ -122,7 +110,8 @@ public class MergeOpinionsTests {
     // Given neither a primary nor an opinion, an opinion is added
     @Test
     void newOpinionAdded() {
-        var existingOpinions = createExistingOpinion(List.of(), defaultReportingSource, "gcp", null);
+        var existingOpinions = createExistingOpinion(List.of(), defaultReportingSource, "gcp",
+            null);
         var latest = createLatest(List.of("q13"), "gcp", defaultReportingSource, null);
         var existingPrimary = createExistingPrimary(List.of(), "gcp", null);
 
@@ -150,9 +139,10 @@ public class MergeOpinionsTests {
 
         var asset = merger.getUpdatedAssets().get("gcp_vminstance_q13");
         assertNotNull(asset);
-        var secondaryOpinion = asset.getOpinions().get(defaultReportingSource);
-        assertNotNull(secondaryOpinion);
-        assertEquals(secondRawData, secondaryOpinion.get(defaultReportingService).getData());
+        var opinionItem = asset.getOpinions()
+            .getSourceAndServiceOpinion(defaultReportingSource, defaultReportingService);
+        assertNotNull(opinionItem);
+        assertEquals(secondRawData, opinionItem.getData());
     }
 
     // Given an existing stub and opinion, an additional opinion from the same source is added
@@ -163,16 +153,19 @@ public class MergeOpinionsTests {
         var latest = createLatest(List.of("q13"), defaultReportingSource, "gcp", secondRawData);
         var existingPrimary = createExistingPrimary(List.of(), "gcp", null);
 
-        var creator = getHelper(defaultReportingSource, secondReportingService
-        );
+        var creator = getHelper(defaultReportingSource, secondReportingService);
         var merger = MergeAssets.process(creator, existingOpinions, latest, existingPrimary);
 
         var asset = merger.getUpdatedAssets().get("gcp_vminstance_q13");
         assertNotNull(asset);
-        var secondaryOpinion = asset.getOpinions().get(defaultReportingSource);
-        assertNotNull(secondaryOpinion);
-        assertEquals(defaultRawData, secondaryOpinion.get(defaultReportingService).getData());
-        assertEquals(secondRawData, secondaryOpinion.get(secondReportingService).getData());
+        var defaultOpinionItem = asset.getOpinions()
+            .getSourceAndServiceOpinion(defaultReportingSource, defaultReportingService);
+        assertNotNull(defaultOpinionItem);
+        var secondaryOpinionItem = asset.getOpinions()
+            .getSourceAndServiceOpinion(defaultReportingSource, secondReportingService);
+        assertNotNull(secondaryOpinionItem);
+        assertEquals(defaultRawData, defaultOpinionItem.getData());
+        assertEquals(secondRawData, secondaryOpinionItem.getData());
     }
 
     // Given an existing stub and opinion, an additional opinion from a different source is added
@@ -183,18 +176,20 @@ public class MergeOpinionsTests {
         var latest = createLatest(List.of("q13"), secondReportingSource, "gcp", secondRawData);
         var existingPrimary = createExistingPrimary(List.of(), "gcp", null);
 
-        var creator = getHelper(secondReportingSource, secondReportingService
-        );
+        var creator = getHelper(secondReportingSource, secondReportingService);
         var merger = MergeAssets.process(creator, existingOpinions, latest, existingPrimary);
 
         var asset = merger.getUpdatedAssets().get("gcp_vminstance_q13");
         assertNotNull(asset);
-        var defaultOpinion = asset.getOpinions().get(defaultReportingSource);
-        assertNotNull(defaultOpinion);
-        var otherOpinion = asset.getOpinions().get(secondReportingSource);
-        assertNotNull(otherOpinion);
-        assertEquals(defaultRawData, defaultOpinion.get(defaultReportingService).getData());
-        assertEquals(secondRawData, otherOpinion.get(secondReportingService).getData());
+        var defaultOpinionItem = asset.getOpinions()
+            .getSourceAndServiceOpinion(defaultReportingSource, defaultReportingService);
+        var otherOpinionItem = asset.getOpinions()
+            .getSourceAndServiceOpinion(secondReportingSource, secondReportingService);
+
+        assertNotNull(defaultOpinionItem);
+        assertNotNull(otherOpinionItem);
+        assertEquals(defaultRawData, defaultOpinionItem.getData());
+        assertEquals(secondRawData, otherOpinionItem.getData());
     }
 
     // Given both a stub & opinion asset, the opinion is missing from the latest.
@@ -251,13 +246,13 @@ public class MergeOpinionsTests {
 
         // Ensure the proper opinion service remains
         var opinions = updatedAsset.getOpinions();
-        assertEquals(Set.of(defaultReportingSource), opinions.keySet());
-        var sourceOpinions = opinions.get(defaultReportingSource);
-        assertEquals(Set.of(secondReportingService), sourceOpinions.keySet());
+        var secondOpinion = opinions.getSourceAndServiceOpinion(defaultReportingSource, secondReportingService);
+        assertNotNull(secondOpinion);
+        assertNull(opinions.getSourceAndServiceOpinion(defaultReportingSource, defaultReportingService));
     }
 
     // Given both a stub & opinion asset, one of the two existing opinions from difference sources
-    // is missing from the latest.
+    // is missing from the latest. This requires removing the missing opinion.
     @Test
     void oneOpinionSourceWithStubIsMissing() {
         var docId = "gcp_vminstance_q13";
@@ -283,9 +278,9 @@ public class MergeOpinionsTests {
 
         // Ensure the proper opinion service remains
         var opinions = updatedAsset.getOpinions();
-        assertEquals(Set.of(secondReportingSource), opinions.keySet());
-        var sourceOpinions = opinions.get(secondReportingSource);
-        assertEquals(Set.of(secondReportingService), sourceOpinions.keySet());
+        var secondOpinion = opinions.getSourceAndServiceOpinion(defaultReportingSource, secondReportingService);
+        assertNotNull(secondOpinion);
+        assertNull(opinions.getSourceAndServiceOpinion(secondReportingSource, defaultReportingService));
     }
 
     // Given a stub and an opinion, a primary is added
@@ -316,7 +311,8 @@ public class MergeOpinionsTests {
     @Test
     void primaryFromOpinion() throws JsonProcessingException {
         var latest = List.of(JsonHelper.mapFromString(getOpinionMapperDocument()));
-        var existingOpinions = createExistingOpinion(List.of(), defaultReportingSource, "gcp", null);
+        var existingOpinions = createExistingOpinion(List.of(), defaultReportingSource, "gcp",
+            null);
 
         var creator = getHelper("secondary", "vminstance");
         var merger = MergeAssets.process(creator, existingOpinions, latest, Map.of());
@@ -336,7 +332,6 @@ public class MergeOpinionsTests {
         assertNotNull(opinionAsset.getOpinions());
         assertNull(opinionAsset.getAssetState());
         assertNull(opinionAsset.getSource());
-
 
         var primaryAsset = merger.getNewPrimaryAssets().get("gcp_vminstance_134312");
         assertNotNull(primaryAsset);

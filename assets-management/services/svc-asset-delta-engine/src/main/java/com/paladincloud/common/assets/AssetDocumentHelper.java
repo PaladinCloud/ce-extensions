@@ -1,6 +1,7 @@
 package com.paladincloud.common.assets;
 
 import com.paladincloud.common.AssetDocumentFields;
+import com.paladincloud.common.assets.AssetDTO.OpinionCollection;
 import com.paladincloud.common.assets.AssetDTO.OpinionItem;
 import com.paladincloud.common.errors.JobException;
 import com.paladincloud.common.util.MapHelper;
@@ -13,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import lombok.Builder;
@@ -220,37 +222,26 @@ public class AssetDocumentHelper {
         if (StringUtils.isBlank(reportingSourceService)) {
             throw new JobException("reportingService is not set");
         }
+
+
         if (dto.getOpinions() == null) {
-            dto.setOpinions(new HashMap<>());
+            dto.setOpinions(new OpinionCollection());
         }
-
-        Map<String, OpinionItem> reportingSourceOpinions = dto.getOpinions().get(reportingSource);
-        if (reportingSourceOpinions == null) {
-            reportingSourceOpinions = new HashMap<>();
-        } else {
-            reportingSourceOpinions = new HashMap<>(reportingSourceOpinions);
+        var opinionItem = dto.getOpinions().getSourceAndServiceOpinion(reportingSource, reportingSourceService);
+        if (opinionItem == null) {
+            opinionItem = new OpinionItem();
         }
-        var reportingServiceOpinionItem = reportingSourceOpinions.get(reportingSourceService);
-        if (reportingServiceOpinionItem == null) {
-            reportingServiceOpinionItem = new OpinionItem();
-        }
-        reportingServiceOpinionItem.setData(
+        opinionItem.setData(
             data.getOrDefault(MapperFields.RAW_DATA, "").toString());
-        OpinionItem finalReportingServiceOpinionItem = reportingServiceOpinionItem;
-
+        OpinionItem finalOpinionItem = opinionItem;
         withValue(data, List.of(MapperFields.FIRST_SCAN_DATE), v -> {
-            finalReportingServiceOpinionItem.setFirstScanDate(TimeHelper.parseDiscoveryDate(v.toString()));
-            return v;
+            finalOpinionItem.setFirstScanDate(TimeHelper.parseDiscoveryDate(v.toString()));
         });
         withValue(data, List.of(MapperFields.LAST_SCAN_DATE), v -> {
-            finalReportingServiceOpinionItem.setLastScanDate(TimeHelper.parseDiscoveryDate(v.toString()));
-            return v;
+            finalOpinionItem.setLastScanDate(TimeHelper.parseDiscoveryDate(v.toString()));
         });
 
-        reportingSourceOpinions.put(reportingSourceService, reportingServiceOpinionItem);
-        var opinions = new HashMap<>(dto.getOpinions());
-        opinions.put(reportingSource, reportingSourceOpinions);
-        dto.setOpinions(opinions);
+        dto.getOpinions().setOpinion(reportingSource, reportingSourceService, opinionItem);
     }
 
     /**
@@ -354,26 +345,22 @@ public class AssetDocumentHelper {
             List.of(AssetDocumentFields.ACCOUNT_ID, AssetDocumentFields.LEGACY_ACCOUNT_ID), v -> {
                 dto.setAccountId(v.toString());
                 dto.setLegacyAccountId(v.toString());
-                return v;
             });
 
         withValue(data, List.of(AssetDocumentFields.LAST_SCAN_DATE,
             AssetDocumentFields.LEGACY_LAST_SCAN_DATE), v -> {
             dto.setLastScanDate(TimeHelper.parseDiscoveryDate(v.toString()));
             dto.setLegacyLastScanDate(TimeHelper.parseDiscoveryDate(v.toString()));
-            return v;
         });
 
         withValue(data, List.of(AssetDocumentFields.REGION), v -> {
             dto.setRegion(v.toString());
-            return v;
         });
 
         withValue(data, List.of(MapperFields.SOURCE_DISPLAY_NAME, MapperFields.LEGACY_SOURCE_DISPLAY_NAME),
             v -> {
                 dto.setSourceDisplayName(v.toString());
                 dto.setLegacySourceDisplayName(v.toString());
-                return v;
             });
 
         dto.setIsEntity(true);
@@ -402,7 +389,6 @@ public class AssetDocumentHelper {
             AssetDocumentFields.SUBSCRIPTION_NAME, AssetDocumentFields.PROJECT_NAME), v -> {
             dto.setAccountName(v.toString());
             dto.setLegacyAccountName(v.toString());
-            return v;
         });
 
         if (data.containsKey(AssetDocumentFields.SUBSCRIPTION)) {
@@ -430,20 +416,8 @@ public class AssetDocumentHelper {
         } else {
             // An opinion has been removed; either update the document to reflect that or
             // delete the document.
-            var opinions = new HashMap<>(dto.getOpinions());
-            var sourceOpinions = opinions.get(reportingSource);
-            if (sourceOpinions != null && sourceOpinions.containsKey(reportingSourceService)) {
-                sourceOpinions = new HashMap<>(sourceOpinions);
-                sourceOpinions.remove(reportingSourceService);
-                if (sourceOpinions.isEmpty()) {
-                    opinions.remove(reportingSource);
-                } else {
-                    opinions.put(reportingSource, sourceOpinions);
-                }
-                dto.setOpinions(opinions);
-            }
-
-            return dto.getOpinions().isEmpty();
+            dto.getOpinions().removeOpinion(reportingSource, reportingSourceService);
+            return !dto.getOpinions().hasOpinions();
         }
     }
 
@@ -521,10 +495,10 @@ public class AssetDocumentHelper {
     }
 
     private void withValue(Map<String, Object> data, List<String> key,
-        Function<Object, Object> fn) {
+        Consumer<Object> fn) {
         var fieldValue = MapHelper.getFirstOrDefault(data, key, null);
         if (fieldValue != null) {
-            fn.apply(fieldValue);
+            fn.accept(fieldValue);
         }
     }
 

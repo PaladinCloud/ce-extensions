@@ -51,9 +51,7 @@ public class AssetDocumentHelperOpinionTests {
         assertNull(dto.getRegion());
 
         // Validate the opinion is stored properly
-        var secondaryOpinion = dto.getOpinions().get("secondary");
-        assertNotNull(secondaryOpinion);
-        var opinionItem = secondaryOpinion.get("assets");
+        var opinionItem = dto.getOpinions().getSourceAndServiceOpinion("secondary", "assets");
         assertNotNull(opinionItem);
         assertEquals(mapperData.get("rawData"), opinionItem.getData());
         assertNotNull(opinionItem.getFirstScanDate());
@@ -79,9 +77,7 @@ public class AssetDocumentHelperOpinionTests {
         mapperData.put("rawData", newRawData);
         helper.updateFrom(mapperData, dto);
 
-        var secondaryOpinion = dto.getOpinions().get("secondary");
-        assertNotNull(secondaryOpinion);
-        var opinionItem = secondaryOpinion.get("assets");
+        var opinionItem = dto.getOpinions().getSourceAndServiceOpinion("secondary", "assets");
         assertNotNull(opinionItem);
         assertEquals(newRawData, opinionItem.getData());
     }
