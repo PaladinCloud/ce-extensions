@@ -13,6 +13,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -224,21 +225,15 @@ public class AssetDocumentHelper {
         }
 
 
-        if (dto.getOpinions() == null) {
-            dto.setOpinions(new OpinionCollection());
-        }
-        var opinionItem = dto.getOpinions().getSourceAndServiceOpinion(reportingSource, reportingSourceService);
-        if (opinionItem == null) {
-            opinionItem = new OpinionItem();
-        }
+        dto.setOpinions(Optional.ofNullable(dto.getOpinions()).orElseGet(OpinionCollection::new));
+        var opinionItem = Optional.ofNullable((dto.getOpinions().getSourceAndServiceOpinion(reportingSource, reportingSourceService))).orElseGet(OpinionItem::new);
         opinionItem.setData(
             data.getOrDefault(MapperFields.RAW_DATA, "").toString());
-        OpinionItem finalOpinionItem = opinionItem;
         withValue(data, List.of(MapperFields.FIRST_SCAN_DATE), v -> {
-            finalOpinionItem.setFirstScanDate(TimeHelper.parseDiscoveryDate(v.toString()));
+            opinionItem.setFirstScanDate(TimeHelper.parseDiscoveryDate(v.toString()));
         });
         withValue(data, List.of(MapperFields.LAST_SCAN_DATE), v -> {
-            finalOpinionItem.setLastScanDate(TimeHelper.parseDiscoveryDate(v.toString()));
+            opinionItem.setLastScanDate(TimeHelper.parseDiscoveryDate(v.toString()));
         });
 
         dto.getOpinions().setOpinion(reportingSource, reportingSourceService, opinionItem);
@@ -517,11 +512,5 @@ public class AssetDocumentHelper {
 
         String FIRST_SCAN_DATE = "_first_scan_date";
         String LAST_SCAN_DATE = "_last_scan_date";
-    }
-
-
-    interface DtoSetter {
-
-        void set(Object value);
     }
 }
