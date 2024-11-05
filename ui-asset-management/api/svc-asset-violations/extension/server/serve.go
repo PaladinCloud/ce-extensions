@@ -63,6 +63,7 @@ func startHTTPServer(port string, httpConfig *HttpServer) {
 
 func handleValue(config *HttpServer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
 		tenantId := chi.URLParam(r, "tenantId")
 		targetType := chi.URLParam(r, "targetType")
 		assetId, err := url.QueryUnescape(chi.URLParam(r, "assetId"))

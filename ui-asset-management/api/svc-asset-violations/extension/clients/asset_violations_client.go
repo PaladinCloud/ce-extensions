@@ -75,7 +75,7 @@ func (c *AssetViolationsClient) GetAssetViolations(ctx context.Context, targetTy
 	policyCount, err := c.rdsClient.GetAllPoliciesCount(ctx, tenantId, targetType)
 	if policyCount == 0 {
 		log.Printf("no policies for given target type [%s]\n", targetType)
-		return &models.AssociatedPoliciesResponse{Data: models.AssociatedPolicies{}, Message: noPolicyMessage}, nil
+		return &models.AssociatedPoliciesResponse{Data: nil, Message: noPolicyMessage}, nil
 	}
 
 	// fetch all the relevant policies for the target type
@@ -86,7 +86,7 @@ func (c *AssetViolationsClient) GetAssetViolations(ctx context.Context, targetTy
 
 	if policies == nil || len(policies) == 0 {
 		log.Printf("no enabled policies for given target type [%s]\n", targetType)
-		return &models.AssociatedPoliciesResponse{Data: models.AssociatedPolicies{}, Message: noActivePolicyMessage}, nil
+		return &models.AssociatedPoliciesResponse{Data: nil, Message: noActivePolicyMessage}, nil
 	}
 
 	log.Printf("got [%s] policies for target type [%s]\n", strconv.Itoa(len(policies)), targetType)
@@ -100,7 +100,7 @@ func (c *AssetViolationsClient) GetAssetViolations(ctx context.Context, targetTy
 
 	associatedPolicies := assembleAssociatedPoliciesResponse(policies, *violations)
 
-	return &models.AssociatedPoliciesResponse{Data: *associatedPolicies, Message: success}, nil
+	return &models.AssociatedPoliciesResponse{Data: associatedPolicies, Message: success}, nil
 }
 
 func buildSeverityInfo(severityCounts []models.Bucket) map[string]int {

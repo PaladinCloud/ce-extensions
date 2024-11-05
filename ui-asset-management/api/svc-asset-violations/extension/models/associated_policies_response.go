@@ -17,8 +17,8 @@
 package models
 
 type AssociatedPoliciesResponse struct {
-	Data    AssociatedPolicies `json:"data"`
-	Message string             `json:"message"`
+	Data    *AssociatedPolicies `json:"data"`
+	Message string              `json:"message"`
 }
 
 type AssociatedPolicies struct {
