@@ -91,6 +91,7 @@ func (c *AssetDetailsClient) GetAssetDetails(ctx context.Context, tenantId, asse
 			TargetType:      commonFields[constants.TargetType],
 			TargetTypeName:  commonFields[constants.TargetTypeName],
 			Region:          commonFields[constants.Region],
+			AssetState:      commonFields[constants.AssetState],
 			Tags:            tags,
 			MandatoryTags:   mandatoryTags,
 			PrimaryProvider: primaryProvider,

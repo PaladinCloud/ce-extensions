@@ -55,9 +55,10 @@ func NewAssetViolationsClient(ctx context.Context, config *Configuration) (*Asse
 }
 
 const (
-	allSources      = "all-sources"
-	success         = "success"
-	noPolicyMessage = "No active policies monitoring this asset type"
+	allSources            = "all-sources"
+	success               = "success"
+	noActivePolicyMessage = "No active policies monitoring this asset type"
+	noPolicyMessage       = "There are no policies for this asset type"
 )
 
 var severityWeights = map[string]int{"critical": 10, "high": 5, "medium": 3, "low": 1}
@@ -70,15 +71,22 @@ func (c *AssetViolationsClient) GetAssetViolations(ctx context.Context, targetTy
 		return nil, fmt.Errorf("targetType must be present")
 	}
 
+	// fetch all policies(ENABLED/DISABLED) count for the target type
+	policyCount, err := c.rdsClient.GetAllPoliciesCount(ctx, tenantId, targetType)
+	if policyCount == 0 {
+		log.Printf("no policies for given target type [%s]\n", targetType)
+		return &models.AssociatedPoliciesResponse{Data: models.AssociatedPolicies{}, Message: noPolicyMessage}, nil
+	}
+
 	// fetch all the relevant policies for the target type
-	policies, err := c.rdsClient.GetPolicies(ctx, tenantId, targetType)
+	policies, err := c.rdsClient.GetEnabledPolicies(ctx, tenantId, targetType)
 	if err != nil {
 		return nil, fmt.Errorf("error fetching policies from rds for target type [%s] %w", targetType, err)
 	}
 
 	if policies == nil || len(policies) == 0 {
-		log.Printf("no policies for given target type [%s]\n", targetType)
-		return &models.AssociatedPoliciesResponse{Data: models.AssociatedPolicies{}, Message: noPolicyMessage}, nil
+		log.Printf("no enabled policies for given target type [%s]\n", targetType)
+		return &models.AssociatedPoliciesResponse{Data: models.AssociatedPolicies{}, Message: noActivePolicyMessage}, nil
 	}
 
 	log.Printf("got [%s] policies for target type [%s]\n", strconv.Itoa(len(policies)), targetType)

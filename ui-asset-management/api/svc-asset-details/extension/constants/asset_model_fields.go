@@ -26,6 +26,7 @@ const (
 	Region          = "region"
 	PrimaryProvider = "primaryProvider"
 	RawData         = "rawData"
+	AssetState      = "_assetState"
 )
 
 var CommonFields = []string{
@@ -36,4 +37,5 @@ var CommonFields = []string{
 	TargetType,
 	TargetTypeName,
 	Region,
+	AssetState,
 }

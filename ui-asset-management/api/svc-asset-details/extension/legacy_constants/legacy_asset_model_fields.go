@@ -57,6 +57,7 @@ const (
 	TargetType     = "_entitytype"
 	TargetTypeName = "targettypedisplayname"
 	Region         = "region"
+	AssetState     = "_assetState"
 )
 
 var CommonFields = []string{
@@ -67,6 +68,7 @@ var CommonFields = []string{
 	TargetType,
 	TargetTypeName,
 	Region,
+	AssetState,
 }
 
 func IsCommonField(field string) bool {

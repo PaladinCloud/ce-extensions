@@ -8,6 +8,7 @@ type AssetDetails struct {
 	TargetType      string            `json:"targetType"`
 	TargetTypeName  string            `json:"targetTypeName"`
 	Region          string            `json:"region"`
+	AssetState      string            `json:"assetState"`
 	Tags            map[string]string `json:"tags"`
 	MandatoryTags   map[string]string `json:"mandatoryTags"`
 	PrimaryProvider string            `json:"primaryProvider"`
