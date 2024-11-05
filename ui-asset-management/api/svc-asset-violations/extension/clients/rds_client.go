@@ -95,7 +95,7 @@ func (r *RdsClient) CreateNewRdsClient(ctx context.Context, tenantId string) (*s
 	return rds, nil
 }
 
-func (r *RdsClient) GetPolicies(ctx context.Context, tenantId, targetType string) ([]models.Policy, error) {
+func (r *RdsClient) GetPolicies(ctx context.Context, tenantId, targetType string) ([]models.PolicyRdsResult, error) {
 	rdsClient, err := r.CreateNewRdsClient(ctx, tenantId)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create rds client %w", err)
@@ -125,7 +125,7 @@ func (r *RdsClient) GetPolicies(ctx context.Context, tenantId, targetType string
 	`
 
 	formattedQuery := fmt.Sprintf(query, targetType)
-	var policies []models.Policy
+	var policies []models.PolicyRdsResult
 	if err := sqlscan.Select(ctx, rdsClient, &policies, formattedQuery); err != nil {
 		return nil, fmt.Errorf("failed to get policies from rds %w", err)
 	}
