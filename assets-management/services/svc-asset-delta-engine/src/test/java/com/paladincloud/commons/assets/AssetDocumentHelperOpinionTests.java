@@ -30,6 +30,7 @@ public class AssetDocumentHelperOpinionTests {
             .resourceNameField("resource_name")
             .reportingSource("secondary")
             .reportingSourceService("assets")
+            .reportingSourceServiceDisplayName("Assets API")
             .build();
     }
 
@@ -51,10 +52,11 @@ public class AssetDocumentHelperOpinionTests {
         assertNull(dto.getRegion());
 
         // Validate the opinion is stored properly
-        var opinions = dto.getOpinions();
-        Map<String, String> opinionDetails = opinions.get("secondary");
-        assertNotNull(opinionDetails);
-        assertEquals(mapperData.get("rawData"), opinionDetails.get("assets"));
+        var opinionItem = dto.getOpinions().getSourceAndServiceOpinion("secondary", "assets");
+        assertNotNull(opinionItem);
+        assertEquals(mapperData.get("rawData"), opinionItem.getData());
+        assertNotNull(opinionItem.getFirstScanDate());
+        assertNotNull(opinionItem.getLastScanDate());
 
         // Ensure each value in the sample asset exists in the serialized/deserialized instance
         expectedMap.forEach((key, value) -> {
@@ -76,10 +78,9 @@ public class AssetDocumentHelperOpinionTests {
         mapperData.put("rawData", newRawData);
         helper.updateFrom(mapperData, dto);
 
-        var opinions = dto.getOpinions();
-        Map<String, String> opinionDetails = opinions.get("secondary");
-        assertNotNull(opinionDetails);
-        assertEquals(newRawData, opinionDetails.get("assets"));
+        var opinionItem = dto.getOpinions().getSourceAndServiceOpinion("secondary", "assets");
+        assertNotNull(opinionItem);
+        assertEquals(newRawData, opinionItem.getData());
     }
 
     private String getOpinionMapperDocument() {
@@ -93,12 +94,13 @@ public class AssetDocumentHelperOpinionTests {
                 "account_name": "main",
                 "projectId": "central-run-3433",
                 "source": "gcp",
-                "reporting_source": "secondary",
-                "reporting_service": "assets",
                 "source_display_name": "GCP",
                 "region": "us-central1-a",
                 "_entityType": "vminstance",
-                "_entityTypeDisplayName": "VM"
+                "_entityTypeDisplayName": "VM",
+                "_first_scan_date": "2024-09-05T14:57:00Z",
+                "_last_scan_date": "2024-10-31T18:33:19Z",
+                "_deep_link": "https://fubar.com"
             }""".trim();
     }
 
@@ -115,7 +117,13 @@ public class AssetDocumentHelperOpinionTests {
                     "_docType": "vminstance",
                     "opinions": {
                         "secondary": {
-                            "assets": "{\\"flavor\\":\\"licorice\\"}"
+                            "assets": {
+                                "data": "{\\"flavor\\":\\"licorice\\"}",
+                                "firstScanDate": "2024-09-05T14:57:00+0000",
+                                "lastScanDate": "2024-10-31T18:33:00+0000",
+                                "serviceName": "Assets API",
+                                "deepLink": "https://fubar.com"
+                            }
                         }
                     }
                 }

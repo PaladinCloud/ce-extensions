@@ -57,6 +57,8 @@ public interface AssetDocumentFields {
     String ENTITY_TYPE_DISPLAY_NAME = "_entityTypeDisplayName";
     String RELATIONS = "_relations";
 
+    String IS_ACTIVE = "_isActive";
+
     String IS_LATEST = "_isLatest";
     String LEGACY_IS_LATEST = "latest";
 

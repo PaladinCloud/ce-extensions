@@ -1,19 +1,22 @@
 package com.paladincloud.common.assets;
 
-import static java.util.Map.entry;
-
 import com.paladincloud.common.AssetDocumentFields;
+import com.paladincloud.common.assets.AssetDTO.OpinionCollection;
+import com.paladincloud.common.assets.AssetDTO.OpinionItem;
 import com.paladincloud.common.errors.JobException;
 import com.paladincloud.common.util.MapHelper;
 import com.paladincloud.common.util.StringHelper;
 import com.paladincloud.common.util.TimeHelper;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import lombok.Builder;
@@ -32,6 +35,7 @@ import org.apache.logging.log4j.Logger;
 public class AssetDocumentHelper {
 
     private static final Logger LOGGER = LogManager.getLogger(AssetDocumentHelper.class);
+    private static boolean warnReportingServiceDisplayName = true;
     // These are the fields the primary Asset 2.0 document model supports. This set is to allow
     // a hybrid model that has both the correct reserved/top-level fields and the backward compatible
     // top-level fields necessary for some components (policies, for instance).
@@ -45,6 +49,9 @@ public class AssetDocumentHelper {
             MapperFields.LEGACY_ACCOUNT_ID,
             MapperFields.RAW_DATA,
             MapperFields.REPORTING_SOURCE,
+            MapperFields.REPORTING_SERVICE,
+            MapperFields.FIRST_SCAN_DATE,
+            MapperFields.LAST_SCAN_DATE,
 
             AssetDocumentFields.LEGACY_NAME,
             AssetDocumentFields.ASSET_ID_DISPLAY_NAME,
@@ -109,6 +116,7 @@ public class AssetDocumentHelper {
     private String resourceNameField;
     private String reportingSource;
     private String reportingSourceService;
+    private String reportingSourceServiceDisplayName;
 
 
     public boolean isPrimarySource() {
@@ -116,13 +124,13 @@ public class AssetDocumentHelper {
     }
 
     public String buildDocId(Map<String, Object> data) {
+        if (docIdFields.contains(AssetDocumentFields.LEGACY_ACCOUNT_ID)
+            && data.get(AssetDocumentFields.LEGACY_ACCOUNT_ID) == null) {
+            data.put(AssetDocumentFields.LEGACY_ACCOUNT_ID,
+                data.get(AssetDocumentFields.ACCOUNT_ID));
+        }
         var docId = STR."\{dataSource}_\{type}_\{StringHelper.concatenate(data, docIdFields,
             "_")}";
-        if ("aws".equalsIgnoreCase(dataSource)) {
-            if (docIdFields.contains(AssetDocumentFields.LEGACY_ACCOUNT_ID)) {
-                docId = STR."\{StringHelper.indexName(dataSource, type)}_\{docId}";
-            }
-        }
         if (StringUtils.isBlank(docId)) {
             LOGGER.info(
                 STR."docId is not valid: '\{docId}' docIdFields=\{docIdFields} mapper data=\{MapHelper.toJsonString(
@@ -218,21 +226,41 @@ public class AssetDocumentHelper {
         if (StringUtils.isBlank(reportingSourceService)) {
             throw new JobException("reportingService is not set");
         }
-        if (dto.getOpinions() == null) {
-            dto.setOpinions(new HashMap<>());
-        }
 
-        Map<String, String> reportingOpinions = dto.getOpinions().get(reportingSource);
-        if (reportingOpinions == null) {
-            reportingOpinions = new HashMap<>();
-        } else {
-            reportingOpinions = new HashMap<>(reportingOpinions);
-        }
-        reportingOpinions.put(reportingSourceService,
+        dto.setOpinions(Optional.ofNullable(dto.getOpinions()).orElseGet(OpinionCollection::new));
+        var opinionItem = Optional.ofNullable(
+                (dto.getOpinions().getSourceAndServiceOpinion(reportingSource, reportingSourceService)))
+            .orElseGet(OpinionItem::new);
+        opinionItem.setData(
             data.getOrDefault(MapperFields.RAW_DATA, "").toString());
-        var opinions = new HashMap<>(dto.getOpinions());
-        opinions.put(reportingSource, reportingOpinions);
-        dto.setOpinions(opinions);
+        if (StringUtils.isBlank(reportingSourceServiceDisplayName)) {
+            if (warnReportingServiceDisplayName) {
+                LOGGER.warn("reportingSourceServiceDisplayName is not set");
+            }
+            warnReportingServiceDisplayName = false;
+        } else {
+            opinionItem.setServiceName(reportingSourceServiceDisplayName);
+        }
+        withValue(data, List.of(MapperFields.FIRST_SCAN_DATE),
+            v -> {
+                try {
+                    opinionItem.setFirstScanDate(TimeHelper.parseISO8601Date(v.toString()));
+                } catch (DateTimeParseException e) {
+                    LOGGER.error(STR."Failed to parse first scan date: \{v}", e);
+                }
+            });
+        withStringValue(data, List.of(MapperFields.LAST_SCAN_DATE),
+            v -> {
+                try {
+                    opinionItem.setLastScanDate(TimeHelper.parseISO8601Date(v.toString()));
+                } catch (DateTimeParseException e) {
+                    LOGGER.error(STR."Failed to parse last scan date: \{v}", e);
+                }
+            });
+        withStringValue(data, List.of(MapperFields.OPINION_SERVICE_DEEP_LINK),
+            v -> opinionItem.setDeepLink(v.toString()));
+
+        dto.getOpinions().setOpinion(reportingSource, reportingSourceService, opinionItem);
     }
 
     /**
@@ -332,31 +360,28 @@ public class AssetDocumentHelper {
 
     private void setCommonPrimaryFields(Map<String, Object> data, AssetDTO dto, String idValue) {
         // Set some common properties in a type safe and convenient manner
-        Map<List<String>, DtoSetter> fieldSetterMap = Map.ofEntries(
-            entry(List.of(AssetDocumentFields.ACCOUNT_ID, AssetDocumentFields.LEGACY_ACCOUNT_ID),
-                v -> {
-                    dto.setAccountId(v.toString());
-                    dto.setLegacyAccountId(v.toString());
-                }),
-            entry(List.of(AssetDocumentFields.LAST_SCAN_DATE,
-                AssetDocumentFields.LEGACY_LAST_SCAN_DATE), v -> {
-                dto.setLastScanDate(TimeHelper.parseDiscoveryDate(v.toString()));
-                dto.setLegacyLastScanDate(TimeHelper.parseDiscoveryDate(v.toString()));
-            }),
-            entry(List.of(AssetDocumentFields.REGION), v -> dto.setRegion(v.toString())),
-            entry(
-                List.of(MapperFields.SOURCE_DISPLAY_NAME, MapperFields.LEGACY_SOURCE_DISPLAY_NAME),
-                v -> {
-                    dto.setSourceDisplayName(v.toString());
-                    dto.setLegacySourceDisplayName(v.toString());
-                }));
+        withValue(data,
+            List.of(AssetDocumentFields.ACCOUNT_ID, AssetDocumentFields.LEGACY_ACCOUNT_ID), v -> {
+                dto.setAccountId(v.toString());
+                dto.setLegacyAccountId(v.toString());
+            });
 
-        fieldSetterMap.forEach((key, value) -> {
-            var fieldValue = MapHelper.getFirstOrDefault(data, key, null);
-            if (fieldValue != null) {
-                value.set(fieldValue);
-            }
+        withValue(data, List.of(AssetDocumentFields.LAST_SCAN_DATE,
+            AssetDocumentFields.LEGACY_LAST_SCAN_DATE), v -> {
+            dto.setLastScanDate(TimeHelper.parseDiscoveryDate(v.toString()));
+            dto.setLegacyLastScanDate(TimeHelper.parseDiscoveryDate(v.toString()));
         });
+
+        withValue(data, List.of(AssetDocumentFields.REGION), v -> {
+            dto.setRegion(v.toString());
+        });
+
+        withValue(data,
+            List.of(MapperFields.SOURCE_DISPLAY_NAME, MapperFields.LEGACY_SOURCE_DISPLAY_NAME),
+            v -> {
+                dto.setSourceDisplayName(v.toString());
+                dto.setLegacySourceDisplayName(v.toString());
+            });
 
         dto.setIsEntity(true);
         dto.setEntityType(type);
@@ -364,6 +389,8 @@ public class AssetDocumentHelper {
         dto.setResourceName(data.getOrDefault(resourceNameField, idValue).toString());
         dto.setLoadDate(loadDate);
         dto.setIsLatest(true);
+        dto.setIsActive(
+            Boolean.parseBoolean(data.getOrDefault(MapperFields.IS_ACTIVE, "true").toString()));
 
         dto.setLegacyIsEntity(true);
         dto.setLegacyEntityType(type);
@@ -380,13 +407,12 @@ public class AssetDocumentHelper {
         dto.setResourceId(resourceId.toString());
         dto.setLegacyResourceId(resourceId.toString());
 
-        var accountName = MapHelper.getFirstOrDefault(data,
+        withValue(data,
             List.of(AssetDocumentFields.ACCOUNT_NAME, AssetDocumentFields.LEGACY_ACCOUNT_NAME,
-                AssetDocumentFields.SUBSCRIPTION_NAME, AssetDocumentFields.PROJECT_NAME), null);
-        if (accountName != null) {
-            dto.setAccountName(accountName.toString());
-            dto.setLegacyAccountName(accountName.toString());
-        }
+                AssetDocumentFields.SUBSCRIPTION_NAME, AssetDocumentFields.PROJECT_NAME), v -> {
+                dto.setAccountName(v.toString());
+                dto.setLegacyAccountName(v.toString());
+            });
 
         if (data.containsKey(AssetDocumentFields.SUBSCRIPTION)) {
             dto.setAccountId(data.get(AssetDocumentFields.SUBSCRIPTION).toString());
@@ -413,20 +439,8 @@ public class AssetDocumentHelper {
         } else {
             // An opinion has been removed; either update the document to reflect that or
             // delete the document.
-            var opinions = new HashMap<>(dto.getOpinions());
-            var sourceOpinions = opinions.get(reportingSource);
-            if (sourceOpinions != null && sourceOpinions.containsKey(reportingSourceService)) {
-                sourceOpinions = new HashMap<>(sourceOpinions);
-                sourceOpinions.remove(reportingSourceService);
-                if (sourceOpinions.isEmpty()) {
-                    opinions.remove(reportingSource);
-                } else {
-                    opinions.put(reportingSource, sourceOpinions);
-                }
-                dto.setOpinions(opinions);
-            }
-
-            return dto.getOpinions().isEmpty();
+            dto.getOpinions().removeOpinion(reportingSource, reportingSourceService);
+            return !dto.getOpinions().hasOpinions();
         }
     }
 
@@ -503,6 +517,24 @@ public class AssetDocumentHelper {
         return source;
     }
 
+    private void withValue(Map<String, Object> data, List<String> key,
+        Consumer<Object> fn) {
+        var fieldValue = MapHelper.getFirstOrDefault(data, key, null);
+        if (fieldValue != null) {
+            fn.accept(fieldValue);
+        }
+    }
+
+    private void withStringValue(Map<String, Object> data, List<String> key,
+        Consumer<Object> fn) {
+        withValue(data, key, v -> {
+            var s = v.toString();
+            if (!StringUtils.isBlank(s)) {
+                fn.accept(s);
+            }
+        });
+    }
+
     public interface MapperFields {
 
         String LEGACY_ACCOUNT_ID = "accountid";
@@ -514,11 +546,10 @@ public class AssetDocumentHelper {
 
         String SOURCE_DISPLAY_NAME = "source_display_name";
         String LEGACY_SOURCE_DISPLAY_NAME = "sourceDisplayName";
-    }
 
-
-    interface DtoSetter {
-
-        void set(Object value);
+        String FIRST_SCAN_DATE = "_first_scan_date";
+        String LAST_SCAN_DATE = "_last_scan_date";
+        String OPINION_SERVICE_DEEP_LINK = "_deep_link";
+        String IS_ACTIVE = "_isActive";
     }
 }

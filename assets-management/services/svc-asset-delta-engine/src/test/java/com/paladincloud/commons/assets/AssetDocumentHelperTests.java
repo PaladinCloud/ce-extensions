@@ -23,7 +23,7 @@ public class AssetDocumentHelperTests {
         return AssetDocumentHelper.builder()
             .loadDate(ZonedDateTime.now())
             .idField(idField)
-            .docIdFields(List.of("accountid", "region", idField))
+            .docIdFields(List.of("region", idField))
             .dataSource(dataSource)
             .displayName("ec2")
             .tags(List.of())

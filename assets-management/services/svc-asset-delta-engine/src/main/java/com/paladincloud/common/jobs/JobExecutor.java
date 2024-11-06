@@ -122,7 +122,7 @@ public abstract class JobExecutor {
                     STR."Argument format incorrect: \{arg}; should be '--name=value");
             }
             var keyTokens = tokens[0].split("--");
-            map.put(keyTokens[keyTokens.length - 1], tokens[1]);
+            map.put(keyTokens[keyTokens.length - 1], tokens[1].trim());
         }
         return map;
     }
