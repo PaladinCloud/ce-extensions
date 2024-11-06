@@ -119,8 +119,8 @@ public class AssetDocumentHelperOpinionTests {
                         "secondary": {
                             "assets": {
                                 "data": "{\\"flavor\\":\\"licorice\\"}",
-                                "firstScanDate": "2024-09-05 14:57:00+0000",
-                                "lastScanDate": "2024-10-31 18:33:00+0000",
+                                "firstScanDate": "2024-09-05T14:57:00+0000",
+                                "lastScanDate": "2024-10-31T18:33:00+0000",
                                 "serviceName": "Assets API",
                                 "deepLink": "https://fubar.com"
                             }
