@@ -21,6 +21,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"svc-asset-violations-layer/models"
 	"sync"
 
@@ -29,11 +30,11 @@ import (
 
 type ElasticSearchClient struct {
 	dynamodbClient           *DynamodbClient
-	elasticsearchClientCache sync.Map // Replaced with sync.Map
+	elasticsearchClientCache sync.Map
 }
 
 func NewElasticSearchClient(dynamodbClient *DynamodbClient) *ElasticSearchClient {
-	fmt.Println("initialized opensearch client")
+	log.Println("initialized opensearch client")
 	return &ElasticSearchClient{
 		dynamodbClient: dynamodbClient,
 	}
@@ -48,12 +49,12 @@ func (c *ElasticSearchClient) CreateNewElasticSearchClient(ctx context.Context, 
 	// If not found, proceed to create a new client
 	esDomainProperties, err := c.dynamodbClient.GetOpenSearchDomain(ctx, tenantId)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error getting opensearch domain properties for tenant id [%s] %w", tenantId, err)
 	}
 
 	client, err := elasticsearch.NewClient(elasticsearch.Config{Addresses: []string{"https://" + esDomainProperties.Endpoint}})
 	if err != nil {
-		return nil, fmt.Errorf("error creating opensearch client for tenant id: %s. err: %+v", tenantId, err)
+		return nil, fmt.Errorf("error creating opensearch client for tenant id [%s] %w", tenantId, err)
 	}
 
 	// Store the new client in the cache
@@ -61,92 +62,88 @@ func (c *ElasticSearchClient) CreateNewElasticSearchClient(ctx context.Context, 
 	return client, nil
 }
 
-func (c *ElasticSearchClient) FetchAssetViolations(ctx context.Context, tenantId, ag, assetId string) (*models.PolicyViolationsMap, error) {
-	query := buildQuery(assetId)
-	fmt.Printf("Query: %+v\n", query)
+func (c *ElasticSearchClient) FetchAssetViolationsWithAggregations(ctx context.Context, tenantId, ag, assetId string, policyIds []string) (*models.ViolationsOpenSearchResult, error) {
+	query := buildQueryWithAggregations(assetId, policyIds)
+	log.Printf("Query: %+v\n", query)
 
 	esRequest := map[string]interface{}{
-		"size":    1000,
-		"query":   query,
-		"_source": [3]string{"policyId", "issueStatus", "_id"},
+		"size":    100,
+		"query":   query["query"],
+		"aggs":    query["aggs"],
+		"_source": []string{"_id", "policyId", "issueStatus"},
 	}
 
 	var buffer bytes.Buffer
 	err := json.NewEncoder(&buffer).Encode(esRequest)
 	if err != nil {
-		return nil, fmt.Errorf("failed to encode opensearch client request: %+v", err)
+		return nil, fmt.Errorf("failed to encode opensearch client request %w", err)
 	}
-	fmt.Printf("opensearch client request: %s\n", buffer.String())
 
 	client, err := c.CreateNewElasticSearchClient(ctx, tenantId)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating opensearch client for tenant id [%s] %w", tenantId, err)
 	}
 	response, err := client.Search(client.Search.WithIndex(ag), client.Search.WithBody(&buffer))
 
 	if err != nil {
-		return nil, fmt.Errorf("error getting response from opensearch client for asset id: %s. err: %+v", assetId, err)
+		return nil, fmt.Errorf("error getting response from opensearch client for asset id: [%s] %w", assetId, err)
 	}
 	defer response.Body.Close()
 
 	if response.StatusCode != 200 {
-		return nil, fmt.Errorf("error while fetching asset details from opensearch client for asset id: %s", assetId)
+		return nil, fmt.Errorf("opensearch request failed with status %d for asset id [%s] %s", response.StatusCode, assetId, response.Body)
 	}
 
-	var result map[string]interface{}
+	var result models.ViolationsOpenSearchResult
 	err = json.NewDecoder(response.Body).Decode(&result)
 	if err != nil {
-		return nil, fmt.Errorf("error decoding response body: %+v", err)
+		return nil, fmt.Errorf("error decoding response body %w", err)
 	}
 
-	hits, ok := result["hits"].(map[string]interface{})
-	if !ok {
-		return nil, fmt.Errorf("unexpected result structure: missing or invalid 'hits'")
-	}
-	sourceArr, ok := hits["hits"].([]interface{})
-	if !ok {
-		return nil, fmt.Errorf("unexpected result structure: missing or invalid 'hits.hits'")
-	}
-
-	var policyViolations = models.PolicyViolationsMap{}
-	if len(sourceArr) > 0 {
-		fmt.Printf("found %d violations for asset id: %s\n", len(sourceArr), assetId)
-
-		policyViolations.PolicyViolationsMap = make(map[string]interface{}, len(sourceArr))
-		// Put the violations in map with policyId as key
-		for i := 0; i < len(sourceArr); i++ {
-			violationDetail := sourceArr[i].(map[string]interface{})["_source"].(map[string]interface{})
-			violationDetail["_id"] = sourceArr[i].(map[string]interface{})["_id"]
-			policyViolations.PolicyViolationsMap[violationDetail["policyId"].(string)] = violationDetail
-		}
-	}
-
-	return &policyViolations, nil
+	return &result, nil
 }
 
-func buildQuery(assetId string) map[string]interface{} {
+func buildQueryWithAggregations(assetId string, policyIds []string) map[string]interface{} {
 	query := map[string]interface{}{
-		"bool": map[string]interface{}{
-			"must": [3]map[string]interface{}{
-				buildTermQuery("_docid.keyword", assetId),
-				buildTermQuery("type", "issue"),
-				buildTermQuery("issueStatus", []string{"open", "exempted"}),
+		"query": map[string]interface{}{
+			"bool": map[string]interface{}{
+				"must": []map[string]interface{}{
+					{
+						"term": map[string]interface{}{
+							"_docid.keyword": map[string]string{
+								"value": assetId,
+							},
+						},
+					},
+					{
+						"term": map[string]interface{}{
+							"type.keyword": map[string]string{
+								"value": "issue",
+							},
+						},
+					},
+					{
+						"terms": map[string]interface{}{
+							"issueStatus.keyword": []string{"open", "exempted"},
+						},
+					},
+					{
+						"terms": map[string]interface{}{
+							"policyId.keyword": policyIds,
+						},
+					},
+				},
+			},
+		},
+		"aggs": map[string]interface{}{
+			"Severity": map[string]interface{}{
+				"terms": map[string]interface{}{
+					"field": "severity.keyword",
+					"size":  4,
+				},
 			},
 		},
 	}
 
 	return query
-}
-
-func buildTermQuery(key string, value interface{}) map[string]interface{} {
-	termKey := "term"
-	if _, ok := value.([]string); ok {
-		termKey = "terms"
-	}
-
-	return map[string]interface{}{
-		termKey: map[string]interface{}{
-			key: value,
-		},
-	}
 }

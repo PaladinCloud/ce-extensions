@@ -384,3 +384,12 @@ poetry.toml
 pyrightconfig.json
 
 # End of https://www.toptal.com/developers/gitignore/api/go,intellij,goland,python
+
+# Lambda function artifacts
+**/bin/service/lambda_function.zip
+**/service/svc-options-method.zip
+
+# Lambda layer artifacts
+**/bin/layers/bin/extension.zip
+**/bin/layers/bin/extensions/*-layer
+**/bin/*

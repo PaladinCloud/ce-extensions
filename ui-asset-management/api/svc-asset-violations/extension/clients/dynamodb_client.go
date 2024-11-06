@@ -19,6 +19,7 @@ package clients
 import (
 	"context"
 	"fmt"
+	"log"
 	"svc-asset-violations-layer/models"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -27,6 +28,11 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
+	"github.com/google/uuid"
+)
+
+const (
+	projectionExpression = "datastore_es_ESDomain"
 )
 
 type DynamodbClient struct {
@@ -41,7 +47,7 @@ func NewDynamoDBClient(ctx context.Context, useAssumeRole bool, assumeRoleArn, r
 	// Load the default AWS configuration
 	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(region))
 	if err != nil {
-		return nil, fmt.Errorf("error loading AWS config: %+v", err)
+		return nil, fmt.Errorf("error loading AWS config %w", err)
 	}
 
 	var svc *dynamodb.Client
@@ -51,7 +57,7 @@ func NewDynamoDBClient(ctx context.Context, useAssumeRole bool, assumeRoleArn, r
 
 		// Assume the role using STS
 		creds := stscreds.NewAssumeRoleProvider(stsClient, assumeRoleArn, func(o *stscreds.AssumeRoleOptions) {
-			o.RoleSessionName = "DynamoDBSession"
+			o.RoleSessionName = fmt.Sprintf("DynamodDBSession-%s", uuid.New())
 		})
 
 		// Create a new AWS configuration with the assumed role credentials
@@ -66,7 +72,7 @@ func NewDynamoDBClient(ctx context.Context, useAssumeRole bool, assumeRoleArn, r
 		svc = dynamodb.NewFromConfig(cfg)
 	}
 
-	fmt.Println("initialized dynamodb client")
+	log.Println("initialized dynamodb client")
 	return &DynamodbClient{
 		region:                  region,
 		client:                  svc,
@@ -76,8 +82,7 @@ func NewDynamoDBClient(ctx context.Context, useAssumeRole bool, assumeRoleArn, r
 }
 
 func (d *DynamodbClient) GetOpenSearchDomain(ctx context.Context, tenantId string) (*models.OpenSearchDomainProperties, error) {
-	fmt.Printf("fetching tenant configs for tenantId: %s\n", tenantId)
-	const projectionExpression = "datastore_es_ESDomain"
+	log.Printf("fetching tenant configs for tenant id [%s]\n", tenantId)
 
 	key := struct {
 		TenantId string `dynamodbav:"tenant_id" json:"tenant_id"`
@@ -85,7 +90,7 @@ func (d *DynamodbClient) GetOpenSearchDomain(ctx context.Context, tenantId strin
 	avs, err := attributevalue.MarshalMap(key)
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to get item from dynamodb: %+v", err)
+		return nil, fmt.Errorf("failed to construct dynamodb key %w", err)
 	}
 
 	// Prepare the GetItemInput with the correct table name and key
@@ -97,24 +102,24 @@ func (d *DynamodbClient) GetOpenSearchDomain(ctx context.Context, tenantId strin
 
 	// Query DynamoDB to get the item
 	result, err := d.client.GetItem(ctx, input)
-
 	if err != nil {
-		return nil, fmt.Errorf("failed to get item from dynamodb: %+v", err)
+		return nil, fmt.Errorf("failed to get opensearch client domain from dynamoddb for tenant id [%s] %w", tenantId, err)
 	}
 
 	// Check if the item exists
 	if result.Item == nil {
-		return nil, fmt.Errorf("tenant_id %s not found", tenantId)
+		return nil, fmt.Errorf("tenant id [%s] not found in dynamodb [%s] table", tenantId, d.tenantConfigOutputTable)
 	}
 
-	var (
-		// Unmarshal the datastore_es_ESDomain field into the struct
-		output models.TenantOutput
-	)
-	if err := attributevalue.UnmarshalMap(result.Item, &output); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal %s: %+v", projectionExpression, err)
+	var output models.TenantOutput
+	if err2 := attributevalue.UnmarshalMap(result.Item, &output); err2 != nil {
+		return nil, fmt.Errorf("failed to unmarshal [%s] %w", projectionExpression, err2)
 	}
 
-	fmt.Printf("%s endpoint fetched from tenant config: %s\n", projectionExpression, output.EsDomain.Endpoint)
+	if output.EsDomain.Endpoint == "" {
+		return nil, fmt.Errorf("empty endpoint in [%s] for tenant [%s]", projectionExpression, tenantId)
+	}
+
+	log.Printf("fetched [%s] endpoint from [%s]\n", output.EsDomain.Endpoint, projectionExpression)
 	return &output.EsDomain, nil
 }

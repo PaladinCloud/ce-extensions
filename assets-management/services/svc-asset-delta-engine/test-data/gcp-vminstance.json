@@ -3,7 +3,7 @@
     {
       "messageId": "059f36b4-87a3-44ab-83d2-661975830a7d",
       "receiptHandle": "AQEBwJnKyrHigUMZj6rYigCgxlaS3SLy0a...",
-      "body": "--tenant_id=98c28482-9bae-46bd-bd4e-58fa132e72c0 --data_source=gcp --s3_path=mapper-results/saasdev/gcp/20241010-194252 --asset_type_override=vminstance --omit_done_event=true --skip_asset_count=true",
+      "body": "--tenant_id=98c28482-9bae-46bd-bd4e-58fa132e72c0 --data_source=gcp --s3_path=mapper-results/98c28482-9bae-46bd-bd4e-58fa132e72c0/gcp/20241029-160450 --asset_type_override=vminstance --omit_done_event=true --skip_asset_count=true",
       "attributes": {
         "ApproximateReceiveCount": "1",
         "SentTimestamp": "1545082649183",

@@ -20,6 +20,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"svc-asset-details-layer/models"
 	"sync"
 
@@ -30,23 +31,41 @@ import (
 type RdsClient struct {
 	secretIdPrefix string
 	secretsClient  *SecretsClient
-	rdsClientCache sync.Map // Replaced with sync.Map
+	rdsClientCache sync.Map
 }
 
-func NewRdsClient(secretsClient *SecretsClient, secretIdPrefix string) *RdsClient {
+func NewRdsClient(secretsClient *SecretsClient, secretIdPrefix string) (*RdsClient, error) {
+	if secretsClient == nil {
+		return nil, fmt.Errorf("secretsClient cannot be nil")
+	}
+	if secretIdPrefix == "" {
+		return nil, fmt.Errorf("secretIdPrefix cannot be empty")
+	}
+
 	return &RdsClient{
 		secretIdPrefix: secretIdPrefix,
 		secretsClient:  secretsClient,
-	}
+	}, nil
 }
 
-func (r *RdsClient) CreateNewClient(ctx context.Context, tenantId string) *sql.DB {
+func (r *RdsClient) CreateNewRdsClient(ctx context.Context, tenantId string) (*sql.DB, error) {
 	// check if the client is already created
 	if db, ok := r.rdsClientCache.Load(tenantId); ok {
-		return db.(*sql.DB) // type assert to *sql.DB
+		if dbClient, ok := db.(*sql.DB); ok {
+			return dbClient, nil
+		}
+
+		return nil, fmt.Errorf("invalid rds client type in cache")
 	}
 
-	rdsCredentials, _ := r.secretsClient.GetRdsSecret(ctx, r.secretIdPrefix, tenantId)
+	rdsCredentials, err := r.secretsClient.GetRdsSecret(ctx, r.secretIdPrefix, tenantId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get rds credentials %w", err)
+	}
+
+	if rdsCredentials == nil {
+		return nil, fmt.Errorf("rds credentials are missing")
+	}
 
 	var (
 		dbUser     = rdsCredentials.DbUsername
@@ -60,34 +79,37 @@ func (r *RdsClient) CreateNewClient(ctx context.Context, tenantId string) *sql.D
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", dbUser, dbPassword, dbHost, dbPort, dbName)
 
 	// open a connection to the database
-	db, err := sql.Open("mysql", dsn)
+	rds, err := sql.Open("mysql", dsn)
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("failed to open database connection %w", err)
 	}
 
 	// check if the database is reachable
-	err = db.Ping()
+	err = rds.Ping()
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("database ping failed %w", err)
 	}
 
-	fmt.Println("connected to rds successfully!")
-	r.rdsClientCache.Store(tenantId, db) // store db in cache
-	return db
+	log.Printf("connected to rds successfully for tenantId [%s]\n", tenantId)
+	r.rdsClientCache.Store(tenantId, rds) // store rds in cache
+	return rds, nil
 }
 
 func (r *RdsClient) FetchMandatoryTags(ctx context.Context, tenantId string) ([]models.Tag, error) {
-	dbClient := r.CreateNewClient(ctx, tenantId)
+	rdsClient, err := r.CreateNewRdsClient(ctx, tenantId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create rds client %w", err)
+	}
 
-	fmt.Println("getting mandatory tags from rds")
+	log.Println("getting mandatory tags from rds")
 	query := `
 		select opt.optionName as tagName
                 from pac_v2_ui_options opt join pac_v2_ui_filters fil on opt.filterId= fil.filterId 
                 and opt.optionValue like '%tags%' and fil.filterName='AssetListing';
 	`
 	var tags []models.Tag
-	if err := sqlscan.Select(ctx, dbClient, &tags, query); err != nil {
-		return nil, err
+	if err := sqlscan.Select(ctx, rdsClient, &tags, query); err != nil {
+		return nil, fmt.Errorf("failed to fetch mandatory tags %w", err)
 	}
 
 	return tags, nil
@@ -96,8 +118,8 @@ func (r *RdsClient) FetchMandatoryTags(ctx context.Context, tenantId string) ([]
 func (r *RdsClient) CloseClient() {
 	// close all connections in the cache
 	r.rdsClientCache.Range(func(key, value interface{}) bool {
-		db := value.(*sql.DB)
-		db.Close()
+		rds := value.(*sql.DB)
+		rds.Close()
 		r.rdsClientCache.Delete(key)
 		return true
 	})

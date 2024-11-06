@@ -31,9 +31,7 @@ import org.apache.logging.log4j.Logger;
 public class Assets {
 
     private static final Logger LOGGER = LogManager.getLogger(Assets.class);
-
     private static final String DATA_SHIPPER_INDEX = "datashipper";
-
     private final AssetTypes assetTypes;
     private final AssetRepository assetRepository;
     private final MapperRepository mapperRepository;
@@ -51,10 +49,6 @@ public class Assets {
         this.assetStateHelper = assetStateHelper;
     }
 
-    private static String assetsPathPrefix(String dataSource) {
-        return STR."\{ConfigService.get(ConfigConstants.S3.DATA_PATH)}/\{dataSource}-";
-    }
-
     private List<Map<String, Object>> fetchMapperFiles(String bucket, String path,
         String dataSource, String type) {
         try {
@@ -66,37 +60,72 @@ public class Assets {
         }
     }
 
-    public void process(String dataSource) {
+    public void process(String dataSource, String mapperPath, String reportingSource,
+        String reportingSourceService, String reportingServiceDisplayName) {
+        // dataSource is the underlying source of the data (gcp, aws, azure) while reporting source
+        // is only set if it's different. It's different for secondary sources reporting data
+        // (qualys, rapid7); in addition, reporting service is also set only if the data is from
+        // a secondary source.
+        // The reporting source and service are determined from values in the mapper file
+
         var bucket = ConfigService.get(ConfigConstants.S3.BUCKET_NAME);
-        var allFilenames = mapperRepository.listFiles(bucket, assetsPathPrefix(dataSource));
+        var allFilenames = mapperRepository.listFiles(bucket, mapperPath);
         var types = assetTypes.getTypesWithDisplayName(dataSource);
         var fileTypes = FilesAndTypes.matchFilesAndTypes(allFilenames, types.keySet());
-        var isCloudDataSource = isCloud(dataSource);
         if (!fileTypes.unknownFiles.isEmpty()) {
             LOGGER.warn("Unknown files: {}", fileTypes.unknownFiles);
         }
 
         if (types.isEmpty()) {
-            LOGGER.info("There are no types to process for dataSource: {}", dataSource);
+            LOGGER.info("There are no types to process for dataSource: {} at {}", dataSource,
+                mapperPath);
+            return;
+        }
+
+        if (allFilenames.isEmpty()) {
+            LOGGER.info("There are no files to process for dataSource: {} at {}", dataSource,
+                mapperPath);
             return;
         }
 
         LOGGER.info("Start processing Asset info");
 
+        var startTime = ZonedDateTime.now();
         var typeToError = loadTypeErrors(bucket, fileTypes.loadErrors);
         try (var batchIndexer = assetRepository.createBatch()) {
             fileTypes.typeFiles.forEach((type, filename) -> {
                 try {
                     var displayName = types.get(type);
-                    var startTime = ZonedDateTime.now();
                     var indexName = StringHelper.indexName(dataSource, type);
 
-                    var existingAssets = assetRepository.getLatestAssets(indexName, Collections.emptyList());
                     var latestAssets = fetchMapperFiles(bucket, filename, dataSource, type);
+                    var isOpinion = reportingSource != null && !dataSource.equalsIgnoreCase(reportingSource);
+
+                    String primaryIndexName;
+                    Map<String, AssetDTO> existingPrimaryAssets = null;
+                    if (isOpinion) {
+                        primaryIndexName = StringHelper.indexName(dataSource, type);
+                        existingPrimaryAssets = assetRepository.getAssets(primaryIndexName, true,
+                            Collections.emptyList());
+                        indexName = StringHelper.opinionIndexName(dataSource, type);
+
+                    } else {
+                        primaryIndexName = null;
+                    }
+
+                    var existingAssets = assetRepository.getAssets(indexName, !isOpinion,
+                        Collections.emptyList());
                     var tags = (fileTypes.tagFiles.containsKey(type)) ? fetchMapperFiles(bucket,
                         fileTypes.tagFiles.get(type), dataSource, type)
                         : new ArrayList<Map<String, Object>>();
 
+                    if (isOpinion) {
+                        LOGGER.info(
+                            "dataSource={}; reportingSource={}; reportingService={}; {} assets were found in the primary index {}",
+                            dataSource, reportingSource, reportingSourceService,
+                            existingPrimaryAssets.size(),
+                            primaryIndexName);
+                    }
                     LOGGER.info("For {}, {} assets and {} tags were fetched from S3 and {} "
                             + "assets were fetched from ElasticSearch", type, latestAssets.size(),
                         tags.size(), existingAssets.size());
@@ -107,23 +136,68 @@ public class Assets {
 
                     // Merge stored assets and mapped assets
                     var assetCreator = AssetDocumentHelper.builder().loadDate(startTime)
-                        .idField(idColumn).docIdFields(docIdFields).dataSource(dataSource)
-                        .isCloud(isCloudDataSource)
+                        .idField(idColumn).docIdFields(docIdFields)
+                        .dataSource(dataSource)
                         .displayName(displayName).tags(tags).type(type)
-                        .accountIdToNameFn(this::accountIdToName).assetState(assetStateHelper.get(dataSource, type));
+                        .accountIdToNameFn(this::accountIdToName)
+                        .reportingSource(reportingSource)
+                        .reportingSourceService(reportingSourceService)
+                        .reportingSourceServiceDisplayName(reportingServiceDisplayName)
+                        .assetState(assetStateHelper.get(dataSource, type));
                     var mergeResponse = MergeAssets.process(assetCreator.build(), existingAssets,
-                        latestAssets);
+                        latestAssets, existingPrimaryAssets);
+
                     LOGGER.info(
-                        "Merged mapper assets for {}; {} were updated, {} were added and {} were deleted",
+                        "Merged mapper assets for {}; {} were updated, {} were added, " +
+                            "{} were missing, {} opinions were deleted, " +
+                            "{} stub primary documents were added, {} primary documents were deleted",
                         type, mergeResponse.getUpdatedAssets().size(),
                         mergeResponse.getNewAssets().size(),
-                        mergeResponse.getRemovedAssets().size());
+                        mergeResponse.getMissingAssets().size(),
+                        mergeResponse.getDeletedOpinionAssets().size(),
+                        mergeResponse.getNewPrimaryAssets().size(),
+                        mergeResponse.getDeletedPrimaryAssets().size());
+
+                    String finalIndexName = indexName;
+                    mergeResponse.getDeletedOpinionAssets().forEach(value -> {
+                        try {
+                            batchIndexer.add(
+                                BatchItem.deleteEntry(finalIndexName, value.getDocId())
+                            );
+                        } catch (IOException e) {
+                            throw new JobException("Failed batching item for delete", e);
+                        }
+                    });
+
+                    // Persist any stub primary documents that were created
+                    if (primaryIndexName != null) {
+                        mergeResponse.getDeletedPrimaryAssets().forEach(value -> {
+                            try {
+                                batchIndexer.add(
+                                    BatchItem.deleteEntry(primaryIndexName, value.getDocId())
+                                );
+                            } catch (IOException e) {
+                                throw new JobException("Failed batching item for delete", e);
+                            }
+                        });
+                    }
 
                     // Each document needs to be updated, regardless of which state it is in
-                    mergeResponse.getAllAssets().forEach((_, value) -> {
+                    mergeResponse.getExistingAssets().values().forEach(value -> {
                         try {
-                            batchIndexer.add(BatchItem.documentEntry(indexName, value.getDocId(),
-                                JsonHelper.toJson(value)));
+                            batchIndexer.add(
+                                BatchItem.documentEntry(finalIndexName, value.getDocId(),
+                                    JsonHelper.toJson(value)));
+                        } catch (IOException e) {
+                            throw new JobException("Failed converting asset to JSON", e);
+                        }
+                    });
+
+                    mergeResponse.getNewPrimaryAssets().values().forEach(value -> {
+                        try {
+                            batchIndexer.add(
+                                BatchItem.documentEntry(primaryIndexName, value.getDocId(),
+                                    JsonHelper.toJson(value)));
                         } catch (IOException e) {
                             throw new JobException("Failed converting asset to JSON", e);
                         }
@@ -144,6 +218,7 @@ public class Assets {
                         fileTypes.supportingTypes.getOrDefault(type, Collections.emptyList()),
                         loadDate);
                 } catch (Exception e) {
+                    batchIndexer.cancel();
                     throw new JobException(
                         STR."Failed uploading asset data for \{dataSource} and \{type}", e);
                 }
@@ -162,20 +237,6 @@ public class Assets {
             return accountNameMapList.getFirst().get("accountName");
         }
         return null;
-    }
-
-    private boolean isCloud(String dataSource) {
-        // This needs to connect to the saas account and use the plugins table there.
-        return true;
-        /*
-        var mapList = databaseHelper.executeQuery(STR."SELECT isCloud FROM plugins_new WHERE source = '\{dataSource}'");
-        if (!mapList.isEmpty()) {
-            return Objects.equals(mapList.getFirst().getOrDefault("isCloud", "0"), "1");
-        }
-        LOGGER.warn(STR."Unable to find 'plugins_new' entry for data source \{dataSource}");
-        return false;
-
-         */
     }
 
     private Map<String, List<Map<String, Object>>> loadTypeErrors(String bucket,

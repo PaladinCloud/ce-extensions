@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"svc-asset-related-assets-layer/models"
 	"sync"
 
@@ -13,11 +14,11 @@ import (
 
 type ElasticSearchClient struct {
 	dynamodbClient           *DynamodbClient
-	elasticsearchClientCache sync.Map // Replaced with sync.Map
+	elasticsearchClientCache sync.Map
 }
 
 func NewElasticSearchClient(dynamodbClient *DynamodbClient) *ElasticSearchClient {
-	fmt.Println("initialized opensearch client")
+	log.Println("initialized opensearch client")
 	return &ElasticSearchClient{
 		dynamodbClient: dynamodbClient,
 	}
@@ -32,12 +33,12 @@ func (c *ElasticSearchClient) CreateNewElasticSearchClient(ctx context.Context, 
 	// If not found, proceed to create a new client
 	esDomainProperties, err := c.dynamodbClient.GetOpenSearchDomain(ctx, tenantId)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error getting opensearch domain properties for tenant id [%s] %w", tenantId, err)
 	}
 
 	client, err := elasticsearch.NewClient(elasticsearch.Config{Addresses: []string{"https://" + esDomainProperties.Endpoint}})
 	if err != nil {
-		return nil, fmt.Errorf("error creating opensearch client for tenant id: %s. err: %+v", tenantId, err)
+		return nil, fmt.Errorf("error creating opensearch client for tenant id [%s] %w", tenantId, err)
 	}
 
 	// Store the new client in the cache
@@ -67,7 +68,7 @@ func (c *ElasticSearchClient) FetchAssetDetails(ctx context.Context, tenantId, a
 
 	client, err := c.CreateNewElasticSearchClient(ctx, tenantId)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating opensearch client for tenant id [%s] %w", tenantId, err)
 	}
 	response, err := client.Search(client.Search.WithIndex(ag), client.Search.WithBody(&buffer))
 
@@ -77,7 +78,7 @@ func (c *ElasticSearchClient) FetchAssetDetails(ctx context.Context, tenantId, a
 	defer response.Body.Close()
 
 	if response.StatusCode != 200 {
-		return nil, fmt.Errorf("error while fetching asset detials from ES for assetId: %s", assetId)
+		return nil, fmt.Errorf("error while fetching asset details from ES for assetId: %s", assetId)
 	}
 	var result map[string]interface{}
 	json.NewDecoder(response.Body).Decode(&result)
@@ -95,7 +96,7 @@ func (c *ElasticSearchClient) FetchRelatedAssets(ctx context.Context, docTypes [
 		}
 		jsonBytes, err := json.Marshal(searchQuery)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error marshalling related asset query %w", err)
 		}
 		esRequest += "{}\n" + string(jsonBytes) + "\n"
 	}
@@ -115,7 +116,7 @@ func (c *ElasticSearchClient) FetchMultipleAssetsByResourceId(ctx context.Contex
 		}
 		jsonBytes, err := json.Marshal(searchQuery)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error marshalling related asset query %w", err)
 		}
 		esRequest += "{}\n" + string(jsonBytes) + "\n"
 	}
@@ -124,16 +125,15 @@ func (c *ElasticSearchClient) FetchMultipleAssetsByResourceId(ctx context.Contex
 }
 
 func (c *ElasticSearchClient) fetchFromOpensearch(ctx context.Context, tenantId, esIndex, esQuery string) (*map[string]interface{}, error) {
-
 	var buffer bytes.Buffer
 	json.NewEncoder(&buffer).Encode(esQuery)
 
 	client, err := c.CreateNewElasticSearchClient(ctx, tenantId)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating opensearch client for tenant id [%s] %w", tenantId, err)
 	}
-	response, err := client.Msearch(bytes.NewReader([]byte(esQuery)), client.Msearch.WithIndex(esIndex))
 
+	response, err := client.Msearch(bytes.NewReader([]byte(esQuery)), client.Msearch.WithIndex(esIndex))
 	if err != nil {
 		return nil, fmt.Errorf("error getting related assets response from Opensearch. err: %s", err)
 	}
@@ -142,13 +142,13 @@ func (c *ElasticSearchClient) fetchFromOpensearch(ctx context.Context, tenantId,
 	if response.StatusCode != 200 {
 		return nil, fmt.Errorf("error getting related assets response from Opensearch. err: %s", err)
 	}
+
 	var result map[string]interface{}
 	json.NewDecoder(response.Body).Decode(&result)
 	return &result, nil
 }
 
 func buildDetailsQuery(assetId string) map[string]interface{} {
-
 	assetIdFilter := map[string]interface{}{
 		"term": map[string]interface{}{
 			"_id": assetId,
@@ -160,11 +160,11 @@ func buildDetailsQuery(assetId string) map[string]interface{} {
 			"must": [1]map[string]interface{}{assetIdFilter},
 		},
 	}
+
 	return query
 }
 
 func buildRelatedAssetsQuery(docType, resourceId string) map[string]interface{} {
-
 	docTypeFilter := map[string]interface{}{
 		"term": map[string]interface{}{
 			docTypeKeyword: docType,
@@ -182,11 +182,11 @@ func buildRelatedAssetsQuery(docType, resourceId string) map[string]interface{} 
 			"must": [2]map[string]interface{}{docTypeFilter, resourceIdFilter},
 		},
 	}
+
 	return query
 }
 
 func buildAssetsQuery(docType, resourceId string) map[string]interface{} {
-
 	docTypeFilter := map[string]interface{}{
 		"term": map[string]interface{}{
 			docTypeKeyword: docType,
@@ -204,5 +204,6 @@ func buildAssetsQuery(docType, resourceId string) map[string]interface{} {
 			"must": [2]map[string]interface{}{docTypeFilter, resourceIdFilter},
 		},
 	}
+
 	return query
 }

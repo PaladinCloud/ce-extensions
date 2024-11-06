@@ -14,20 +14,28 @@
  * the License.
  */
 
-package utils
+package main
 
-var FieldsToBeSkipped = [...]string{
-	"_cloudType",
-	"_resourceid",
-	"_docid",
-	"docId",
-	"_discoverydate",
-	"discoverydate",
-	"firstdiscoveredon",
-	"_entity",
-	"_entitytype",
-	"_loaddate",
-	"assetRiskScore",
-	"targettypedisplayname",
-	"arsLoadDate",
+import (
+	"svc-asset-violations-layer/clients"
+	"testing"
+)
+
+func TestStartMain(t *testing.T) {
+	t.Run("main", func(t *testing.T) {
+		config := &clients.Configuration{
+			EnableExtension:         false,
+			UseAssumeRole:           false,
+			AssumeRoleArn:           "",
+			Region:                  "us-east-1",
+			TenantConfigOutputTable: "tenant-output",
+			TenantTablePartitionKey: "tenant_id",
+			SecretIdPrefix:          "paladincloud/secret/",
+		}
+
+		err := startMain(config)
+		if err != nil {
+			t.Fatalf("failed to start main %+v", err)
+		}
+	})
 }

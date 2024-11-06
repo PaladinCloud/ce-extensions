@@ -8,11 +8,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.paladincloud.common.AssetDocumentFields;
 import com.paladincloud.common.assets.AssetDTO;
+import com.paladincloud.common.assets.AssetDTO.OpinionCollection;
+import com.paladincloud.common.assets.AssetDTO.OpinionItem;
 import com.paladincloud.common.assets.AssetState;
 import com.paladincloud.common.search.ElasticQueryAssetResponse;
 import com.paladincloud.common.util.JsonHelper;
 import com.paladincloud.common.util.TimeHelper;
 import java.time.ZonedDateTime;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 public class AssetDTOTests {
@@ -24,7 +29,7 @@ public class AssetDTOTests {
     @Test
     void specialTypesUsedForSomeFields() throws JsonProcessingException {
         var dateTime = ZonedDateTime.now();
-        var original = createAsset(dateTime);
+        var original = createPrimaryAsset(dateTime);
         var asJson = JsonHelper.objectMapper.writeValueAsString(original);
 
         // Deserialize to a map to avoid using the Json directives - the directives are being
@@ -41,14 +46,25 @@ public class AssetDTOTests {
         assertEquals(TimeHelper.formatZeroSeconds(dateTime),
             asMap.get(AssetDocumentFields.FIRST_DISCOVERY_DATE));
         assertEquals(TimeHelper.formatZeroSeconds(dateTime),
-            asMap.get(AssetDocumentFields.LAST_DISCOVERY_DATE));
+            asMap.get(AssetDocumentFields.LAST_SCAN_DATE));
         assertEquals(TimeHelper.formatZeroSeconds(dateTime),
             asMap.get(AssetDocumentFields.LEGACY_LOAD_DATE));
         assertEquals(TimeHelper.formatZeroSeconds(dateTime),
             asMap.get(AssetDocumentFields.LEGACY_FIRST_DISCOVERY_DATE));
         assertEquals(TimeHelper.formatZeroSeconds(dateTime),
-            asMap.get(AssetDocumentFields.LEGACY_LAST_DISCOVERY_DATE));
+            asMap.get(AssetDocumentFields.LEGACY_LAST_SCAN_DATE));
         assertEquals("managed", asMap.get(AssetDocumentFields.ASSET_STATE));
+    }
+
+    // Ensure no additional fields are serialized. Specifically, 'latest' and 'entity' for opinions.
+    @Test
+    void nullValuesAreNotSerialized() throws JsonProcessingException {
+        var original = createOpinionAsset();
+        var asJson = JsonHelper.objectMapper.writeValueAsString(original);
+        var asMap = JsonHelper.mapFromString(asJson);
+        assertNotNull(asMap);
+
+        assertEquals(Set.of("_docId", "_docType", "opinions"), asMap.keySet());
     }
 
     @Test
@@ -79,7 +95,7 @@ public class AssetDTOTests {
 
     @Test
     void existingFormatWorksEndToEnd() throws JsonProcessingException {
-        var sampleJson = getSampleSerializedDocument();
+        var sampleJson = getPrimarySerializedDocument();
 
         // Get a round-trip from the string to AssetDTO back to string for validation
         var deserialized = JsonHelper.objectMapper.readValue(sampleJson, AssetDTO.class);
@@ -101,26 +117,37 @@ public class AssetDTOTests {
         });
     }
 
-    private AssetDTO createAsset(ZonedDateTime dateTime) {
+    private AssetDTO createPrimaryAsset(ZonedDateTime dateTime) {
         var dto = new AssetDTO();
         dto.setDocId("1");
         dto.setLegacyDocId("1");
         dto.setLegacyName("name");
         dto.setAssetState(AssetState.MANAGED);
-        dto.setLatest(true);
+        dto.setIsLatest(true);
         dto.setLegacyIsLatest(true);
-        dto.setEntity(true);
+        dto.setIsEntity(true);
         dto.setLegacyIsEntity(true);
         dto.setLoadDate(dateTime);
         dto.setLegacyLoadDate(dateTime);
-        dto.setLastDiscoveryDate(dateTime);
-        dto.setLegacyLastDiscoveryDate(dateTime);
+        dto.setLastScanDate(dateTime);
+        dto.setLegacyLastScanDate(dateTime);
         dto.setFirstDiscoveryDate(dateTime);
         dto.setLegacyFirstDiscoveryDate(dateTime);
         return dto;
     }
 
-    private String getSampleSerializedDocument() {
+    private AssetDTO createOpinionAsset() {
+        var dto = new AssetDTO();
+        dto.setDocId("1");
+        dto.setDocType("ec2");
+        dto.setOpinions(new OpinionCollection());
+        var opinionItem = new OpinionItem();
+        opinionItem.setData("licorice");
+        dto.getOpinions().setOpinion("secondary", "flavor", opinionItem);
+        return dto;
+    }
+
+    private String getPrimarySerializedDocument() {
         return """
             {
                 "owner": true,
@@ -134,10 +161,8 @@ public class AssetDTOTests {
                 "_resourcename": "17",
                 "_resourceid": "17",
                 "sourceDisplayName": "GCP",
-                "assetIdDisplayName": null,
                 "targettypedisplayname": "ec2",
                 "accountid": "xyz",
-                "accountname": null,
                 "discoverydate": "2024-09-05 14:57:00+0000",
                 "firstdiscoveredon": "2024-09-05 14:57:00+0000",
                 "ec2_relations": "ec2",
@@ -177,7 +202,7 @@ public class AssetDTOTests {
                       "_isEntity": true,
                       "_isLatest": true,
                       "_firstDiscoveryDate": "2024-09-27 22:28:00+0000",
-                      "_lastDiscoveryDate": "2024-09-27 22:28:00+0000",
+                      "_lastScanDate": "2024-09-27 22:28:00+0000",
                       "_loadDate": "2024-09-27 23:14:00+0000",
 
                       "resource_id": "3228267340273394036",

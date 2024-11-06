@@ -19,6 +19,7 @@ package clients
 import (
 	"context"
 	"fmt"
+	"log"
 	"math"
 	"strconv"
 	"strings"
@@ -30,34 +31,39 @@ type AssetViolationsClient struct {
 	rdsClient           *RdsClient
 }
 
-func NewAssetViolationsClient(ctx context.Context, config *Configuration) *AssetViolationsClient {
-	dynamodbClient, _ := NewDynamoDBClient(ctx, config.UseAssumeRole, config.AssumeRoleArn, config.Region, config.TenantConfigOutputTable, config.TenantTablePartitionKey)
-	secretsClient, _ := NewSecretsClient(ctx, config.UseAssumeRole, config.AssumeRoleArn, config.Region)
+func NewAssetViolationsClient(ctx context.Context, config *Configuration) (*AssetViolationsClient, error) {
+	dynamodbClient, err := NewDynamoDBClient(ctx, config.UseAssumeRole, config.AssumeRoleArn, config.Region, config.TenantConfigOutputTable, config.TenantTablePartitionKey)
+	if err != nil {
+		return nil, fmt.Errorf("error creating dynamodb client %w", err)
+	}
+
+	secretsClient, err := NewSecretsClient(ctx, config.UseAssumeRole, config.AssumeRoleArn, config.Region)
+	if err != nil {
+		return nil, fmt.Errorf("error creating secrets client %w", err)
+	}
+
+	opensearchClient := NewElasticSearchClient(dynamodbClient)
+	rdsClient, err := NewRdsClient(secretsClient, config.SecretIdPrefix)
+	if err != nil {
+		return nil, fmt.Errorf("error creating rds client %w", err)
+	}
 
 	return &AssetViolationsClient{
-		elasticSearchClient: NewElasticSearchClient(dynamodbClient),
-		rdsClient:           NewRdsClient(secretsClient, config.SecretIdPrefix),
-	}
+		elasticSearchClient: opensearchClient,
+		rdsClient:           rdsClient,
+	}, nil
 }
 
 const (
-	allSources  = "all-sources"
-	open        = "open"
-	fail        = "Fail"
-	exempted    = "exempted"
-	exempt      = "Exempt"
-	pass        = "Pass"
-	issueStatus = "issueStatus"
-	policyId    = "policyId"
-	success     = "success"
-	managed     = "Managed"
-	unmanaged   = "Unmanaged"
+	allSources            = "all-sources"
+	success               = "success"
+	noActivePolicyMessage = "No active policies monitoring this asset type"
+	noPolicyMessage       = "There are no policies for this asset type"
 )
 
-var severities = [4]string{"low", "medium", "high", "critical"}
-var severityWeights = map[string]int{"low": 1, "medium": 3, "high": 5, "critical": 10}
+var severityWeights = map[string]int{"critical": 10, "high": 5, "medium": 3, "low": 1}
 
-func (c *AssetViolationsClient) GetAssetViolations(ctx context.Context, targetType, tenantId, assetId string) (*models.AssetViolations, error) {
+func (c *AssetViolationsClient) GetAssetViolations(ctx context.Context, targetType, tenantId, assetId string) (*models.AssociatedPoliciesResponse, error) {
 	if len(strings.TrimSpace(assetId)) == 0 {
 		return nil, fmt.Errorf("assetId must be present")
 	}
@@ -65,97 +71,127 @@ func (c *AssetViolationsClient) GetAssetViolations(ctx context.Context, targetTy
 		return nil, fmt.Errorf("targetType must be present")
 	}
 
+	// fetch all policies(ENABLED/DISABLED) count for the target type
+	policyCount, err := c.rdsClient.GetAllPoliciesCount(ctx, tenantId, targetType)
+	if policyCount == 0 {
+		log.Printf("no policies for given target type [%s]\n", targetType)
+		return &models.AssociatedPoliciesResponse{Data: nil, Message: noPolicyMessage}, nil
+	}
+
 	// fetch all the relevant policies for the target type
-	policies, err := c.rdsClient.GetPolicies(ctx, tenantId, targetType)
+	policies, err := c.rdsClient.GetEnabledPolicies(ctx, tenantId, targetType)
 	if err != nil {
-		return nil, fmt.Errorf("error fetching policies from rds for target type: " + targetType)
+		return nil, fmt.Errorf("error fetching policies from rds for target type [%s] %w", targetType, err)
 	}
 
 	if policies == nil || len(policies) == 0 {
-		fmt.Printf("no policies for given target type: %s\n", targetType)
-		return &models.AssetViolations{Data: models.PolicyViolations{Coverage: unmanaged}, Message: success}, nil
+		log.Printf("no enabled policies for given target type [%s]\n", targetType)
+		return &models.AssociatedPoliciesResponse{Data: nil, Message: noActivePolicyMessage}, nil
 	}
 
-	fmt.Printf("got %s policies for target type: %s\n", strconv.Itoa(len(policies)), targetType)
-
-	if err != nil {
-		return nil, err
-	}
+	log.Printf("got [%s] policies for target type [%s]\n", strconv.Itoa(len(policies)), targetType)
 
 	// fetch violations for the asset
-	policyViolationMap, err := c.elasticSearchClient.FetchAssetViolations(ctx, tenantId, allSources, assetId)
+	policyIds := extractPolicyIds(policies)
+	violations, err := c.elasticSearchClient.FetchAssetViolationsWithAggregations(ctx, tenantId, allSources, assetId, policyIds)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error fetching asset violations from elasticsearch for asset id [%s] %w", assetId, err)
 	}
 
-	policyViolations := assemblePolicyViolations(policies, *policyViolationMap)
+	associatedPolicies := assembleAssociatedPoliciesResponse(policies, *violations)
 
-	return &models.AssetViolations{Data: *policyViolations, Message: success}, nil
+	return &models.AssociatedPoliciesResponse{Data: associatedPolicies, Message: success}, nil
 }
 
-func buildSeverityInfo(severityCounts map[string]int) []models.SeverityInfo {
-	severityInfoArr := make([]models.SeverityInfo, 0, len(severities))
-	for k, v := range severityCounts {
-		severityInfo := models.SeverityInfo{Severity: k, Count: v}
-		severityInfoArr = append(severityInfoArr, severityInfo)
+func buildSeverityInfo(severityCounts []models.Bucket) map[string]int {
+	severityInfoMap := make(map[string]int)
+	for _, bucket := range severityCounts {
+		severityInfoMap[bucket.Key] = bucket.DocCount
 	}
-	return severityInfoArr
+
+	return severityInfoMap
+}
+
+func extractPolicyIds(policies []models.PolicyRdsResult) []string {
+	var policyIds []string
+	for _, policy := range policies {
+		policyIds = append(policyIds, policy.PolicyId)
+	}
+
+	return policyIds
+}
+
+func createPoliciesWithIssueIds(dbPolicies []models.PolicyRdsResult, esResult *models.ViolationsOpenSearchResult) ([]models.Policy, int) {
+	policies := make([]models.Policy, 0, len(dbPolicies))
+	issueByPolicyMap := make(map[string]models.InnerHits)
+
+	// Extract issue IDs from ElasticSearchResult
+	for _, hit := range esResult.Hits.Hits {
+		issueByPolicyMap[hit.Source.PolicyID] = hit
+	}
+
+	// Create Policy object
+	var totalPoliciesWeights int
+	for _, dbPolicy := range dbPolicies {
+		totalPoliciesWeights += severityWeights[dbPolicy.Severity]
+
+		policy := models.Policy{
+			PolicyId:   dbPolicy.PolicyId,
+			PolicyName: dbPolicy.PolicyName,
+			Severity:   dbPolicy.Severity,
+			Category:   dbPolicy.Category,
+		}
+
+		// Check if the policy has an associated issue and set the Issue ID and Last Scan Status
+		hit, exists := issueByPolicyMap[dbPolicy.PolicyId]
+		if exists {
+			policy.LastScanStatus = hit.Source.IssueStatus // Issue status from ElasticSearch
+			policy.IssueId = hit.ID                        // Issue ID from ElasticSearch
+		}
+
+		policies = append(policies, policy)
+	}
+
+	return policies, totalPoliciesWeights
+}
+
+func assembleAssociatedPoliciesResponse(dbPolicies []models.PolicyRdsResult, violationsResults models.ViolationsOpenSearchResult) *models.AssociatedPolicies {
+	policies, totalSeverityWeights := createPoliciesWithIssueIds(dbPolicies, &violationsResults)
+
+	// Calculate compliance percentage
+	aggregatedSeverityMap := getAggregatedSeverityMap(violationsResults.Aggregations.Severity.Buckets)
+	compliance := calculateCompliancePercent(totalSeverityWeights, aggregatedSeverityMap)
+	violations := buildSeverityInfo(violationsResults.Aggregations.Severity.Buckets)
+
+	return &models.AssociatedPolicies{
+		Policies: policies,
+		Violations: models.ViolationSummary{
+			Violations: violations,
+			Compliance: compliance,
+		},
+	}
+}
+
+func getAggregatedSeverityMap(severityCounts []models.Bucket) map[string]int {
+	severityMap := make(map[string]int)
+	for _, bucket := range severityCounts {
+		severityMap[bucket.Key] = bucket.DocCount
+	}
+
+	return severityMap
 }
 
 func calculateCompliancePercent(totalPolicySeverityWeights int, severityCounts map[string]int) int {
-	violatedPolicySeverityWeights := severityCounts["critical"]*severityWeights["critical"] + severityCounts["high"]*severityWeights["high"] + severityCounts["medium"]*severityWeights["medium"] + severityCounts["low"]*severityWeights["low"]
 	if totalPolicySeverityWeights > 0 {
+		violatedPolicySeverityWeights :=
+			severityCounts["critical"]*severityWeights["critical"] +
+				severityCounts["high"]*severityWeights["high"] +
+				severityCounts["medium"]*severityWeights["medium"] +
+				severityCounts["low"]*severityWeights["low"]
+
 		compliance := 100 - (violatedPolicySeverityWeights * 100 / totalPolicySeverityWeights)
 		return int(math.Floor(float64(compliance)))
 	} else {
 		return 100
 	}
-}
-
-func assemblePolicyViolations(policies []models.Policy, policyViolationsMap models.PolicyViolationsMap) *models.PolicyViolations {
-	policyViolations := models.PolicyViolations{Violations: []models.Violation{}}
-	severityCount := make(map[string]int, len(severities))
-	for _, severity := range severities {
-		severityCount[severity] = 0
-	}
-
-	var totalSeverityWeights int
-	totalViolations := 0
-	for _, policy := range policies {
-		var lastScanStatus string
-		var issueId string
-		var evaluationStatus string
-
-		if policyViolationsMap.PolicyViolationsMap[policy.PolicyId] != nil {
-			violationInfo := policyViolationsMap.PolicyViolationsMap[policy.PolicyId].(map[string]interface{})
-			lastScanStatus = violationInfo[issueStatus].(string)
-			issueId = violationInfo["_id"].(string)
-		}
-		if lastScanStatus == open {
-			evaluationStatus = fail
-			totalViolations++
-			severityCount[policy.Severity] = severityCount[policy.Severity] + 1
-		} else if lastScanStatus == exempted {
-			evaluationStatus = exempt
-		} else {
-			evaluationStatus = pass
-		}
-
-		policyViolations.Violations = append(policyViolations.Violations, models.Violation{
-			PolicyId:       policy.PolicyId,
-			PolicyName:     policy.PolicyName,
-			Severity:       policy.Severity,
-			Category:       policy.Category,
-			LastScanStatus: evaluationStatus,
-			IssueId:        issueId,
-		})
-		policyViolations.SeverityInfos = buildSeverityInfo(severityCount)
-		policyViolations.TotalPolicies = len(policies)
-		policyViolations.TotalViolations = totalViolations
-		totalSeverityWeights += severityWeights[policy.Severity]
-		policyViolations.Compliance = calculateCompliancePercent(totalSeverityWeights, severityCount)
-		policyViolations.Coverage = managed
-	}
-
-	return &policyViolations
 }

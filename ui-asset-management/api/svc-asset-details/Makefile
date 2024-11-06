@@ -3,7 +3,7 @@ SERVICE_BIN_DIR := bin/service
 EXTENSIONS_BIN_DIR := bin/layers/bin/extensions
 EXTENSIONS_ZIP_DIR := bin/layers/bin/
 
-LAMBDA_LAYER_NAME := svc-asset-violations-layer
+LAMBDA_LAYER_NAME := svc-asset-details-layer
 
 # Build the extension for Lambda
 build-ext: dependencies
@@ -14,7 +14,7 @@ package-ext: build-ext
 	cd $(EXTENSIONS_ZIP_DIR); zip -r extension.zip extensions/ -x '**/.*' -x '**/__MACOSX'
 
 # Deploy the extension to AWS Lambda
-deploy-ext: build-ext package-ext
+deploy-ext: package-ext
 	cd $(EXTENSIONS_ZIP_DIR); aws lambda publish-layer-version --layer-name '$(LAMBDA_LAYER_NAME)' --region us-east-1 --zip-file 'fileb://extension.zip'
 
 # Package the Lambda function

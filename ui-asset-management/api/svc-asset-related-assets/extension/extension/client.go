@@ -92,30 +92,36 @@ func (e *Client) Register(ctx context.Context, filename string) (*RegisterRespon
 		"events": []EventType{Invoke, Shutdown},
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("[extension][register] error marshalling request body %w", err)
 	}
+
 	httpReq, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(reqBody))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("[extension][register] error creating http request %w", err)
 	}
+
 	httpReq.Header.Set(extensionNameHeader, filename)
 	httpRes, err := e.httpClient.Do(httpReq)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("[extension][register] error making http request %w", err)
 	}
+
 	if httpRes.StatusCode != 200 {
-		return nil, fmt.Errorf("request failed with status %s", httpRes.Status)
+		return nil, fmt.Errorf("[extension][register[ request failed with status [%s]", httpRes.Status)
 	}
+
 	defer httpRes.Body.Close()
 	body, err := ioutil.ReadAll(httpRes.Body)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("[extension][register] error reading response body %w", err)
 	}
+
 	res := RegisterResponse{}
 	err = json.Unmarshal(body, &res)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("[extension][register] error unmarshalling response body %w", err)
 	}
+
 	e.extensionID = httpRes.Header.Get(extensionIdentiferHeader)
 	print(e.extensionID)
 	return &res, nil
@@ -128,26 +134,31 @@ func (e *Client) NextEvent(ctx context.Context) (*NextEventResponse, error) {
 
 	httpReq, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("[extension][nextevent] error creating http request %w", err)
 	}
+
 	httpReq.Header.Set(extensionIdentiferHeader, e.extensionID)
 	httpRes, err := e.httpClient.Do(httpReq)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("[extension][nextevent] error making http request %w", err)
 	}
+
 	if httpRes.StatusCode != 200 {
-		return nil, fmt.Errorf("request failed with status %s", httpRes.Status)
+		return nil, fmt.Errorf("[extension][nextevent] request failed with status %s", httpRes.Status)
 	}
+
 	defer httpRes.Body.Close()
 	body, err := ioutil.ReadAll(httpRes.Body)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("[extension][nextevent] error reading response body %w", err)
 	}
+
 	res := NextEventResponse{}
 	err = json.Unmarshal(body, &res)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("[extension][nextevent] error unmarshalling response body %w", err)
 	}
+
 	return &res, nil
 }
 
@@ -158,27 +169,31 @@ func (e *Client) InitError(ctx context.Context, errorType string) (*StatusRespon
 
 	httpReq, err := http.NewRequestWithContext(ctx, "POST", url, nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("[extension][initerror] error creating http request %w", err)
 	}
 	httpReq.Header.Set(extensionIdentiferHeader, e.extensionID)
 	httpReq.Header.Set(extensionErrorType, errorType)
 	httpRes, err := e.httpClient.Do(httpReq)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("[extension][initerror] error making http request %w", err)
 	}
+
 	if httpRes.StatusCode != 200 {
-		return nil, fmt.Errorf("request failed with status %s", httpRes.Status)
+		return nil, fmt.Errorf("[extension][initerror] request failed with status %s", httpRes.Status)
 	}
+
 	defer httpRes.Body.Close()
 	body, err := ioutil.ReadAll(httpRes.Body)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("[extension][initerror] error reading response body %w", err)
 	}
+
 	res := StatusResponse{}
 	err = json.Unmarshal(body, &res)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("[extension][initerror] error unmarshalling response body %w", err)
 	}
+
 	return &res, nil
 }
 
@@ -189,26 +204,31 @@ func (e *Client) ExitError(ctx context.Context, errorType string) (*StatusRespon
 
 	httpReq, err := http.NewRequestWithContext(ctx, "POST", url, nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("[extension][exiterror] error creating http request %w", err)
 	}
+
 	httpReq.Header.Set(extensionIdentiferHeader, e.extensionID)
 	httpReq.Header.Set(extensionErrorType, errorType)
 	httpRes, err := e.httpClient.Do(httpReq)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("[extension][exiterror] error making http request %w", err)
 	}
+
 	if httpRes.StatusCode != 200 {
 		return nil, fmt.Errorf("request failed with status %s", httpRes.Status)
 	}
+
 	defer httpRes.Body.Close()
 	body, err := ioutil.ReadAll(httpRes.Body)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("[extension][exiterror] error reading response body %w", err)
 	}
+
 	res := StatusResponse{}
 	err = json.Unmarshal(body, &res)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("[extension][exiterror] error unmarshalling response body %w", err)
 	}
+
 	return &res, nil
 }

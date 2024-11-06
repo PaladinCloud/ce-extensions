@@ -16,6 +16,14 @@
 
 package models
 
-type PolicyViolationsMap struct {
-	PolicyViolationsMap map[string]interface{}
+// OpenSearchDomainProperties represents the properties of the OpenSearch domain
+type OpenSearchDomainProperties struct {
+	Endpoint       string `dynamodbav:"endpoint" json:"endpoint"`
+	ID             string `dynamodbav:"id" json:"id"`
+	KibanaEndpoint string `dynamodbav:"kibana_endpoint" json:"kibana_endpoint"`
+}
+
+// TenantOutput represents the output structure for tenant configurations
+type TenantOutput struct {
+	EsDomain OpenSearchDomainProperties `dynamodbav:"datastore_es_ESDomain" json:"datastore_es_ESDomain"`
 }

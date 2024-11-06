@@ -93,7 +93,7 @@ func (r *RdsClient) GetPlugins(ctx context.Context, tenantId string) ([]models.P
 
 	var plugins []models.Plugin
 	if err := sqlscan.Select(ctx, r.db, &plugins, formattedQuery); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get plugins from rds %w", err)
 	}
 
 	return plugins, nil
