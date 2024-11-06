@@ -95,7 +95,45 @@ func (r *RdsClient) CreateNewRdsClient(ctx context.Context, tenantId string) (*s
 	return rds, nil
 }
 
-func (r *RdsClient) GetPolicies(ctx context.Context, tenantId, targetType string) ([]models.PolicyRdsResult, error) {
+func (r *RdsClient) GetAllPoliciesCount(ctx context.Context, tenantId, targetType string) (int, error) {
+	rdsClient, err := r.CreateNewRdsClient(ctx, tenantId)
+	if err != nil {
+		return 0, fmt.Errorf("failed to create rds client %w", err)
+	}
+
+	log.Println("getting policy count from rds for targetType: %s", targetType)
+	query := `
+		SELECT 
+			count(p.policyId) as count
+		FROM 
+			cf_PolicyTable p
+		LEFT JOIN 
+			cf_PolicyParams pp ON p.policyId = pp.policyId 
+			AND pp.paramKey = 'pluginType'
+		LEFT JOIN 
+			cf_Accounts a ON pp.paramValue = a.platform
+		WHERE 
+			p.targetType = ?
+			AND ((a.platform IS NULL AND pp.policyId IS NULL)
+            OR (a.platform IS NOT NULL AND pp.policyId IS NOT NULL))
+		ORDER BY 
+			p.policyId;
+	`
+
+	var args []interface{}
+	args = append(args, targetType)
+	var policyCount int
+
+	row := rdsClient.QueryRow(query, args...)
+
+	if err := row.Scan(&policyCount); err != nil {
+		return 0, fmt.Errorf("failed to get policy count from rds %w", err)
+	}
+
+	return policyCount, nil
+}
+
+func (r *RdsClient) GetEnabledPolicies(ctx context.Context, tenantId, targetType string) ([]models.PolicyRdsResult, error) {
 	rdsClient, err := r.CreateNewRdsClient(ctx, tenantId)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create rds client %w", err)
@@ -117,16 +155,17 @@ func (r *RdsClient) GetPolicies(ctx context.Context, tenantId, targetType string
 			cf_Accounts a ON pp.paramValue = a.platform
 		WHERE 
 			p.status = 'ENABLED' 
-			AND p.targetType = '%s'
+			AND p.targetType = ?
 			AND ((a.platform IS NULL AND pp.policyId IS NULL)
             OR (a.platform IS NOT NULL AND pp.policyId IS NOT NULL))
 		ORDER BY 
 			p.policyId;
 	`
 
-	formattedQuery := fmt.Sprintf(query, targetType)
+	var args []interface{}
+	args = append(args, targetType)
 	var policies []models.PolicyRdsResult
-	if err := sqlscan.Select(ctx, rdsClient, &policies, formattedQuery); err != nil {
+	if err := sqlscan.Select(ctx, rdsClient, &policies, query, args...); err != nil {
 		return nil, fmt.Errorf("failed to get policies from rds %w", err)
 	}
 
