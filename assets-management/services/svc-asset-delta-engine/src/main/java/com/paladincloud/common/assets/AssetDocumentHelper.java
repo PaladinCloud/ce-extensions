@@ -239,9 +239,9 @@ public class AssetDocumentHelper {
             opinionItem.setServiceName(reportingSourceServiceDisplayName);
         }
         withValue(data, List.of(MapperFields.FIRST_SCAN_DATE),
-            v -> opinionItem.setFirstScanDate(TimeHelper.parseISO860Date(v.toString())));
+            v -> opinionItem.setFirstScanDate(TimeHelper.parseISO8601Date(v.toString())));
         withStringValue(data, List.of(MapperFields.LAST_SCAN_DATE),
-            v -> opinionItem.setLastScanDate(TimeHelper.parseISO860Date(v.toString())));
+            v -> opinionItem.setLastScanDate(TimeHelper.parseISO8601Date(v.toString())));
         withStringValue(data, List.of(MapperFields.OPINION_SERVICE_DEEP_LINK),
             v -> opinionItem.setDeepLink(v.toString()));
 

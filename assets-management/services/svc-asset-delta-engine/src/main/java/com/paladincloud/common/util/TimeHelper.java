@@ -1,9 +1,8 @@
 package com.paladincloud.common.util;
 
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import org.joda.time.DateTimeZone;
-import org.joda.time.format.ISODateTimeFormat;
 
 public class TimeHelper {
 
@@ -25,9 +24,9 @@ public class TimeHelper {
         return ZonedDateTime.parse(time, discoveryDateFormat);
     }
 
-    public static ZonedDateTime parseISO860Date(String time) {
-        return ISODateTimeFormat.dateTimeNoMillis().parseDateTime(time).withZone(DateTimeZone.UTC).toGregorianCalendar()
-            .toZonedDateTime();
+    public static ZonedDateTime parseISO8601Date(String time) {
+        return ZonedDateTime.parse(time, DateTimeFormatter.ISO_DATE_TIME).withZoneSameInstant(
+            ZoneOffset.UTC);
     }
 
     public static String formatZeroSeconds(ZonedDateTime time) {
