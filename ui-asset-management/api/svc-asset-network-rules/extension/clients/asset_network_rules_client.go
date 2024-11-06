@@ -79,7 +79,12 @@ func (c *AssetNetworkRulesClient) GetPortRuleDetails(ctx context.Context, tenant
 			return nil, fmt.Errorf("failed to extract source from result: %w", err)
 		}
 
-		if v, ok := assetDetails[inboundSecurityRulesField]; ok {
+		assetDetail, ok := assetDetails[0].(map[string]interface{})["_source"].(map[string]interface{})
+		if !ok {
+			return nil, fmt.Errorf("invalid source format for asset id [%s]", assetId)
+		}
+
+		if v, ok := assetDetail[inboundSecurityRulesField]; ok {
 			inboundSecurityRules := v.([]interface{})
 			for _, rule := range inboundSecurityRules {
 				ruleObj := rule.(map[string]interface{})
@@ -110,7 +115,7 @@ func (c *AssetNetworkRulesClient) GetPortRuleDetails(ctx context.Context, tenant
 			}
 		}
 
-		if v, ok := assetDetails[outboundSecurityRulesField]; ok {
+		if v, ok := assetDetail[outboundSecurityRulesField]; ok {
 			outBoundSecurityRules := v.([]interface{})
 			for _, rule := range outBoundSecurityRules {
 				ruleObj := rule.(map[string]interface{})
@@ -203,7 +208,7 @@ func (c *AssetNetworkRulesClient) GetPortRuleDetails(ctx context.Context, tenant
 	return &models.Response{Data: nil, Message: "success"}, nil
 }
 
-func extractSourceFromResult(result *map[string]interface{}, assetId string) (map[string]interface{}, error) {
+func extractSourceFromResult(result *map[string]interface{}, assetId string) ([]interface{}, error) {
 	hits, ok := (*result)["hits"].(map[string]interface{})
 	if !ok {
 		return nil, fmt.Errorf("unexpected response format: 'hits' key missing")
@@ -214,12 +219,7 @@ func extractSourceFromResult(result *map[string]interface{}, assetId string) (ma
 		return nil, fmt.Errorf("asset details not found for asset id [%s]", assetId)
 	}
 
-	source, ok := sourceArr[0].(map[string]interface{})["_source"].(map[string]interface{})
-	if !ok {
-		return nil, fmt.Errorf("invalid source format for asset id [%s]", assetId)
-	}
-
-	return source, nil
+	return sourceArr, nil
 }
 
 func concatAsString(arr []interface{}) string {
