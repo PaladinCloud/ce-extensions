@@ -8,6 +8,7 @@ import com.paladincloud.common.util.MapHelper;
 import com.paladincloud.common.util.StringHelper;
 import com.paladincloud.common.util.TimeHelper;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -123,8 +124,10 @@ public class AssetDocumentHelper {
     }
 
     public String buildDocId(Map<String, Object> data) {
-        if (docIdFields.contains(AssetDocumentFields.LEGACY_ACCOUNT_ID) && data.get(AssetDocumentFields.LEGACY_ACCOUNT_ID) == null) {
-            data.put(AssetDocumentFields.LEGACY_ACCOUNT_ID, data.get(AssetDocumentFields.ACCOUNT_ID));
+        if (docIdFields.contains(AssetDocumentFields.LEGACY_ACCOUNT_ID)
+            && data.get(AssetDocumentFields.LEGACY_ACCOUNT_ID) == null) {
+            data.put(AssetDocumentFields.LEGACY_ACCOUNT_ID,
+                data.get(AssetDocumentFields.ACCOUNT_ID));
         }
         var docId = STR."\{dataSource}_\{type}_\{StringHelper.concatenate(data, docIdFields,
             "_")}";
@@ -239,9 +242,21 @@ public class AssetDocumentHelper {
             opinionItem.setServiceName(reportingSourceServiceDisplayName);
         }
         withValue(data, List.of(MapperFields.FIRST_SCAN_DATE),
-            v -> opinionItem.setFirstScanDate(TimeHelper.parseISO8601Date(v.toString())));
+            v -> {
+                try {
+                    opinionItem.setFirstScanDate(TimeHelper.parseISO8601Date(v.toString()));
+                } catch (DateTimeParseException e) {
+                    LOGGER.error(STR."Failed to parse first scan date: \{v}", e);
+                }
+            });
         withStringValue(data, List.of(MapperFields.LAST_SCAN_DATE),
-            v -> opinionItem.setLastScanDate(TimeHelper.parseISO8601Date(v.toString())));
+            v -> {
+                try {
+                    opinionItem.setLastScanDate(TimeHelper.parseISO8601Date(v.toString()));
+                } catch (DateTimeParseException e) {
+                    LOGGER.error(STR."Failed to parse last scan date: \{v}", e);
+                }
+            });
         withStringValue(data, List.of(MapperFields.OPINION_SERVICE_DEEP_LINK),
             v -> opinionItem.setDeepLink(v.toString()));
 
