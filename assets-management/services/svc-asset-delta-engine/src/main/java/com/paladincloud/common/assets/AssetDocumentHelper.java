@@ -34,6 +34,7 @@ import org.apache.logging.log4j.Logger;
 public class AssetDocumentHelper {
 
     private static final Logger LOGGER = LogManager.getLogger(AssetDocumentHelper.class);
+    private static boolean warnReportingServiceDisplayName = true;
     // These are the fields the primary Asset 2.0 document model supports. This set is to allow
     // a hybrid model that has both the correct reserved/top-level fields and the backward compatible
     // top-level fields necessary for some components (policies, for instance).
@@ -114,6 +115,7 @@ public class AssetDocumentHelper {
     private String resourceNameField;
     private String reportingSource;
     private String reportingSourceService;
+    private String reportingSourceServiceDisplayName;
 
 
     public boolean isPrimarySource() {
@@ -121,13 +123,11 @@ public class AssetDocumentHelper {
     }
 
     public String buildDocId(Map<String, Object> data) {
+        if (docIdFields.contains(AssetDocumentFields.LEGACY_ACCOUNT_ID) && data.get(AssetDocumentFields.LEGACY_ACCOUNT_ID) == null) {
+            data.put(AssetDocumentFields.LEGACY_ACCOUNT_ID, data.get(AssetDocumentFields.ACCOUNT_ID));
+        }
         var docId = STR."\{dataSource}_\{type}_\{StringHelper.concatenate(data, docIdFields,
             "_")}";
-        if ("aws".equalsIgnoreCase(dataSource)) {
-            if (docIdFields.contains(AssetDocumentFields.LEGACY_ACCOUNT_ID)) {
-                docId = STR."\{StringHelper.indexName(dataSource, type)}_\{docId}";
-            }
-        }
         if (StringUtils.isBlank(docId)) {
             LOGGER.info(
                 STR."docId is not valid: '\{docId}' docIdFields=\{docIdFields} mapper data=\{MapHelper.toJsonString(
@@ -224,17 +224,26 @@ public class AssetDocumentHelper {
             throw new JobException("reportingService is not set");
         }
 
-
         dto.setOpinions(Optional.ofNullable(dto.getOpinions()).orElseGet(OpinionCollection::new));
-        var opinionItem = Optional.ofNullable((dto.getOpinions().getSourceAndServiceOpinion(reportingSource, reportingSourceService))).orElseGet(OpinionItem::new);
+        var opinionItem = Optional.ofNullable(
+                (dto.getOpinions().getSourceAndServiceOpinion(reportingSource, reportingSourceService)))
+            .orElseGet(OpinionItem::new);
         opinionItem.setData(
             data.getOrDefault(MapperFields.RAW_DATA, "").toString());
-        withValue(data, List.of(MapperFields.FIRST_SCAN_DATE), v -> {
-            opinionItem.setFirstScanDate(TimeHelper.parseDiscoveryDate(v.toString()));
-        });
-        withValue(data, List.of(MapperFields.LAST_SCAN_DATE), v -> {
-            opinionItem.setLastScanDate(TimeHelper.parseDiscoveryDate(v.toString()));
-        });
+        if (StringUtils.isBlank(reportingSourceServiceDisplayName)) {
+            if (warnReportingServiceDisplayName) {
+                LOGGER.warn("reportingSourceServiceDisplayName is not set");
+            }
+            warnReportingServiceDisplayName = false;
+        } else {
+            opinionItem.setServiceName(reportingSourceServiceDisplayName);
+        }
+        withValue(data, List.of(MapperFields.FIRST_SCAN_DATE),
+            v -> opinionItem.setFirstScanDate(TimeHelper.parseISO860Date(v.toString())));
+        withStringValue(data, List.of(MapperFields.LAST_SCAN_DATE),
+            v -> opinionItem.setLastScanDate(TimeHelper.parseISO860Date(v.toString())));
+        withStringValue(data, List.of(MapperFields.OPINION_SERVICE_DEEP_LINK),
+            v -> opinionItem.setDeepLink(v.toString()));
 
         dto.getOpinions().setOpinion(reportingSource, reportingSourceService, opinionItem);
     }
@@ -352,7 +361,8 @@ public class AssetDocumentHelper {
             dto.setRegion(v.toString());
         });
 
-        withValue(data, List.of(MapperFields.SOURCE_DISPLAY_NAME, MapperFields.LEGACY_SOURCE_DISPLAY_NAME),
+        withValue(data,
+            List.of(MapperFields.SOURCE_DISPLAY_NAME, MapperFields.LEGACY_SOURCE_DISPLAY_NAME),
             v -> {
                 dto.setSourceDisplayName(v.toString());
                 dto.setLegacySourceDisplayName(v.toString());
@@ -364,6 +374,8 @@ public class AssetDocumentHelper {
         dto.setResourceName(data.getOrDefault(resourceNameField, idValue).toString());
         dto.setLoadDate(loadDate);
         dto.setIsLatest(true);
+        dto.setIsActive(
+            Boolean.parseBoolean(data.getOrDefault(MapperFields.IS_ACTIVE, "true").toString()));
 
         dto.setLegacyIsEntity(true);
         dto.setLegacyEntityType(type);
@@ -380,11 +392,12 @@ public class AssetDocumentHelper {
         dto.setResourceId(resourceId.toString());
         dto.setLegacyResourceId(resourceId.toString());
 
-        withValue(data, List.of(AssetDocumentFields.ACCOUNT_NAME, AssetDocumentFields.LEGACY_ACCOUNT_NAME,
-            AssetDocumentFields.SUBSCRIPTION_NAME, AssetDocumentFields.PROJECT_NAME), v -> {
-            dto.setAccountName(v.toString());
-            dto.setLegacyAccountName(v.toString());
-        });
+        withValue(data,
+            List.of(AssetDocumentFields.ACCOUNT_NAME, AssetDocumentFields.LEGACY_ACCOUNT_NAME,
+                AssetDocumentFields.SUBSCRIPTION_NAME, AssetDocumentFields.PROJECT_NAME), v -> {
+                dto.setAccountName(v.toString());
+                dto.setLegacyAccountName(v.toString());
+            });
 
         if (data.containsKey(AssetDocumentFields.SUBSCRIPTION)) {
             dto.setAccountId(data.get(AssetDocumentFields.SUBSCRIPTION).toString());
@@ -497,6 +510,15 @@ public class AssetDocumentHelper {
         }
     }
 
+    private void withStringValue(Map<String, Object> data, List<String> key,
+        Consumer<Object> fn) {
+        withValue(data, key, v -> {
+            var s = v.toString();
+            if (!StringUtils.isBlank(s)) {
+                fn.accept(s);
+            }
+        });
+    }
 
     public interface MapperFields {
 
@@ -512,5 +534,7 @@ public class AssetDocumentHelper {
 
         String FIRST_SCAN_DATE = "_first_scan_date";
         String LAST_SCAN_DATE = "_last_scan_date";
+        String OPINION_SERVICE_DEEP_LINK = "_deep_link";
+        String IS_ACTIVE = "_isActive";
     }
 }

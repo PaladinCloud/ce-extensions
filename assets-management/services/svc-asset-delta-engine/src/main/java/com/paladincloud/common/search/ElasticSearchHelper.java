@@ -160,7 +160,7 @@ public class ElasticSearchHelper {
         String query;
         if (latestOnly) {
             query = """
-                {"query":{"match":{"latest":true}}}
+                {"query": { "bool": { "must": [ { "term": { "latest": { "value": true } } }, { "term": { "_entity": { "value": "true" } } } ] } }}
                 """;
         } else {
             query = """

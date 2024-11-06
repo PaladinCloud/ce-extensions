@@ -30,6 +30,7 @@ public class AssetDocumentHelperOpinionTests {
             .resourceNameField("resource_name")
             .reportingSource("secondary")
             .reportingSourceService("assets")
+            .reportingSourceServiceDisplayName("Assets API")
             .build();
     }
 
@@ -97,8 +98,9 @@ public class AssetDocumentHelperOpinionTests {
                 "region": "us-central1-a",
                 "_entityType": "vminstance",
                 "_entityTypeDisplayName": "VM",
-                "_first_scan_date": "2024-09-05 14:57:00+0000",
-                "_last_scan_date": "2024-10-31 18:33:19+0000"
+                "_first_scan_date": "2024-09-05T14:57:00Z",
+                "_last_scan_date": "2024-10-31T18:33:19Z",
+                "_deep_link": "https://fubar.com"
             }""".trim();
     }
 
@@ -118,7 +120,9 @@ public class AssetDocumentHelperOpinionTests {
                             "assets": {
                                 "data": "{\\"flavor\\":\\"licorice\\"}",
                                 "firstScanDate": "2024-09-05 14:57:00+0000",
-                                "lastScanDate": "2024-10-31 18:33:00+0000"
+                                "lastScanDate": "2024-10-31 18:33:00+0000",
+                                "serviceName": "Assets API",
+                                "deepLink": "https://fubar.com"
                             }
                         }
                     }

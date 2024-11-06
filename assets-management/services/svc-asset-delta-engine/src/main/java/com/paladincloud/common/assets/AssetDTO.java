@@ -64,6 +64,10 @@ public class AssetDTO {
     @Setter
     @JsonProperty(AssetDocumentFields.IS_LATEST)
     private Boolean isLatest;
+    @Getter
+    @Setter
+    @JsonProperty(AssetDocumentFields.IS_ACTIVE)
+    private Boolean isActive;
     /**
      * Managed by the asset-shipper; this is the earliest discovery date there are records for. The
      * format is "yyyy-MM-dd HH:mm:00Z"
@@ -308,6 +312,9 @@ public class AssetDTO {
         @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd HH:mm:00Z")
         @JsonProperty("lastScanDate")
         private ZonedDateTime lastScanDate;
+
+        @JsonProperty("serviceName")
+        private String serviceName;
 
         @JsonProperty("deepLink")
         private String deepLink;

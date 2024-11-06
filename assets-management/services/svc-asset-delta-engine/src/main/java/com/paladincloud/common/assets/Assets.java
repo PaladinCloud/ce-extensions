@@ -61,7 +61,7 @@ public class Assets {
     }
 
     public void process(String dataSource, String mapperPath, String reportingSource,
-        String reportingSourceService) {
+        String reportingSourceService, String reportingServiceDisplayName) {
         // dataSource is the underlying source of the data (gcp, aws, azure) while reporting source
         // is only set if it's different. It's different for secondary sources reporting data
         // (qualys, rapid7); in addition, reporting service is also set only if the data is from
@@ -142,6 +142,7 @@ public class Assets {
                         .accountIdToNameFn(this::accountIdToName)
                         .reportingSource(reportingSource)
                         .reportingSourceService(reportingSourceService)
+                        .reportingSourceServiceDisplayName(reportingServiceDisplayName)
                         .assetState(assetStateHelper.get(dataSource, type));
                     var mergeResponse = MergeAssets.process(assetCreator.build(), existingAssets,
                         latestAssets, existingPrimaryAssets);

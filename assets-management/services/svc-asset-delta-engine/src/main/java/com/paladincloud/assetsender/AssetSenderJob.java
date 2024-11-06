@@ -25,10 +25,11 @@ public class AssetSenderJob extends JobExecutor {
 
     public static final String DATA_SOURCE = "data_source";
     public static final String S3_PATH = "s3_path";
-    // These two optional arguments are provided for opinions; in that case, the reporting source
+    // These optional arguments are provided for opinions; in that case, the reporting source
     // will differ from the data source and the opinion service will be used to store the opinion.
     private static final String REPORTING_SOURCE = "reporting_source";
     private static final String REPORTING_SOURCE_SERVICE = "reporting_source_service";
+    private static final String REPORTING_SOURCE_SERVICE_DISPLAY_NAME = "reporting_source_service_display_name";
 
     private static final Logger LOGGER = LogManager.getLogger(AssetSenderJob.class);
 
@@ -66,7 +67,8 @@ public class AssetSenderJob extends JobExecutor {
         assetTypes.setupIndexAndTypes(dataSource);
         assets.process(dataSource, params.get(S3_PATH),
             params.get(REPORTING_SOURCE),
-            params.get(REPORTING_SOURCE_SERVICE));
+            params.get(REPORTING_SOURCE_SERVICE),
+            params.get(REPORTING_SOURCE_SERVICE_DISPLAY_NAME));
 
         if ("true".equalsIgnoreCase(ConfigService.get(Dev.SKIP_ASSET_COUNT))) {
             LOGGER.error("Skipping asset count");
