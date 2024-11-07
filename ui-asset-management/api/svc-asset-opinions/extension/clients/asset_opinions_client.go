@@ -48,13 +48,14 @@ func (c *AssetOpinionsClient) GetAssetOpinions(ctx context.Context, tenantId, so
 
 	result, err := c.elasticSearchClient.FetchAssetOpinions(ctx, tenantId, source, targetType, assetId)
 	if err != nil {
-
-		return nil, fmt.Errorf("error fetching asset Opinions %w", err)
+		log.Printf("error fetching asset Opinions: %+v", err)
+		return &models.Response{Data: nil, Message: "No opinions available for this asset"}, nil
 	}
 
 	assetOpinions, err := extractSourceFromResult(result, assetId)
 	if err != nil {
-		return nil, fmt.Errorf("failed to extract source from result: %w", err)
+		log.Printf("failed to extract source from result: %+v", err)
+		return &models.Response{Data: nil, Message: "No opinions available for this asset"}, nil
 	}
 
 	allOpinions := models.OpinionsResponse{}
