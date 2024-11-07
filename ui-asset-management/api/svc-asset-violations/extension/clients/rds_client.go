@@ -101,7 +101,7 @@ func (r *RdsClient) GetAllPoliciesCount(ctx context.Context, tenantId, targetTyp
 		return 0, fmt.Errorf("failed to create rds client %w", err)
 	}
 
-	log.Println("getting policy count from rds for targetType: %s", targetType)
+	log.Printf("getting policy count from rds for targetType [%s]\n", targetType)
 	query := `
 		SELECT 
 			count(p.policyId) as count
