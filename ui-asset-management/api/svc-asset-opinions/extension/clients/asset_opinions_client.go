@@ -66,15 +66,7 @@ func (c *AssetOpinionsClient) GetAssetOpinions(ctx context.Context, tenantId, so
 	}
 
 	if v, ok := assetOpinions[opinions]; ok {
-		allOpinions.Opinions = make(map[string]interface{})
-		for opinionProvider, v := range v.(map[string]interface{}) {
-
-			if vuln, ok1 := v.(map[string]interface{}); ok1 {
-				if vulnJsonString, ok2 := vuln["vulnerabilities_management"]; ok2 {
-					allOpinions.Opinions[opinionProvider] = map[string]string{"vulnerabilities": vulnJsonString.(string)}
-				}
-			}
-		}
+		allOpinions.Opinions = v.(map[string]interface{})
 	}
 
 	return &models.Response{Data: &allOpinions, Message: "success"}, nil
