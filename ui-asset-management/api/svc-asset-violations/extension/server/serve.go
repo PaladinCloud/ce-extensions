@@ -76,7 +76,7 @@ func handleValue(config *HttpServer) http.HandlerFunc {
 		assetDetails, err := config.AssetViolationsClient.GetAssetViolations(r.Context(), targetType, tenantId, assetId)
 		if err != nil {
 			logError("error fetching asset violations", err)
-			http.Error(w, err.Error(), http.StatusNotFound)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 

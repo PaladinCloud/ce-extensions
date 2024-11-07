@@ -26,6 +26,22 @@ import (
 	"svc-asset-violations-layer/models"
 )
 
+const (
+	allSources            = "all-sources"
+	success               = "success"
+	noActivePolicyMessage = "No active policies monitoring this asset type"
+	noPolicyMessage       = "There are no policies for this asset type"
+)
+
+const (
+	open     = "open"
+	exempted = "exempted"
+	exempt   = "exempt"
+	pass     = "pass"
+	fail     = "fail"
+	unknown  = "unknown"
+)
+
 type AssetViolationsClient struct {
 	elasticSearchClient *ElasticSearchClient
 	rdsClient           *RdsClient
@@ -54,13 +70,6 @@ func NewAssetViolationsClient(ctx context.Context, config *Configuration) (*Asse
 	}, nil
 }
 
-const (
-	allSources            = "all-sources"
-	success               = "success"
-	noActivePolicyMessage = "No active policies monitoring this asset type"
-	noPolicyMessage       = "There are no policies for this asset type"
-)
-
 var severityWeights = map[string]int{"critical": 10, "high": 5, "medium": 3, "low": 1}
 
 func (c *AssetViolationsClient) GetAssetViolations(ctx context.Context, targetType, tenantId, assetId string) (*models.AssociatedPoliciesResponse, error) {
@@ -73,6 +82,10 @@ func (c *AssetViolationsClient) GetAssetViolations(ctx context.Context, targetTy
 
 	// fetch all policies(ENABLED/DISABLED) count for the target type
 	policyCount, err := c.rdsClient.GetAllPoliciesCount(ctx, tenantId, targetType)
+	if err != nil {
+		return nil, fmt.Errorf("error fetching policy count from rds for target type [%s] %w", targetType, err)
+	}
+
 	if policyCount == 0 {
 		log.Printf("no policies for given target type [%s]\n", targetType)
 		return &models.AssociatedPoliciesResponse{Data: nil, Message: noPolicyMessage}, nil
@@ -145,8 +158,10 @@ func createPoliciesWithIssueIds(dbPolicies []models.PolicyRdsResult, esResult *m
 		// Check if the policy has an associated issue and set the Issue ID and Last Scan Status
 		hit, exists := issueByPolicyMap[dbPolicy.PolicyId]
 		if exists {
-			policy.LastScanStatus = hit.Source.IssueStatus // Issue status from ElasticSearch
-			policy.IssueId = hit.ID                        // Issue ID from ElasticSearch
+			policy.LastScanStatus = getViolationState(hit.Source.IssueStatus) // Issue status from ElasticSearch
+			policy.IssueId = hit.ID                                           // Issue ID from ElasticSearch
+		} else {
+			policy.LastScanStatus = pass
 		}
 
 		policies = append(policies, policy)
@@ -194,4 +209,14 @@ func calculateCompliancePercent(totalPolicySeverityWeights int, severityCounts m
 	} else {
 		return 100
 	}
+}
+
+func getViolationState(violationStatus string) string {
+	if violationStatus == open {
+		return fail
+	} else if violationStatus == exempted {
+		return exempt
+	}
+
+	return unknown
 }
