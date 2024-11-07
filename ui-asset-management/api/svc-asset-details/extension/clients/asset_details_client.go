@@ -207,6 +207,8 @@ func (c *AssetDetailsClient) buildLegacyCommonFields(assetDetails map[string]int
 				commonFields[constants.TargetTypeName] = fmt.Sprintf("%v", value)
 			case legacy_constants.Region:
 				commonFields[constants.Region] = fmt.Sprintf("%v", value)
+			case legacy_constants.AssetState:
+				commonFields[constants.AssetState] = fmt.Sprintf("%v", value)
 			}
 		}
 	}
