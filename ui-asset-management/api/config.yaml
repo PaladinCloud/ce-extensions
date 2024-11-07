@@ -137,7 +137,6 @@
     requireOptionsMethod: true
   serviceConfig:
     environmentalVariables:
-      ASSUME_ROLE_ARN: {ASSUME_ROLE_ARN}
       ENABLE_EXTENSION: {ENABLE_EXTENSION}
       REGION: {REGION}
       SECRET_NAME_PREFIX: {SECRET_NAME_PREFIX}
