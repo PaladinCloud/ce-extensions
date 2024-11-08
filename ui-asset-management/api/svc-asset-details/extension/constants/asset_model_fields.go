@@ -17,12 +17,12 @@
 package constants
 
 const (
-	AccountId       = "accountId"
-	AccountName     = "accountName"
+	AccountId       = "account_id"
+	AccountName     = "account_name"
 	Source          = "source"
-	SourceName      = "sourceName"
-	TargetType      = "targetType"
-	TargetTypeName  = "targetTypeName"
+	SourceName      = "sourceDisplayName"
+	TargetType      = "_entityType"
+	TargetTypeName  = "_entityTypeDisplayName"
 	Region          = "region"
 	PrimaryProvider = "primaryProvider"
 	RawData         = "rawData"
