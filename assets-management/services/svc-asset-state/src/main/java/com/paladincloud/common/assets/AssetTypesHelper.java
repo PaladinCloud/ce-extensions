@@ -15,13 +15,13 @@ public class AssetTypesHelper {
     public boolean isTypeManaged(String dataSource, String assetType) {
         var dbHelper = new DatabaseHelper();
         var rows = dbHelper.executeQuery(
-            STR."SELECT targetType,count(*) FROM pacmandata.cf_PolicyTable WHERE assetGroup = '\{dataSource}' AND targetType= '\{assetType}' AND status = 'ENABLED'");
+            String.format("SELECT targetType,count(*) FROM pacmandata.cf_PolicyTable WHERE assetGroup = '%s' AND targetType= '%s' AND status = 'ENABLED'", dataSource, assetType));
         if (rows.size() == 1) {
             var firstRow = rows.getFirst();
             var count = Integer.parseInt(firstRow.get("count(*)"));
             return count > 1;
         } else {
-            throw new JobException(STR."1 row expected, \{rows.size()} returned for \{dataSource} and \{assetType}");
+            throw new JobException(String.format("1 row expected, %d returned for %s and %s", rows.size(), dataSource, assetType));
         }
     }
 }

@@ -44,7 +44,7 @@ public abstract class JobExecutor {
     protected String tenantName;
 
     public void run(String jobName, String[] args) {
-        LOGGER.info(STR."Starting \{jobName} \{String.join(" ", args)}");
+        LOGGER.info(String.format("Starting %s %s", jobName, String.join(" ", args)));
 
         var status = "";
         long startTime = System.nanoTime();
@@ -76,7 +76,7 @@ public abstract class JobExecutor {
             status = "Succeeded";
         } catch (Throwable t) {
             status = "Failed";
-            LOGGER.error(STR."\{ALERT_ERROR_PREFIX} \{jobName}:", t);
+            LOGGER.error(String.format("%s %s:", ALERT_ERROR_PREFIX, jobName), t);
         }
 
         long duration = System.nanoTime() - startTime;
@@ -104,7 +104,7 @@ public abstract class JobExecutor {
             var tokens = arg.split("=");
             if (tokens.length < 2) {
                 throw new JobException(
-                    STR."Argument format incorrect: \{arg}; should be '--name=value");
+                    String.format("Argument format incorrect: %s; should be '--name=value", arg));
             }
             var keyTokens = tokens[0].split("--");
             map.put(keyTokens[keyTokens.length - 1], tokens[1]);
@@ -131,7 +131,7 @@ public abstract class JobExecutor {
         });
         if (!missing.isEmpty()) {
             throw new IllegalArgumentException(
-                STR."Missing required field(s): \{String.join(", ", missing)}");
+                String.format("Missing required field(s): %s", String.join(", ", missing)));
         }
     }
 

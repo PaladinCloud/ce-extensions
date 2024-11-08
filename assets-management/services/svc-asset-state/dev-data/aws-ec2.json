@@ -3,7 +3,7 @@
     {
       "messageId": "059f36b4-87a3-44ab-83d2-661975830a7d",
       "receiptHandle": "AQEBwJnKyrHigUMZj6rYigCgxlaS3SLy0a...",
-      "body": "--tenant_id=98c28482-9bae-46bd-bd4e-58fa132e72c0 --data_source=gcp --asset_type=vminstance --evaluation_type=evaluate-all --omit_policy_event=true",
+      "body": "--tenant_id=98c28482-9bae-46bd-bd4e-58fa132e72c0 --data_source=aws --asset_type=ec2 --evaluation_type=evaluate-all --omit_policy_event=true",
       "attributes": {
         "ApproximateReceiveCount": "1",
         "SentTimestamp": "1545082649183",

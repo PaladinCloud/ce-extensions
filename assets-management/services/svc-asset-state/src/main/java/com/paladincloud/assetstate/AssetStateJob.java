@@ -1,9 +1,14 @@
 package com.paladincloud.assetstate;
 
 import com.paladincloud.common.assets.AssetTypesHelper;
+import com.paladincloud.common.aws.AssetStorageHelper;
 import com.paladincloud.common.errors.JobException;
 import com.paladincloud.common.jobs.JobExecutor;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -18,10 +23,12 @@ public class AssetStateJob extends JobExecutor {
     private static final String OMIT_POLICY_EVENT = "omit_policy_event";
 
     private final AssetTypesHelper assetTypesHelper;
+    private final AssetStorageHelper searchHelper;
 
     @Inject
-    AssetStateJob(AssetTypesHelper assetTypesHelper) {
+    AssetStateJob(AssetTypesHelper assetTypesHelper, AssetStorageHelper searchHelper) {
         this.assetTypesHelper = assetTypesHelper;
+        this.searchHelper = searchHelper;
     }
 
     @Override
@@ -33,26 +40,47 @@ public class AssetStateJob extends JobExecutor {
         LOGGER.info("Starting Asset State job: {}", params);
         // determine type of work
         //  1: Policy state changed - change status for a class (cloud/type) (to either managed or unmanaged)
-        //          Ignores suspicious & reconciling, can set to managed or unmanaged
-        //  2: Assets shipped - determine and set status for a class
-        //          Ignores reconciling, can set to managed, unmanaged or suspicious
-        //  3: Reconciliation completed - determine and set status for specific assets
-        //          Can set to managed, unmanaged or suspicious
+        //          Ignores suspicious & reconciling
+        //          Sets to managed or unmanaged
+        //  2: Evaluate all - determine and set status for a class (cloud/type)
+        //          This is used by both the Delta Engine & Reconciler
+        //          Ignores reconciling
+        //          Sets to managed, unmanaged or suspicious
 
         // Get cloud/type policy status
         var isTypeManaged = assetTypesHelper.isTypeManaged(dataSource, assetType);
 
         switch (evaluationType.toLowerCase()) {
-            case "assets-shipped":
-                // Get opinions
-                // Get primary assets
+            case "evaluate-all":
+                var opinion = searchHelper.getOpinions(dataSource, assetType);
+                var primary = searchHelper.getPrimary(dataSource, assetType);
+                var evaluator = AssetStateEvaluator.builder()
+                    .primaryAssets(toMap(primary))
+                    .opinions(toMap(opinion))
+                    .isManaged(isTypeManaged)
+                    .build();
+
+                evaluator.run();
+                searchHelper.setStates(dataSource, assetType, evaluator.getUpdated());
+
+                if (evaluator.getUpdated().isEmpty()) {
+                    LOGGER.info("None of the {} {} {} asset states were changed", primary.size(),
+                        dataSource, assetType);
+                } else {
+                    LOGGER.info("{} of {} {} {} asset states were changed to {}",
+                        evaluator.getUpdated().size(), primary.size(), dataSource, assetType,
+                        isTypeManaged ? AssetState.MANAGED : AssetState.UNMANAGED);
+                }
                 break;
             case "policy-changed":
-                break;
-            case "reconciliation-completed":
+                // Toggle asset state ONLY for those assets with the opposite status
+                var oldState = isTypeManaged ? AssetState.UNMANAGED : AssetState.MANAGED;
+                var newState = isTypeManaged ? AssetState.MANAGED : AssetState.UNMANAGED;
+                searchHelper.toggleState(dataSource, assetType, oldState, newState);
                 break;
             default:
-                throw new JobException(STR."Invalid evaluation type: '\{evaluationType}'");
+                throw new JobException(
+                    String.format("Invalid evaluation type: '%s'", evaluationType));
         }
 
         // do the work
@@ -64,6 +92,11 @@ public class AssetStateJob extends JobExecutor {
             // TODO: Fire off policy event
             LOGGER.error("TODO - fire off the policy event");
         }
+    }
+
+    Map<String, PartialAssetDTO> toMap(Collection<PartialAssetDTO> assets) {
+        return assets.stream()
+            .collect(Collectors.toMap(PartialAssetDTO::getDocId, Function.identity()));
     }
 
     @Override

@@ -5,7 +5,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
@@ -17,12 +16,14 @@ import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 
 public class DynamoDBHelper {
+
     private static final Logger LOGGER = LogManager.getLogger(DynamoDBHelper.class);
 
     private DynamoDBHelper() {
     }
 
-    static private DynamoDbClient getClient(String region, AwsCredentialsProvider credentialsProvider) {
+    static private DynamoDbClient getClient(String region,
+        AwsCredentialsProvider credentialsProvider) {
         var builder = DynamoDbClient.builder().region(Region.of(region));
         if (credentialsProvider != null) {
             builder.credentialsProvider(credentialsProvider);
@@ -30,24 +31,27 @@ public class DynamoDBHelper {
         return builder.build();
     }
 
-    public static Map<String, String> get(String region, AwsCredentialsProvider credentialsProvider, String tableName,
+    public static Map<String, String> get(String region, AwsCredentialsProvider credentialsProvider,
+        String tableName,
         String key, String keyValue, Map<String, String> fieldMap) {
         var keyMap = new HashMap<>(Map.of(key, AttributeValue.builder().s(keyValue).build()));
 
         var request = GetItemRequest.builder().key(keyMap).tableName(tableName).build();
         try (var client = getClient(region, credentialsProvider)) {
-            LOGGER.info(STR."Querying '\{tableName}' for item: \{request} (\{client})");
+            LOGGER.info(
+                String.format("Querying '%s' for item: %s (%s)", tableName, request, client));
             var item = client.getItem(request).item();
             return getFieldsFromRow(item, fieldMap);
         }
     }
 
-    public static List<Map<String, String>> query(String region, AwsCredentialsProvider credentialsProvider, String tableName,
+    public static List<Map<String, String>> query(String region,
+        AwsCredentialsProvider credentialsProvider, String tableName,
         String key, String keyValue, Map<String, String> fieldMap) {
-        var attributeNameAlias = Map.of(STR."#\{key}", key);
-        var attributeValues = Map.of(STR.":\{key}", AttributeValue.builder().s(keyValue).build());
+        var attributeNameAlias = Map.of("#" + key, key);
+        var attributeValues = Map.of(":" + key, AttributeValue.builder().s(keyValue).build());
         var request = QueryRequest.builder().tableName(tableName)
-            .keyConditionExpression(STR."#\{key} = :\{key}")
+            .keyConditionExpression(String.format("#%s = :%s", key, key))
             .expressionAttributeNames(attributeNameAlias)
             .expressionAttributeValues(attributeValues)
             .build();
@@ -66,10 +70,12 @@ public class DynamoDBHelper {
         return Collections.emptyList();
     }
 
-    private static Map<String, String> getFieldsFromRow(Map<String, AttributeValue> row, Map<String, String> fieldMap) {
+    private static Map<String, String> getFieldsFromRow(Map<String, AttributeValue> row,
+        Map<String, String> fieldMap) {
         var configResponse = new HashMap<String, String>();
         fieldMap.forEach((fullFieldName, fieldValue) -> {
-            var fieldName = fullFieldName;;
+            var fieldName = fullFieldName;
+            ;
             var dottedName = "";
             if (fieldName.contains(".")) {
                 fieldName = fullFieldName.substring(0, fullFieldName.lastIndexOf('.'));
@@ -84,7 +90,7 @@ public class DynamoDBHelper {
                     configResponse.put(fieldValue, rowValue.s());
                 } else {
                     LOGGER.error(
-                        STR."Unable to convert value for '\{fieldName}: '\{rowValue}'");
+                        "Unable to convert value for '{}: '{}'", fieldName, rowValue);
                 }
             }
         });

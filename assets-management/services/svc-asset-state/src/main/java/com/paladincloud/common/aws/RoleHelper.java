@@ -22,7 +22,7 @@ public class RoleHelper {
             return runAsFn.apply(null);
         }
 
-        LOGGER.info(STR."Assuming role: \{roleArn} in region \{awsRegion}");
+        LOGGER.info(String.format("Assuming role: %s in region %s", roleArn, awsRegion));
         try (var stsClient = StsClient.builder().region(Region.of(awsRegion)).credentialsProvider(currentCredentialsProvider)
             .build()) {
             var roleRequest = AssumeRoleRequest.builder().roleArn(roleArn)

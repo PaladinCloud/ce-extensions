@@ -23,6 +23,7 @@
     <dagger.version>2.51.1</dagger.version>
     <elasticsearch.version>7.17.21</elasticsearch.version>
     <faster-xml-jackson.version>2.17.1</faster-xml-jackson.version>
+    <junit.version>5.10.2</junit.version>
     <log4j2.version>2.17.1</log4j2.version>
     <log4j-slf4j.version>2.23.1</log4j-slf4j.version>
     <lombok.version>1.18.34</lombok.version>
@@ -96,6 +97,11 @@
       <version>${log4j-slf4j.version}</version>
     </dependency>
     <dependency>
+      <groupId>org.elasticsearch.client</groupId>
+      <artifactId>elasticsearch-rest-client</artifactId>
+      <version>${elasticsearch.version}</version>
+    </dependency>
+    <dependency>
       <groupId>software.amazon.awssdk</groupId>
       <artifactId>apache-client</artifactId>
     </dependency>
@@ -155,6 +161,12 @@
       <version>${mysql-connector-j-version}</version>
     </dependency>
     <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>${junit.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.apache.maven.plugins</groupId>
       <artifactId>maven-surefire-plugin</artifactId>
       <version>${maven-surefire.version}</version>
@@ -200,9 +212,6 @@
         <configuration>
           <source>21</source>
           <target>21</target>
-          <compilerArgs>
-            <arg>--enable-preview</arg>
-          </compilerArgs>
           <annotationProcessorPaths>
             <path>
               <groupId>com.google.dagger</groupId>
@@ -222,7 +231,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <version>${maven-surefire.version}</version>
         <configuration>
-          <argLine>--enable-preview -XX:+EnableDynamicAgentLoading</argLine>
+          <argLine>-XX:+EnableDynamicAgentLoading</argLine>
         </configuration>
       </plugin>
 

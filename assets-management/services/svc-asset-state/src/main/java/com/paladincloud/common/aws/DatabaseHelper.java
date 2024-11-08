@@ -26,7 +26,7 @@ public class DatabaseHelper {
             var port = Configuration.get(ConfigConstants.DB_PORT);
             var databaseName = Configuration.get(ConfigConstants.DB_NAME);
             var queryParameters = "autoReconnect=true&useSSL=false";
-            return DriverManager.getConnection(STR."jdbc:mysql://\{host}:\{port}/\{databaseName}?\{queryParameters}", props);
+            return DriverManager.getConnection(String.format("jdbc:mysql://%s:%s/%s?%s", host, port, databaseName, queryParameters), props);
         } catch (SQLException e) {
             throw new JobException("Unable to connect to database", e);
         }
