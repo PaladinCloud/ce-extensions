@@ -45,6 +45,7 @@ public class AssetDocumentHelper {
     // top-level asset document
     static private Set<String> assetFields = new HashSet<>(
         List.of(
+            MapperFields.IS_ACTIVE,
             MapperFields.ACCOUNT_ID,
             MapperFields.LEGACY_ACCOUNT_ID,
             MapperFields.RAW_DATA,
