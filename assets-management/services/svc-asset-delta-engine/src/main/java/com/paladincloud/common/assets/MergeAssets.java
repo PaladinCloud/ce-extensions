@@ -18,7 +18,11 @@ public class MergeAssets {
     private final Map<String, AssetDTO> updatedAssets = new HashMap<>();
     private final Map<String, AssetDTO> missingAssets = new HashMap<>();
     private final Map<String, AssetDTO> newAssets = new HashMap<>();
+    // newPrimaryAssets is only populated when processing secondary sources AND the primary asset
+    // is missing
     private final Map<String, AssetDTO> newPrimaryAssets = new HashMap<>();
+    // deletedPrimaryAssets is only populated when processing secondary sources AND the primary
+    // asset exists AND the last opinion was removed.
     private final List<AssetDTO> deletedPrimaryAssets = new ArrayList<>();
     private final List<AssetDTO> deletedOpinionAssets = new ArrayList<>();
 

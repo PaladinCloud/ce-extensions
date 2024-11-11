@@ -69,6 +69,8 @@ public class Assets {
         // The reporting source and service are determined from values in the mapper file
 
         var bucket = ConfigService.get(ConfigConstants.S3.BUCKET_NAME);
+        var featureSuspiciousAssetsEnabled = ConfigService.get(
+            "feature_flags.enableSuspiciousAssets", "true").equalsIgnoreCase("true");
         var allFilenames = mapperRepository.listFiles(bucket, mapperPath);
         var types = assetTypes.getTypesWithDisplayName(dataSource);
         var fileTypes = FilesAndTypes.matchFilesAndTypes(allFilenames, types.keySet());
@@ -88,7 +90,8 @@ public class Assets {
             return;
         }
 
-        LOGGER.info("Start processing Asset info");
+        LOGGER.info("Start processing Asset info; suspiciousAssetsEnabled={}",
+            featureSuspiciousAssetsEnabled);
 
         var startTime = ZonedDateTime.now();
         var typeToError = loadTypeErrors(bucket, fileTypes.loadErrors);
@@ -99,7 +102,8 @@ public class Assets {
                     var indexName = StringHelper.indexName(dataSource, type);
 
                     var latestAssets = fetchMapperFiles(bucket, filename, dataSource, type);
-                    var isOpinion = reportingSource != null && !dataSource.equalsIgnoreCase(reportingSource);
+                    var isOpinion =
+                        reportingSource != null && !dataSource.equalsIgnoreCase(reportingSource);
 
                     String primaryIndexName;
                     Map<String, AssetDTO> existingPrimaryAssets = null;
@@ -171,15 +175,17 @@ public class Assets {
 
                     // Persist any stub primary documents that were created
                     if (primaryIndexName != null) {
-                        mergeResponse.getDeletedPrimaryAssets().forEach(value -> {
-                            try {
-                                batchIndexer.add(
-                                    BatchItem.deleteEntry(primaryIndexName, value.getDocId())
-                                );
-                            } catch (IOException e) {
-                                throw new JobException("Failed batching item for delete", e);
-                            }
-                        });
+                        if (featureSuspiciousAssetsEnabled) {
+                            mergeResponse.getDeletedPrimaryAssets().forEach(value -> {
+                                try {
+                                    batchIndexer.add(
+                                        BatchItem.deleteEntry(primaryIndexName, value.getDocId())
+                                    );
+                                } catch (IOException e) {
+                                    throw new JobException("Failed batching item for delete", e);
+                                }
+                            });
+                        }
                     }
 
                     // Each document needs to be updated, regardless of which state it is in
@@ -193,15 +199,17 @@ public class Assets {
                         }
                     });
 
-                    mergeResponse.getNewPrimaryAssets().values().forEach(value -> {
-                        try {
-                            batchIndexer.add(
-                                BatchItem.documentEntry(primaryIndexName, value.getDocId(),
-                                    JsonHelper.toJson(value)));
-                        } catch (IOException e) {
-                            throw new JobException("Failed converting asset to JSON", e);
-                        }
-                    });
+                    if (featureSuspiciousAssetsEnabled) {
+                        mergeResponse.getNewPrimaryAssets().values().forEach(value -> {
+                            try {
+                                batchIndexer.add(
+                                    BatchItem.documentEntry(primaryIndexName, value.getDocId(),
+                                        JsonHelper.toJson(value)));
+                            } catch (IOException e) {
+                                throw new JobException("Failed converting asset to JSON", e);
+                            }
+                        });
+                    }
 
                     var stats = generateStats(startTime, dataSource, type, latestAssets.size(),
                         mergeResponse.getNewAssets().size());
