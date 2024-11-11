@@ -45,7 +45,7 @@ func NewAssetDetailsClient(ctx context.Context, config *Configuration) (*AssetDe
 const (
 	allSources = "all-sources"
 	success    = "success"
-	empty      = ""
+	empty      = "<missing>"
 )
 
 func (c *AssetDetailsClient) GetAssetDetails(ctx context.Context, tenantId, assetId string) (*models.Response, error) {
