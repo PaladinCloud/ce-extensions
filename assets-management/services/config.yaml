@@ -9,6 +9,7 @@
       SECRET_NAME_PREFIX: {SECRET_NAME_PREFIX}
       TENANT_CONFIG_OUTPUT_TABLE: {TENANT_CONFIG_OUTPUT_TABLE}
       TENANT_TABLE_PARTITION_KEY: {TENANT_TABLE_PARTITION_KEY}
+      TENANT_CONFIG_TABLE: {TENANT_CONFIG_TABLE}
     lambdaConfig:
       handler: com.paladincloud.assetsender.AssetDoneHandler
       runtime: java

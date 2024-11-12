@@ -12,7 +12,6 @@ import com.paladincloud.common.util.JsonHelper;
 import java.util.Map;
 import java.util.Properties;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.StringUtils;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient;
 import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueRequest;
@@ -48,7 +47,10 @@ public class ConfigService {
             return;
         }
 
-        var dynamoConfig = getTenantConfiguration(configParams);
+        var tenantFeatureFlags = getTenantFeatureFlags(configParams);
+        ConfigService.setProperties("", tenantFeatureFlags);
+
+        var dynamoConfig = getTenantOutputConfiguration(configParams);
         ConfigService.setProperties("config.", dynamoConfig);
 
         var basePaladinApiUrl = STR."https://\{dynamoConfig.get("base-paladincloud-domain")}/api";
@@ -85,14 +87,24 @@ public class ConfigService {
             });
     }
 
-    private static Map<String, String> getTenantConfiguration(ConfigParams configParams) {
+    private static Map<String, String> getTenantOutputConfiguration(ConfigParams configParams) {
         return RoleHelper.runAs(configParams.awsRegion, null, configParams.assumeRoleArn,
             dynamoCredentialsProvider -> {
-                var configTable = configParams.tenantConfigTable;
+                var configTable = configParams.tenantConfigOutputTable;
                 var configTableKey = configParams.tenantConfigTablePartitionKey;
                 return DynamoDBHelper.get(configParams.awsRegion, dynamoCredentialsProvider,
                     configTable, configTableKey, configParams.tenantId,
                     configParams.dynamoConfigMap);
+            });
+    }
+
+    private static Map<String, String> getTenantFeatureFlags(ConfigParams configParams) {
+        return RoleHelper.runAs(configParams.awsRegion, null, configParams.assumeRoleArn,
+            dynamoCredentialsProviders -> {
+                var table = configParams.tenantConfigTable;
+                var tableKey = configParams.tenantConfigTablePartitionKey;
+                return DynamoDBHelper.get(configParams.awsRegion, dynamoCredentialsProviders,
+                    table, tableKey, configParams.tenantId, Map.of("api_feature_flags", "feature_flags"));
             });
     }
 
