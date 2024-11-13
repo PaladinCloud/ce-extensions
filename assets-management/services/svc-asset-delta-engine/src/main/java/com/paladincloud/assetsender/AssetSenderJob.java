@@ -64,21 +64,34 @@ public class AssetSenderJob extends JobExecutor {
         ConfigService.setProperties("batch.",
             Collections.singletonMap("s3.data", params.get(S3_PATH)));
 
-        assetTypes.setupIndexAndTypes(dataSource);
-        assets.process(dataSource, params.get(S3_PATH),
-            params.get(REPORTING_SOURCE),
+        assetTypes.reset();
+
+        var reportingSource = params.get(REPORTING_SOURCE);
+        // dataSource is the underlying source of the data (gcp, aws, azure) while reporting source
+        // is only set if it's different. It's different for secondary sources reporting data
+        // (qualys, rapid7); in addition, reporting service is also set only if the data is from
+        // a secondary source.
+        var isOpinion = reportingSource != null && !dataSource.equalsIgnoreCase(reportingSource);
+
+        if (!isOpinion) {
+            assetTypes.setupIndexAndTypes(dataSource);
+        }
+        assets.process(dataSource, params.get(S3_PATH), isOpinion,
+            reportingSource,
             params.get(REPORTING_SOURCE_SERVICE),
             params.get(REPORTING_SOURCE_SERVICE_DISPLAY_NAME));
 
-        if ("true".equalsIgnoreCase(ConfigService.get(Dev.SKIP_ASSET_COUNT))) {
-            LOGGER.error("Skipping asset count");
-        } else {
-            try {
-                var dataSourceInfo = dataSourceHelper.fetch(dataSource);
-                assetGroupStatsCollector.collectStats(dataSourceInfo.assetGroups());
-                assetCounts.populate(dataSource, dataSourceInfo.accountIds());
-            } catch (Exception e) {
-                throw new JobException("Error populating asset stats", e);
+        if (!isOpinion) {
+            if ("true".equalsIgnoreCase(ConfigService.get(Dev.SKIP_ASSET_COUNT))) {
+                LOGGER.error("Skipping asset count");
+            } else {
+                try {
+                    var dataSourceInfo = dataSourceHelper.fetch(dataSource);
+                    assetGroupStatsCollector.collectStats(dataSourceInfo.assetGroups());
+                    assetCounts.populate(dataSource, dataSourceInfo.accountIds());
+                } catch (Exception e) {
+                    throw new JobException("Error populating asset stats", e);
+                }
             }
         }
 
