@@ -58,6 +58,16 @@ public class AssetDocumentHelperTests {
     }
 
     @Test
+    void docIdOverridesCorrectly() throws JsonProcessingException {
+        AssetDocumentHelper helper = getHelper("gcp", "resource_id", "resource_name");
+        var mapperData = JsonHelper.mapFromString(getPrimaryWithDocIdMapperDocument());
+        var dto = helper.createFrom(mapperData);
+
+        assertEquals("doc-id-override", dto.getDocId());
+        assertEquals("doc-id-override", dto.getLegacyDocId());
+    }
+
+    @Test
     void primaryDtoIsFullyPopulatedFromLegacyMapper() throws JsonProcessingException {
         AssetDocumentHelper helper = getHelper("gcp", "_resource_id", "_resource_name");
         var mapperData = JsonHelper.mapFromString(getLegacyPrimaryMapperDocument());
@@ -113,6 +123,26 @@ public class AssetDocumentHelperTests {
             {
                 "rawData": "{\\"auto_restart\\":true,\\"can_ip_forward\\":false,\\"confidential_computing\\":false,\\"description\\":\\"\\",\\"disks\\":[{\\"id\\":\\"0\\",\\"projectId\\":\\"xyz\\",\\"projectName\\":\\"Project\\",\\"name\\":\\"instance-abc\\",\\"sizeInGb\\":50,\\"type\\":\\"PERSISTENT\\",\\"autoDelete\\":true,\\"hasSha256\\":false,\\"hasKMSKeyName\\":false,\\"labels\\":null,\\"region\\":\\"\\"}],\\"emails\\":[\\"fubar@developer.gserviceaccount.com\\"],\\"id\\":17,\\"item_interfaces\\":[{\\"key\\":\\"enable-oslogin\\",\\"value\\":\\"true\\"}],\\"labels\\":{},\\"machine_type\\":\\"https://www.googleapis.com/compute/v1/projects/xyz/zones/z/machineTypes/e2-standard-2\\",\\"name\\":\\"instance-abc\\",\\"network_interfaces\\":[{\\"id\\":\\"100.128.100.189\\",\\"name\\":\\"nic0\\",\\"network\\":\\"https://www.googleapis.com/compute/v1/projects/xyz/global/networks/default\\",\\"accessConfig\\":[{\\"id\\":\\"External NAT\\",\\"name\\":\\"External NAT\\",\\"natIp\\":null,\\"projectName\\":\\"Project\\"}]}],\\"on_host_maintainence\\":\\"MIGRATE\\",\\"project_id\\":\\"xyz\\",\\"project_name\\":\\"Project\\",\\"project_number\\":344106022091,\\"region\\":\\"r\\",\\"scopes\\":[\\"https://www.googleapis.com/auth/devstorage.read_only\\",\\"https://www.googleapis.com/auth/logging.write\\",\\"https://www.googleapis.com/auth/monitoring.write\\",\\"https://www.googleapis.com/auth/servicecontrol\\",\\"https://www.googleapis.com/auth/service.management.readonly\\",\\"https://www.googleapis.com/auth/trace.append\\"],\\"service_accounts\\":[{\\"email\\":\\"fubar@developer.gserviceaccount.com\\",\\"emailBytes\\":{},\\"scopeList\\":[\\"https://www.googleapis.com/auth/devstorage.read_only\\",\\"https://www.googleapis.com/auth/logging.write\\",\\"https://www.googleapis.com/auth/monitoring.write\\",\\"https://www.googleapis.com/auth/servicecontrol\\",\\"https://www.googleapis.com/auth/service.management.readonly\\",\\"https://www.googleapis.com/auth/trace.append\\"]}],\\"shielded_instance_config\\":{\\"enableVtpm\\":true,\\"enableIntegrityMonitoring\\":true},\\"status\\":\\"TERMINATED\\"}",
                 "_lastScanDate": "2024-09-05 14:57:00+0000",
+                "resource_id": "17",
+                "resource_name": "instance-abc",
+                "account_id": "abc",
+                "source": "gcp",
+                "source_display_name": "GCP",
+                "_entityType": "vminstance",
+                "_entityTypeDisplayName": "VM",
+                "region": "us-central",
+                "reporting_source": "gcp",
+                "tags": { "environment": "test" },
+                "projectId": "xyz"
+            }""".trim();
+    }
+
+    private String getPrimaryWithDocIdMapperDocument() {
+        return """
+            {
+                "rawData": "{\\"auto_restart\\":true,\\"can_ip_forward\\":false,\\"confidential_computing\\":false,\\"description\\":\\"\\",\\"disks\\":[{\\"id\\":\\"0\\",\\"projectId\\":\\"xyz\\",\\"projectName\\":\\"Project\\",\\"name\\":\\"instance-abc\\",\\"sizeInGb\\":50,\\"type\\":\\"PERSISTENT\\",\\"autoDelete\\":true,\\"hasSha256\\":false,\\"hasKMSKeyName\\":false,\\"labels\\":null,\\"region\\":\\"\\"}],\\"emails\\":[\\"fubar@developer.gserviceaccount.com\\"],\\"id\\":17,\\"item_interfaces\\":[{\\"key\\":\\"enable-oslogin\\",\\"value\\":\\"true\\"}],\\"labels\\":{},\\"machine_type\\":\\"https://www.googleapis.com/compute/v1/projects/xyz/zones/z/machineTypes/e2-standard-2\\",\\"name\\":\\"instance-abc\\",\\"network_interfaces\\":[{\\"id\\":\\"100.128.100.189\\",\\"name\\":\\"nic0\\",\\"network\\":\\"https://www.googleapis.com/compute/v1/projects/xyz/global/networks/default\\",\\"accessConfig\\":[{\\"id\\":\\"External NAT\\",\\"name\\":\\"External NAT\\",\\"natIp\\":null,\\"projectName\\":\\"Project\\"}]}],\\"on_host_maintainence\\":\\"MIGRATE\\",\\"project_id\\":\\"xyz\\",\\"project_name\\":\\"Project\\",\\"project_number\\":344106022091,\\"region\\":\\"r\\",\\"scopes\\":[\\"https://www.googleapis.com/auth/devstorage.read_only\\",\\"https://www.googleapis.com/auth/logging.write\\",\\"https://www.googleapis.com/auth/monitoring.write\\",\\"https://www.googleapis.com/auth/servicecontrol\\",\\"https://www.googleapis.com/auth/service.management.readonly\\",\\"https://www.googleapis.com/auth/trace.append\\"],\\"service_accounts\\":[{\\"email\\":\\"fubar@developer.gserviceaccount.com\\",\\"emailBytes\\":{},\\"scopeList\\":[\\"https://www.googleapis.com/auth/devstorage.read_only\\",\\"https://www.googleapis.com/auth/logging.write\\",\\"https://www.googleapis.com/auth/monitoring.write\\",\\"https://www.googleapis.com/auth/servicecontrol\\",\\"https://www.googleapis.com/auth/service.management.readonly\\",\\"https://www.googleapis.com/auth/trace.append\\"]}],\\"shielded_instance_config\\":{\\"enableVtpm\\":true,\\"enableIntegrityMonitoring\\":true},\\"status\\":\\"TERMINATED\\"}",
+                "_lastScanDate": "2024-09-05 14:57:00+0000",
+                "_docId": "doc-id-override",
                 "resource_id": "17",
                 "resource_name": "instance-abc",
                 "account_id": "abc",

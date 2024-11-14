@@ -60,13 +60,8 @@ public class Assets {
         }
     }
 
-    public void process(String dataSource, String mapperPath, String reportingSource,
+    public void process(String dataSource, String mapperPath, boolean isOpinion, String reportingSource,
         String reportingSourceService, String reportingServiceDisplayName) {
-        // dataSource is the underlying source of the data (gcp, aws, azure) while reporting source
-        // is only set if it's different. It's different for secondary sources reporting data
-        // (qualys, rapid7); in addition, reporting service is also set only if the data is from
-        // a secondary source.
-        // The reporting source and service are determined from values in the mapper file
 
         var bucket = ConfigService.get(ConfigConstants.S3.BUCKET_NAME);
         var featureSuspiciousAssetsEnabled = ConfigService.get(
@@ -75,18 +70,18 @@ public class Assets {
         var types = assetTypes.getTypesWithDisplayName(dataSource);
         var fileTypes = FilesAndTypes.matchFilesAndTypes(allFilenames, types.keySet());
         if (!fileTypes.unknownFiles.isEmpty()) {
-            LOGGER.warn("Unknown files: {}", fileTypes.unknownFiles);
+            LOGGER.warn("Unknown files: {} (types={})", fileTypes.unknownFiles, types.keySet());
         }
 
         if (types.isEmpty()) {
-            LOGGER.info("There are no types to process for dataSource: {} at {}", dataSource,
-                mapperPath);
+            LOGGER.info("There are no types to process for dataSource: {} at {}. Filenames={}",
+                dataSource, mapperPath, allFilenames);
             return;
         }
 
         if (allFilenames.isEmpty()) {
-            LOGGER.info("There are no files to process for dataSource: {} at {}", dataSource,
-                mapperPath);
+            LOGGER.info("There are no files to process for dataSource: {} at {}. Types={}",
+                dataSource, mapperPath, types.keySet());
             return;
         }
 
@@ -102,9 +97,6 @@ public class Assets {
                     var indexName = StringHelper.indexName(dataSource, type);
 
                     var latestAssets = fetchMapperFiles(bucket, filename, dataSource, type);
-                    var isOpinion =
-                        reportingSource != null && !dataSource.equalsIgnoreCase(reportingSource);
-
                     String primaryIndexName;
                     Map<String, AssetDTO> existingPrimaryAssets = null;
                     if (isOpinion) {
@@ -112,6 +104,7 @@ public class Assets {
                         existingPrimaryAssets = assetRepository.getAssets(primaryIndexName, true,
                             Collections.emptyList());
                         indexName = StringHelper.opinionIndexName(dataSource, type);
+                        assetTypes.ensureOpinionIndexExists(dataSource, type);
 
                     } else {
                         primaryIndexName = null;
