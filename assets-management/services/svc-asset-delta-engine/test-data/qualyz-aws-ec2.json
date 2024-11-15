@@ -3,7 +3,7 @@
     {
       "messageId": "059f36b4-87a3-44ab-83d2-661975830a7d",
       "receiptHandle": "AQEBwJnKyrHigUMZj6rYigCgxlaS3SLy0a...",
-      "body": "--tenant_id=98c28482-9bae-46bd-bd4e-58fa132e72c0 --data_source=aws --s3_path=mapper-results/98c28482-9bae-46bd-bd4e-58fa132e72c0/qualys/20241113-170514/aws --reporting_source=qualys  --reporting_source_service=vulnerability_management  \"--reporting_source_service_display_name=Vulnerability Management\"  --reporting_source_display_name=Qualys --tenant_name=saasdev",
+      "body": "--tenant_id=98c28482-9bae-46bd-bd4e-58fa132e72c0 --data_source=aws --s3_path=mapper-results/98c28482-9bae-46bd-bd4e-58fa132e72c0/qualys/20241113-170514/aws --reporting_source=qualys  --reporting_source_service=vulnerability_management  \"--reporting_source_service_display_name=Vulnerability Management\"  --reporting_source_display_name=Qualys  --omit_done_event=true",
       "attributes": {
         "ApproximateReceiveCount": "1",
         "SentTimestamp": "1545082649183",
@@ -19,7 +19,7 @@
     {
       "messageId": "059f36b4-87a3-44ab-83d2-661975830a7d",
       "receiptHandle": "AQEBwJnKyrHigUMZj6rYigCgxlaS3SLy0a...",
-      "body": "--tenant_id=98c28482-9bae-46bd-bd4e-58fa132e72c0 --data_source=gcp --s3_path=mapper-results/98c28482-9bae-46bd-bd4e-58fa132e72c0/qualys/20241113-170514/gcp --reporting_source=qualys --reporting_source_service=vulnerabilities_management \"--reporting_source_service_display_name=Vulnerability Management\" --omit_done_event=true",
+      "body": "--tenant_id=98c28482-9bae-46bd-bd4e-58fa132e72c0 --data_source=gcp --s3_path=mapper-results/98c28482-9bae-46bd-bd4e-58fa132e72c0/qualys/20241113-170514/gcp --reporting_source=qualys --reporting_source_service=vulnerability_management \"--reporting_source_service_display_name=Vulnerability Management\" --omit_done_event=true",
       "attributes": {
         "ApproximateReceiveCount": "1",
         "SentTimestamp": "1545082649183",

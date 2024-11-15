@@ -152,7 +152,7 @@ public class Assets {
                         mergeResponse.getNewAssets().size(),
                         mergeResponse.getMissingAssets().size(),
                         mergeResponse.getDeletedOpinionAssets().size(),
-                        featureSuspiciousAssetsEnabled ? 0 : mergeResponse.getNewPrimaryAssets().size(),
+                        !featureSuspiciousAssetsEnabled ? 0 : mergeResponse.getNewPrimaryAssets().size(),
                         mergeResponse.getDeletedPrimaryAssets().size());
 
                     String finalIndexName = indexName;
