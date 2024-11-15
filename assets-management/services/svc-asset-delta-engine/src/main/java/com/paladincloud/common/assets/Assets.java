@@ -145,14 +145,14 @@ public class Assets {
                         latestAssets, existingPrimaryAssets);
 
                     LOGGER.info(
-                        "Merged mapper assets for {}; {} were updated, {} were added, " +
-                            "{} were missing, {} opinions were deleted, " +
-                            "{} stub primary documents were added, {} primary documents were deleted",
+                        "Merged mapper assets for {}; {} updated, {} added, " +
+                            "{} missing, {} opinions deleted, " +
+                            "{} suspicious primary added, {} primary deleted",
                         type, mergeResponse.getUpdatedAssets().size(),
                         mergeResponse.getNewAssets().size(),
                         mergeResponse.getMissingAssets().size(),
                         mergeResponse.getDeletedOpinionAssets().size(),
-                        mergeResponse.getNewPrimaryAssets().size(),
+                        featureSuspiciousAssetsEnabled ? 0 : mergeResponse.getNewPrimaryAssets().size(),
                         mergeResponse.getDeletedPrimaryAssets().size());
 
                     String finalIndexName = indexName;
