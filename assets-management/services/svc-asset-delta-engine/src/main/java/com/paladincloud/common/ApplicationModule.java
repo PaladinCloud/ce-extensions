@@ -76,7 +76,7 @@ public class ApplicationModule {
     @Singleton
     @Provides
     AssetCounts provideAssetCounts(DatabaseHelper databaseHelper, AssetGroups assetGroups, AssetCountsHelper assetCountsHelper) {
-        return new AssetCounts(databaseHelper, assetGroups, assetCountsHelper);
+        return new AssetCounts(databaseHelper, assetCountsHelper);
     }
 
     @Singleton

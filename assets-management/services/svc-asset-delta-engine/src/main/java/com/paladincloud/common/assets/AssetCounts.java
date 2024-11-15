@@ -9,13 +9,11 @@ import javax.inject.Singleton;
 public class AssetCounts {
 
     private final DatabaseHelper database;
-    private final AssetGroups assetGroupsInstance;
     private final AssetCountsHelper assetCountsHelper;
 
     @Inject
-    public AssetCounts(DatabaseHelper database, AssetGroups assetGroupsInstance, AssetCountsHelper assetCountsHelper) {
+    public AssetCounts(DatabaseHelper database, AssetCountsHelper assetCountsHelper) {
         this.database = database;
-        this.assetGroupsInstance = assetGroupsInstance;
         this.assetCountsHelper = assetCountsHelper;
     }
 

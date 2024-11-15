@@ -64,8 +64,6 @@ public class AssetSenderJob extends JobExecutor {
         ConfigService.setProperties("batch.",
             Collections.singletonMap("s3.data", params.get(S3_PATH)));
 
-        assetTypes.reset();
-
         var reportingSource = params.get(REPORTING_SOURCE);
         // dataSource is the underlying source of the data (gcp, aws, azure) while reporting source
         // is only set if it's different. It's different for secondary sources reporting data

@@ -23,6 +23,7 @@ public class AssetTypes {
 
     private static final Logger LOGGER = LogManager.getLogger(AssetTypes.class);
     private static Map<String, Map<String, String>> typeInfo;
+    private static String typeInfoDataSource = null;
 
     private final ElasticSearchHelper elasticSearch;
     private final DatabaseHelper database;
@@ -36,10 +37,6 @@ public class AssetTypes {
         this.elasticSearch = elasticSearch;
         this.database = database;
         this.assetGroups = assetGroups;
-    }
-
-    public void reset() {
-        typeInfo = null;
     }
 
     public Set<String> getTypes(String dataSource) {
@@ -80,6 +77,11 @@ public class AssetTypes {
             ",", true);
         var targetTypesExclude = StringUtils.split(ConfigService.get(Config.TARGET_TYPE_EXCLUDE),
             ",", true);
+
+        if (!dataSource.equals(typeInfoDataSource)) {
+            typeInfo = null;
+            typeInfoDataSource = dataSource;
+        }
 
         if (typeInfo == null) {
             typeInfo = new HashMap<>();

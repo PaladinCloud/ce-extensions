@@ -39,6 +39,7 @@ public class AssetGroups {
         }
         """.trim();
     private static final Map<String, List<Map<String, String>>> databaseCache = new HashMap<>();
+    private static String cacheDataSource = null;
     private static final List<String> dataSourceCache = new ArrayList<>();
     private static final Map<String, List<Map<String, String>>> assetGroupTagsCache = new HashMap<>();
     private final ElasticSearchHelper elasticSearch;
@@ -51,8 +52,20 @@ public class AssetGroups {
         this.database = database;
     }
 
+    private void checkCaches(String newDataSource) {
+        if (cacheDataSource == null) {
+            return;
+        }
+        if (!cacheDataSource.equals(newDataSource)) {
+            cacheDataSource = newDataSource;
+            dataSourceCache.clear();
+            assetGroupTagsCache.clear();
+
+        }
+    }
 
     public void createDefaultGroup(String dataSource) {
+        checkCaches(dataSource);
         try {
             String queryForAllResources = STR."""
                 SELECT EXISTS (SELECT 1 FROM cf_AssetGroupDetails
