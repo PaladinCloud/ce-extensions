@@ -45,7 +45,7 @@ func NewAssetDetailsClient(ctx context.Context, config *Configuration) (*AssetDe
 const (
 	allSources = "all-sources"
 	success    = "success"
-	empty      = ""
+	empty      = "<missing>"
 )
 
 func (c *AssetDetailsClient) GetAssetDetails(ctx context.Context, tenantId, assetId string) (*models.Response, error) {
@@ -64,7 +64,12 @@ func (c *AssetDetailsClient) GetAssetDetails(ctx context.Context, tenantId, asse
 		return nil, fmt.Errorf("failed to extract source from result: %w", err)
 	}
 
-	tags, err := c.extractTags(assetDetails)
+	mandatoryTagsFromDb, err := c.rdsClient.FetchMandatoryTags(ctx, tenantId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch mandatory tags: %w", err)
+	}
+
+	tags, err := c.extractTags(assetDetails, mandatoryTagsFromDb)
 	if err != nil {
 		return nil, fmt.Errorf("failed to extract tags: %w", err)
 	}
@@ -77,7 +82,7 @@ func (c *AssetDetailsClient) GetAssetDetails(ctx context.Context, tenantId, asse
 		commonFields = c.buildCommonFields(assetDetails)
 	}
 
-	mandatoryTags, err := c.extractMandatoryTags(ctx, tenantId, tags)
+	mandatoryTags, err := c.extractMandatoryTags(ctx, tenantId, tags, mandatoryTagsFromDb)
 	if err != nil {
 		return nil, fmt.Errorf("failed to add mandatory tags: %w", err)
 	}
@@ -122,12 +127,13 @@ func extractSourceFromResult(result *map[string]interface{}, assetId string) (ma
 }
 
 // Helper method to extract tags
-func (c *AssetDetailsClient) extractTags(assetDetails map[string]interface{}) (map[string]string, error) {
+func (c *AssetDetailsClient) extractTags(assetDetails map[string]interface{}, mandatoryTags []models.Tag) (map[string]string, error) {
 	tags := make(map[string]string)
 	if val, ok := assetDetails["tags"].(map[string]interface{}); ok {
 		for k, v := range val {
 			if strVal, ok2 := v.(string); ok2 {
-				tags[k] = strVal
+				tagDisplayName := getTagDisplayName(k, mandatoryTags)
+				tags[tagDisplayName] = strVal
 			}
 		}
 	} else {
@@ -138,13 +144,18 @@ func (c *AssetDetailsClient) extractTags(assetDetails map[string]interface{}) (m
 	return tags, nil
 }
 
-// Helper method to add mandatory tags
-func (c *AssetDetailsClient) extractMandatoryTags(ctx context.Context, tenantId string, tags map[string]string) (map[string]string, error) {
-	mandatoryTagsWithValues := make(map[string]string)
-	mandatoryTags, err := c.rdsClient.FetchMandatoryTags(ctx, tenantId)
-	if err != nil {
-		return mandatoryTagsWithValues, fmt.Errorf("failed to fetch mandatory tags: %w", err)
+func getTagDisplayName(tag string, mandatoryTags []models.Tag) string {
+	for _, mandatoryTag := range mandatoryTags {
+		if strings.ToLower(tag) == strings.ToLower(mandatoryTag.TagName) {
+			return mandatoryTag.TagName
+		}
 	}
+	return tag
+}
+
+// Helper method to add mandatory tags
+func (c *AssetDetailsClient) extractMandatoryTags(ctx context.Context, tenantId string, tags map[string]string, mandatoryTags []models.Tag) (map[string]string, error) {
+	mandatoryTagsWithValues := make(map[string]string)
 
 	for _, mandatoryTag := range mandatoryTags {
 		if val, exists := tags[mandatoryTag.TagName]; exists {
@@ -207,6 +218,8 @@ func (c *AssetDetailsClient) buildLegacyCommonFields(assetDetails map[string]int
 				commonFields[constants.TargetTypeName] = fmt.Sprintf("%v", value)
 			case legacy_constants.Region:
 				commonFields[constants.Region] = fmt.Sprintf("%v", value)
+			case legacy_constants.AssetState:
+				commonFields[constants.AssetState] = fmt.Sprintf("%v", value)
 			}
 		}
 	}

@@ -71,7 +71,15 @@ public class DynamoDBHelper {
             var rowValue = row.get(fieldName);
             if (rowValue != null) {
                 if (rowValue.hasM()) {
-                    configResponse.put(fieldValue, rowValue.m().get("id").s());
+                    var map = rowValue.m();
+                    if (map.containsKey("id")) {
+                        configResponse.put(fieldValue, map.get("id").s());
+                    } else {
+                        // Add the entire map
+                        convertToJava(map).entrySet().forEach(entry -> {
+                            configResponse.put(fieldValue + "." + entry.getKey(), entry.getValue().toString());
+                        });
+                    }
                 } else if (rowValue.type().equals(Type.S)) {
                     configResponse.put(fieldValue, rowValue.s());
                 } else {
@@ -81,5 +89,20 @@ public class DynamoDBHelper {
             }
         });
         return configResponse;
+    }
+
+    private static Map<String, Object> convertToJava(Map<String, AttributeValue> mapValue) {
+        var newMap = new HashMap<String, Object>(mapValue.size());
+        for (var entry : mapValue.entrySet()) {
+            switch (entry.getValue().type()) {
+                case S:
+                    newMap.put(entry.getKey(), entry.getValue().s());
+                    break;
+                case BOOL:
+                    newMap.put(entry.getKey(), entry.getValue().bool());
+                    break;
+            }
+        }
+        return newMap;
     }
 }

@@ -14,28 +14,16 @@
  * the License.
  */
 
-package constants
+package models
 
-const (
-	AccountId       = "account_id"
-	AccountName     = "account_name"
-	Source          = "source"
-	SourceName      = "sourceDisplayName"
-	TargetType      = "_entityType"
-	TargetTypeName  = "_entityTypeDisplayName"
-	Region          = "region"
-	PrimaryProvider = "primaryProvider"
-	RawData         = "rawData"
-	AssetState      = "_assetState"
-)
+// OpenSearchDomainProperties represents the properties of the OpenSearch domain
+type OpenSearchDomainProperties struct {
+	Endpoint       string `dynamodbav:"endpoint" json:"endpoint"`
+	ID             string `dynamodbav:"id" json:"id"`
+	KibanaEndpoint string `dynamodbav:"kibana_endpoint" json:"kibana_endpoint"`
+}
 
-var CommonFields = []string{
-	AccountId,
-	AccountName,
-	Source,
-	SourceName,
-	TargetType,
-	TargetTypeName,
-	Region,
-	AssetState,
+// TenantOutput represents the output structure for tenant configurations
+type TenantOutput struct {
+	EsDomain OpenSearchDomainProperties `dynamodbav:"datastore_es_ESDomain" json:"datastore_es_ESDomain"`
 }

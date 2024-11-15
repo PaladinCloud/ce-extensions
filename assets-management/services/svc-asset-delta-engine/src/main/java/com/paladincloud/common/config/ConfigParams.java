@@ -28,11 +28,14 @@ public class ConfigParams {
 
     // The DynamoDB table with tenant config
     @NonNull
-    String tenantConfigTable;
+    String tenantConfigOutputTable;
 
     // The partition key for the DynamoDB tenant config table
     @NonNull
     String tenantConfigTablePartitionKey;
+
+    @NonNull
+    String tenantConfigTable;
 
     // The map of DynamoDB config to retrieve. The key is the DynamoDB config and the
     // value is the name to use for storing in the config properties.

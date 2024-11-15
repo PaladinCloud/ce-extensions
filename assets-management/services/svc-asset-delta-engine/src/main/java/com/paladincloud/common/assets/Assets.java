@@ -60,35 +60,33 @@ public class Assets {
         }
     }
 
-    public void process(String dataSource, String mapperPath, String reportingSource,
+    public void process(String dataSource, String mapperPath, boolean isOpinion, String reportingSource,
         String reportingSourceService, String reportingServiceDisplayName) {
-        // dataSource is the underlying source of the data (gcp, aws, azure) while reporting source
-        // is only set if it's different. It's different for secondary sources reporting data
-        // (qualys, rapid7); in addition, reporting service is also set only if the data is from
-        // a secondary source.
-        // The reporting source and service are determined from values in the mapper file
 
         var bucket = ConfigService.get(ConfigConstants.S3.BUCKET_NAME);
+        var featureSuspiciousAssetsEnabled = ConfigService.get(
+            "feature_flags.enableSuspiciousAssets", "true").equalsIgnoreCase("true");
         var allFilenames = mapperRepository.listFiles(bucket, mapperPath);
         var types = assetTypes.getTypesWithDisplayName(dataSource);
         var fileTypes = FilesAndTypes.matchFilesAndTypes(allFilenames, types.keySet());
         if (!fileTypes.unknownFiles.isEmpty()) {
-            LOGGER.warn("Unknown files: {}", fileTypes.unknownFiles);
+            LOGGER.warn("Unknown files: {} (types={})", fileTypes.unknownFiles, types.keySet());
         }
 
         if (types.isEmpty()) {
-            LOGGER.info("There are no types to process for dataSource: {} at {}", dataSource,
-                mapperPath);
+            LOGGER.info("There are no types to process for dataSource: {} at {}. Filenames={}",
+                dataSource, mapperPath, allFilenames);
             return;
         }
 
         if (allFilenames.isEmpty()) {
-            LOGGER.info("There are no files to process for dataSource: {} at {}", dataSource,
-                mapperPath);
+            LOGGER.info("There are no files to process for dataSource: {} at {}. Types={}",
+                dataSource, mapperPath, types.keySet());
             return;
         }
 
-        LOGGER.info("Start processing Asset info");
+        LOGGER.info("Start processing Asset info; suspiciousAssetsEnabled={}",
+            featureSuspiciousAssetsEnabled);
 
         var startTime = ZonedDateTime.now();
         var typeToError = loadTypeErrors(bucket, fileTypes.loadErrors);
@@ -99,8 +97,6 @@ public class Assets {
                     var indexName = StringHelper.indexName(dataSource, type);
 
                     var latestAssets = fetchMapperFiles(bucket, filename, dataSource, type);
-                    var isOpinion = reportingSource != null && !dataSource.equalsIgnoreCase(reportingSource);
-
                     String primaryIndexName;
                     Map<String, AssetDTO> existingPrimaryAssets = null;
                     if (isOpinion) {
@@ -108,6 +104,7 @@ public class Assets {
                         existingPrimaryAssets = assetRepository.getAssets(primaryIndexName, true,
                             Collections.emptyList());
                         indexName = StringHelper.opinionIndexName(dataSource, type);
+                        assetTypes.ensureOpinionIndexExists(dataSource, type);
 
                     } else {
                         primaryIndexName = null;
@@ -171,15 +168,17 @@ public class Assets {
 
                     // Persist any stub primary documents that were created
                     if (primaryIndexName != null) {
-                        mergeResponse.getDeletedPrimaryAssets().forEach(value -> {
-                            try {
-                                batchIndexer.add(
-                                    BatchItem.deleteEntry(primaryIndexName, value.getDocId())
-                                );
-                            } catch (IOException e) {
-                                throw new JobException("Failed batching item for delete", e);
-                            }
-                        });
+                        if (featureSuspiciousAssetsEnabled) {
+                            mergeResponse.getDeletedPrimaryAssets().forEach(value -> {
+                                try {
+                                    batchIndexer.add(
+                                        BatchItem.deleteEntry(primaryIndexName, value.getDocId())
+                                    );
+                                } catch (IOException e) {
+                                    throw new JobException("Failed batching item for delete", e);
+                                }
+                            });
+                        }
                     }
 
                     // Each document needs to be updated, regardless of which state it is in
@@ -193,15 +192,17 @@ public class Assets {
                         }
                     });
 
-                    mergeResponse.getNewPrimaryAssets().values().forEach(value -> {
-                        try {
-                            batchIndexer.add(
-                                BatchItem.documentEntry(primaryIndexName, value.getDocId(),
-                                    JsonHelper.toJson(value)));
-                        } catch (IOException e) {
-                            throw new JobException("Failed converting asset to JSON", e);
-                        }
-                    });
+                    if (featureSuspiciousAssetsEnabled) {
+                        mergeResponse.getNewPrimaryAssets().values().forEach(value -> {
+                            try {
+                                batchIndexer.add(
+                                    BatchItem.documentEntry(primaryIndexName, value.getDocId(),
+                                        JsonHelper.toJson(value)));
+                            } catch (IOException e) {
+                                throw new JobException("Failed converting asset to JSON", e);
+                            }
+                        });
+                    }
 
                     var stats = generateStats(startTime, dataSource, type, latestAssets.size(),
                         mergeResponse.getNewAssets().size());

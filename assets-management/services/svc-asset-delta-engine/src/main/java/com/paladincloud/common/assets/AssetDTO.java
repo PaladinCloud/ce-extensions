@@ -305,11 +305,11 @@ public class AssetDTO {
         @JsonProperty("data")
         private String data;
 
-        @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:00Z")
+        @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:00'Z'", timezone = "UTC")
         @JsonProperty("firstScanDate")
         private ZonedDateTime firstScanDate;
 
-        @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:00Z")
+        @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:00'Z'", timezone = "UTC")
         @JsonProperty("lastScanDate")
         private ZonedDateTime lastScanDate;
 

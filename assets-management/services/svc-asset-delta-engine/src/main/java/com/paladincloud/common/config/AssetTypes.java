@@ -38,6 +38,10 @@ public class AssetTypes {
         this.assetGroups = assetGroups;
     }
 
+    public void reset() {
+        typeInfo = null;
+    }
+
     public Set<String> getTypes(String dataSource) {
         return getTypeConfig(dataSource).keySet();
     }
@@ -115,19 +119,17 @@ public class AssetTypes {
     }
 
     public void setupIndexAndTypes(String dataSource) {
-        var newAssets = new HashSet<String>();
-        var types = getTypes(dataSource);
-        for (var type : types) {
-            var indexName = StringHelper.indexName(dataSource, type);
-            if (ensureIndexExists(indexName, false, type, dataSource)) {
-                newAssets.add(indexName);
+            var newAssets = new HashSet<String>();
+            var types = getTypes(dataSource);
+            for (var type : types) {
+                var indexName = StringHelper.indexName(dataSource, type);
+                if (ensureIndexExists(indexName, false, type, dataSource)) {
+                    newAssets.add(indexName);
+                }
             }
-        }
 
-        assetGroups.createDefaultGroup(dataSource);
-        assetGroups.updateImpactedAliases(newAssets.stream().toList(), dataSource);
-
-        setupOpinionIndexes(dataSource);
+            assetGroups.createDefaultGroup(dataSource);
+            assetGroups.updateImpactedAliases(newAssets.stream().toList(), dataSource);
 
         try {
             elasticSearch.createIndex("exceptions");
@@ -136,15 +138,13 @@ public class AssetTypes {
         }
     }
 
-    private void setupOpinionIndexes(String dataSource) {
-        var types = getTypes(dataSource);
-        for (var type : types) {
-            var indexName = StringHelper.opinionIndexName(dataSource, type);
-            ensureIndexExists(indexName, true, null, null);
-        }
+    public void ensureOpinionIndexExists(String dataSource, String type) {
+        var indexName = StringHelper.opinionIndexName(dataSource, type);
+        ensureIndexExists(indexName, true, null, null);
     }
 
-    private boolean ensureIndexExists(String indexName, boolean isOpinion, String type, String dataSource) {
+    private boolean ensureIndexExists(String indexName, boolean isOpinion, String type,
+        String dataSource) {
         if (elasticSearch.indexMissing(indexName)) {
             LOGGER.info("Creating index '{}'", indexName);
             var additionalProperties = "";

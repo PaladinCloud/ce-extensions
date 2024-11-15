@@ -45,6 +45,7 @@ public class AssetDocumentHelper {
     // top-level asset document
     static private Set<String> assetFields = new HashSet<>(
         List.of(
+            MapperFields.IS_ACTIVE,
             MapperFields.ACCOUNT_ID,
             MapperFields.LEGACY_ACCOUNT_ID,
             MapperFields.RAW_DATA,
@@ -124,6 +125,13 @@ public class AssetDocumentHelper {
     }
 
     public String buildDocId(Map<String, Object> data) {
+        // Allow mappers to override the docId formation.
+        var docIdOverride = MapHelper.getFirstOrDefaultString(data,
+            List.of(AssetDocumentFields.DOC_ID, AssetDocumentFields.LEGACY_DOC_ID), null);
+        if (StringUtils.isNotBlank(docIdOverride)) {
+            return docIdOverride;
+        }
+
         if (docIdFields.contains(AssetDocumentFields.LEGACY_ACCOUNT_ID)
             && data.get(AssetDocumentFields.LEGACY_ACCOUNT_ID) == null) {
             data.put(AssetDocumentFields.LEGACY_ACCOUNT_ID,

@@ -23,24 +23,24 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"svc-asset-violations-layer/clients"
+	"svc-asset-opinions-layer/clients"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
 
 type HttpServer struct {
-	Configuration         *clients.Configuration
-	AssetViolationsClient *clients.AssetViolationsClient
+	Configuration       *clients.Configuration
+	AssetOpinionsClient *clients.AssetOpinionsClient
 }
 
 // Start begins running the sidecar
 func Start(port string, server *HttpServer, enableExtension bool) {
 	if enableExtension {
-		log.Println("starting the server in background")
+		println("starting the server in background")
 		go startHTTPServer(port, server)
 	} else {
-		log.Println("starting the server")
+		println("starting the server")
 		startHTTPServer(port, server)
 	}
 }
@@ -50,60 +50,38 @@ func startHTTPServer(port string, httpConfig *HttpServer) {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
-	r.Get("/tenant/{tenantId}/targets/{targetType}/assets/{assetId}/violations", handleValue(httpConfig))
+	r.Get("/tenant/{tenantId}/sources/{source}/targets/{targetType}/assets/{assetId}/opinions", handleValue(httpConfig))
 
-	log.Printf("starting server on port [%s]\n", port)
-	if err := http.ListenAndServe(fmt.Sprintf(":%s", port), r); err != nil {
-		logError("error starting the server", err)
+	err := http.ListenAndServe(fmt.Sprintf(":%s", port), r)
+	if err != nil {
+		log.Printf("error starting the server %+v", err)
 		os.Exit(1)
 	}
 
-	log.Printf("server started on %s\n", port)
+	log.Printf("server started on [%s]\n", port)
 }
 
 func handleValue(config *HttpServer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		tenantId := chi.URLParam(r, "tenantId")
+		source := chi.URLParam(r, "source")
 		targetType := chi.URLParam(r, "targetType")
+
 		assetId, err := url.QueryUnescape(chi.URLParam(r, "assetId"))
 		if err != nil {
-			logError("error decoding the asset id from url path", err)
+			log.Println("error decoding the asset id from url path")
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
-		assetDetails, err := config.AssetViolationsClient.GetAssetViolations(r.Context(), targetType, tenantId, assetId)
+		assetOpinions, err := config.AssetOpinionsClient.GetAssetOpinions(r.Context(), tenantId, source, targetType, assetId)
 		if err != nil {
-			logError("error fetching asset violations", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
 
-		b, _ := json.Marshal(assetDetails)
+		b, _ := json.Marshal(assetOpinions)
 		w.Write(b)
 	}
-}
-
-func logError(message string, err error) {
-	type ErrorOutput struct {
-		Message string `json:"message"`
-		Error   string `json:"error"`
-		Details string `json:"details,omitempty"`
-	}
-
-	errorOutput := ErrorOutput{
-		Message: message,
-		Error:   fmt.Sprintf("%T", err),
-		Details: err.Error(),
-	}
-
-	jsonOutput, jsonErr := json.MarshalIndent(errorOutput, "", "  ")
-	if jsonErr != nil {
-		// Fallback to basic logging if JSON fails
-		log.Printf("ERROR: %s: %v (JSON marshaling failed: %v)", message, err, jsonErr)
-		return
-	}
-
-	log.Printf("%s", jsonOutput)
 }
