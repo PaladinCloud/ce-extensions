@@ -3,6 +3,7 @@ package clients
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -74,12 +75,16 @@ func (c *AssetDetailsClient) GetAssetDetails(ctx context.Context, tenantId, asse
 		return nil, fmt.Errorf("failed to extract tags: %w", err)
 	}
 
+	message := success
 	isLegacy, primaryProvider, err := c.extractPrimaryProvider(assetDetails)
 	commonFields := make(map[string]string)
 	if isLegacy {
 		commonFields = c.buildLegacyCommonFields(assetDetails)
 	} else {
 		commonFields = c.buildCommonFields(assetDetails)
+		if err != nil {
+			message = err.Error()
+		}
 	}
 
 	mandatoryTags, err := c.extractMandatoryTags(ctx, tenantId, tags, mandatoryTagsFromDb)
@@ -101,7 +106,7 @@ func (c *AssetDetailsClient) GetAssetDetails(ctx context.Context, tenantId, asse
 			MandatoryTags:   mandatoryTags,
 			PrimaryProvider: primaryProvider,
 		},
-		Message: success,
+		Message: message,
 	}
 
 	return response, nil
@@ -238,10 +243,15 @@ func (c *AssetDetailsClient) getCommonField(assetDetails map[string]interface{},
 // Helper method to determine primary provider
 func (c *AssetDetailsClient) extractPrimaryProvider(assetDetails map[string]interface{}) (bool, string, error) {
 	isLegacy := false
+	// If asset state is suspicious, return empty primary provider
+	if assetState, ok := assetDetails[constants.AssetState]; ok {
+		if assetState == constants.Suspicious {
+			return isLegacy, fmt.Sprintf("%v", ""), errors.New("No primary provider data exists")
+		}
+	}
+
 	if provider, ok := assetDetails[constants.PrimaryProvider]; ok {
 		return isLegacy, fmt.Sprintf("%v", provider), nil
-	} else if rawData, ok2 := assetDetails[constants.RawData]; ok2 {
-		return isLegacy, fmt.Sprintf("%v", rawData), nil
 	}
 
 	isLegacy = true
