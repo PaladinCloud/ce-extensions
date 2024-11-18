@@ -19,6 +19,7 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"svc-plugins-list-layer/clients"
@@ -33,9 +34,14 @@ type HttpServer struct {
 }
 
 // Start begins running the sidecar
-func Start(port string, server *HttpServer) {
-	fmt.Println("Starting the local http server in background")
-	go startHTTPServer(port, server)
+func Start(port string, server *HttpServer, enableExtension bool) {
+	if enableExtension {
+		log.Println("starting the server in background")
+		go startHTTPServer(port, server)
+	} else {
+		log.Println("starting the server")
+		startHTTPServer(port, server)
+	}
 }
 
 // Method that responds back with the cached values
@@ -45,20 +51,23 @@ func startHTTPServer(port string, httpConfig *HttpServer) {
 	r.Use(middleware.Recoverer)
 	r.Get("/tenant/{tenantId}/plugins", handleValue(httpConfig))
 
-	err := http.ListenAndServe(fmt.Sprintf(":%s", port), r)
-	if err != nil {
-		fmt.Errorf("error starting the server %v", err)
-		os.Exit(0)
+	log.Printf("starting server on port [%s]\n", port)
+	if err := http.ListenAndServe(fmt.Sprintf(":%s", port), r); err != nil {
+		logError("error starting the server", err)
+		os.Exit(1)
 	}
 
-	fmt.Printf("server started on %s\n", port)
+	log.Printf("server started on %s\n", port)
 }
 
 func handleValue(config *HttpServer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tenantId := chi.URLParam(r, "tenantId")
+
+		log.Printf("getting plugins list for tenant %s", tenantId)
 		pluginsList, err := config.PluginsListClient.GetPlugins(r.Context(), tenantId)
 		if err != nil {
+			logError("error fetching plugins list", err)
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
@@ -66,4 +75,27 @@ func handleValue(config *HttpServer) http.HandlerFunc {
 		b, _ := json.Marshal(pluginsList)
 		w.Write(b)
 	}
+}
+
+func logError(message string, err error) {
+	type ErrorOutput struct {
+		Message string `json:"message"`
+		Error   string `json:"error"`
+		Details string `json:"details,omitempty"`
+	}
+
+	errorOutput := ErrorOutput{
+		Message: message,
+		Error:   fmt.Sprintf("%T", err),
+		Details: err.Error(),
+	}
+
+	jsonOutput, jsonErr := json.MarshalIndent(errorOutput, "", "  ")
+	if jsonErr != nil {
+		// Fallback to basic logging if JSON fails
+		log.Printf("ERROR: %s: %v (JSON marshaling failed: %v)", message, err, jsonErr)
+		return
+	}
+
+	log.Printf("%s", jsonOutput)
 }

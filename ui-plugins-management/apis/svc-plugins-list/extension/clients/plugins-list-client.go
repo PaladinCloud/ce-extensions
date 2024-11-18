@@ -18,7 +18,8 @@ package clients
 
 import (
 	"context"
-	logger "svc-plugins-list-layer/logging"
+	"fmt"
+	"log"
 	"svc-plugins-list-layer/models"
 )
 
@@ -26,31 +27,39 @@ type PluginsListClient struct {
 	dynamodbClient *DynamodbClient     `json:"dynamodbClient,omitempty"`
 	rdsClient      *RdsClient          `json:"rdsClient,omitempty"`
 	cacheClient    *PluginsCacheClient `json:"cacheClient,omitempty"`
-	log            *logger.Logger      `json:"logger,omitempty"`
 }
 
-func NewPluginsListClient(configuration *Configuration, log *logger.Logger) *PluginsListClient {
-	return &PluginsListClient{
-		dynamodbClient: NewDynamoDBClient(configuration),
-		rdsClient:      NewRdsClient(configuration),
-		cacheClient:    NewCacheClient(),
-		log:            log,
+func NewPluginsListClient(ctx context.Context, config *Configuration) (*PluginsListClient, error) {
+	dynamodbClient, err := NewDynamoDBClient(ctx, config.UseAssumeRole, config.AssumeRoleArn, config.Region, config.TenantConfigTable, config.TenantConfigOutputTable, config.TenantTablePartitionKey)
+	if err != nil {
+		return nil, fmt.Errorf("error creating dynamodb client %w", err)
 	}
+
+	//secretsClient, err := NewSecretsClient(ctx, config.UseAssumeRole, config.AssumeRoleArn, config.Region)
+	//if err != nil {
+	//	return nil, fmt.Errorf("error creating secrets client %w", err)
+	//}
+
+	return &PluginsListClient{
+		dynamodbClient: dynamodbClient,
+		rdsClient:      NewRdsClient(config),
+		cacheClient:    NewCacheClient(),
+	}, nil
 }
 
 func (c *PluginsListClient) GetPlugins(ctx context.Context, tenantId string) (*models.Plugins, error) {
-	c.log.Info("Getting Plugins List")
+	log.Println("getting plugins list")
 	pluginsListCache, err := c.cacheClient.GetPlugins(tenantId)
 	if err != nil {
 		return nil, err
 	}
 	if pluginsListCache != nil {
-		c.log.Info("Got Plugins List from cache")
+		log.Println("got plugins list from cache")
 		return pluginsListCache, nil
 	}
 
 	// Cache is missed, populate the plugins list
-	c.log.Info("Populating Plugins List")
+	log.Println("populating plugins list")
 	// Get plugin feature flags
 	pluginFeatureFlags, err := c.dynamodbClient.GetPluginsFeatureFlags(ctx, tenantId)
 	if err != nil {
@@ -73,12 +82,12 @@ func (c *PluginsListClient) GetPlugins(ctx context.Context, tenantId string) (*m
 	return plugins, nil
 }
 
-func AssemblePluginsList(plugins []models.Plugin, flags models.PluginsFeatures) (*models.Plugins, error) {
+func AssemblePluginsList(plugins []models.Plugin, flags models.TenantConfig) (*models.Plugins, error) {
 	var inboundPlugins []models.Plugin
 	var outboundPlugins []models.Plugin
 	for i := range plugins {
 		plugin := &plugins[i]
-		plugin.Flags = flags[plugin.Source]
+		//plugin.Flags = flags[plugin.Source]
 
 		if plugin.IsInbound {
 			inboundPlugins = append(inboundPlugins, *plugin)

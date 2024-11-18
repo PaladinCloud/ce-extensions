@@ -24,16 +24,21 @@ import (
 // Test the dynamodb client
 func TestDynamodbClient(t *testing.T) {
 	ctx := context.Background()
-	configuration := &Configuration{
-		Region:                   "us-east-1",
-		TenantConfigTable:        "tenant-config",
-		TenantConfigPartitionKey: "tenant_id",
-		RdsSecretName:            "SECRET_NAME",
+	c := &Configuration{
+		EnableExtension:         false,
+		UseAssumeRole:           false,
+		Region:                  "us-east-1",
+		TenantConfigTable:       "tenant-config",
+		TenantConfigOutputTable: "tenant-output",
+		TenantTablePartitionKey: "tenant_id",
 	}
 
-	client := NewDynamoDBClient(configuration)
+	client, err := NewDynamoDBClient(ctx, c.UseAssumeRole, c.AssumeRoleArn, c.Region, c.TenantConfigTable, c.TenantConfigOutputTable, c.TenantTablePartitionKey)
+	if err != nil {
+		t.Fatalf("Failed to create DynamoDB client: %+v", err)
+	}
 
-	pluginFeatureFlags, err := client.GetPluginsFeatureFlags(ctx, configuration.RdsSecretName)
+	pluginFeatureFlags, err := client.GetPluginsFeatureFlags(ctx, "tenant_id")
 	if err != nil {
 		panic(err)
 	}

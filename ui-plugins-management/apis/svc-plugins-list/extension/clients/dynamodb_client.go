@@ -19,72 +19,109 @@ package clients
 import (
 	"context"
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
+	"log"
 	"svc-plugins-list-layer/models"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
+	"github.com/google/uuid"
+)
+
+const (
+	pluginFlagsProjectionExpression = "plugin_feature_flags"
 )
 
 type DynamodbClient struct {
-	configuration *Configuration
-	client        *dynamodb.DynamoDB
+	region                  string
+	tenantConfigTable       string
+	tenantConfigOutputTable string
+	tenantTablePartitionKey string
+	client                  *dynamodb.Client
 }
 
 // NewDynamoDBClient inits a DynamoDB session to be used throughout the services
-func NewDynamoDBClient(configuration *Configuration) *DynamodbClient {
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(configuration.Region),
-	})
+func NewDynamoDBClient(ctx context.Context, useAssumeRole bool, assumeRoleArn, region, tenantConfigTable, tenantConfigOutputTable, tenantTablePartitionKey string) (*DynamodbClient, error) {
+	// Load the default AWS configuration
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(region))
 	if err != nil {
-		fmt.Errorf("error creating dynamoDB client %w", err)
+		return nil, fmt.Errorf("error loading AWS config %w", err)
 	}
 
-	svc := dynamodb.New(sess)
+	var svc *dynamodb.Client
+	if useAssumeRole {
+		// Create an STS client
+		stsClient := sts.NewFromConfig(cfg)
 
-	fmt.Println("Initialized DynamoDB Client")
+		// Assume the role using STS
+		creds := stscreds.NewAssumeRoleProvider(stsClient, assumeRoleArn, func(o *stscreds.AssumeRoleOptions) {
+			o.RoleSessionName = fmt.Sprintf("DynamodDBSession-%s", uuid.New())
+		})
+
+		// Create a new AWS configuration with the assumed role credentials
+		assumedCfg := aws.Config{
+			Credentials: aws.NewCredentialsCache(creds),
+			Region:      region,
+		}
+
+		// Initialize the DynamoDB client with the assumed role credentials
+		svc = dynamodb.NewFromConfig(assumedCfg)
+	} else {
+		svc = dynamodb.NewFromConfig(cfg)
+	}
+
+	log.Println("initialized dynamodb client")
 	return &DynamodbClient{
-		configuration: configuration,
-		client:        svc,
-	}
+		region:                  region,
+		client:                  svc,
+		tenantConfigTable:       tenantConfigTable,
+		tenantConfigOutputTable: tenantConfigOutputTable,
+		tenantTablePartitionKey: tenantTablePartitionKey,
+	}, nil
 }
 
-func (d *DynamodbClient) GetPluginsFeatureFlags(ctx context.Context, tenant string) (*models.PluginsFeatures, error) {
+func (d *DynamodbClient) GetPluginsFeatureFlags(ctx context.Context, tenant string) (*models.TenantConfig, error) {
 	tenantId := tenant
 
-	// Define the query input
-	input := &dynamodb.QueryInput{
-		TableName: aws.String(d.configuration.TenantConfigTable),
-		KeyConditions: map[string]*dynamodb.Condition{
-			d.configuration.TenantConfigPartitionKey: {
-				ComparisonOperator: aws.String("EQ"),
-				AttributeValueList: []*dynamodb.AttributeValue{
-					{
-						S: aws.String(tenantId),
-					},
-				},
-			},
-		},
-		ProjectionExpression: aws.String("plugin_feature_flags"),
-	}
+	key := struct {
+		TenantId string `dynamodbav:"tenant_id" json:"tenant_id"`
+	}{TenantId: tenantId}
+	avs, err := attributevalue.MarshalMap(key)
 
-	// Retrieve the item from DynamoDB
-	result, err := d.client.QueryWithContext(ctx, input)
 	if err != nil {
-		return &models.PluginsFeatures{}, fmt.Errorf("failed to get item from DynamoDB: %v", err)
+		return nil, fmt.Errorf("failed to construct dynamodb key %w", err)
 	}
 
-	// Check if the item is found
-	if len(result.Items) == 0 {
-		return &models.PluginsFeatures{}, fmt.Errorf("tenant_id %s not found", tenantId)
+	// Prepare the GetItemInput with the correct table name and key
+	input := &dynamodb.GetItemInput{
+		TableName:            aws.String(d.tenantConfigTable),             // DynamoDB table name
+		Key:                  avs,                                         // Key to fetch the item
+		ProjectionExpression: aws.String(pluginFlagsProjectionExpression), // Only fetch the required attribute
 	}
 
-	// Unmarshal the result into TenantConfig struct
-	var config models.TenantConfig
-	err = dynamodbattribute.UnmarshalMap(result.Items[0], &config)
+	// Query DynamoDB to get the item
+	result, err := d.client.GetItem(ctx, input)
 	if err != nil {
-		return &models.PluginsFeatures{}, fmt.Errorf("failed to unmarshal result: %v", err)
+		return nil, fmt.Errorf("failed to get tenant plugin feature flags from dynamoddb for tenant id [%s] %w", tenantId, err)
 	}
 
-	return &config.PluginsFeatures, nil
+	// Check if the item exists
+	if result.Item == nil {
+		return nil, fmt.Errorf("tenant id [%s] not found in dynamodb [%s] table", tenantId, d.tenantConfigOutputTable)
+	}
+
+	var output models.TenantConfig
+	if err2 := attributevalue.UnmarshalMap(result.Item, &output); err2 != nil {
+		return nil, fmt.Errorf("failed to unmarshal [%s] %w", pluginFlagsProjectionExpression, err2)
+	}
+
+	if output.PluginsFeatures == nil {
+		return nil, fmt.Errorf("empty plugin feature flags in [%s] for tenant [%s]", pluginFlagsProjectionExpression, tenantId)
+	}
+
+	log.Printf("fetched plugin feature flags from [%s]\n", pluginFlagsProjectionExpression)
+	return &output, nil
 }

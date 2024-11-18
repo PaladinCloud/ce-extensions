@@ -19,89 +19,95 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"svc-plugins-list-layer/clients"
 	"svc-plugins-list-layer/extension"
-	logger "svc-plugins-list-layer/logging"
 	"svc-plugins-list-layer/server"
+
 	"syscall"
 )
 
 var (
-	log *logger.Logger
-
 	httpServerClient *server.HttpServer
+	port             = "4567"
 
 	extensionName    = filepath.Base(os.Args[0]) // extension name has to match the filename
 	lambdaRuntimeAPI = os.Getenv("AWS_LAMBDA_RUNTIME_API")
 	extensionClient  = extension.NewClient(lambdaRuntimeAPI)
-	printPrefix      = fmt.Sprintf("[%s]", extensionName)
-
-	port = "4567"
 )
 
-func init() {
-	log = logger.NewLogger(printPrefix)
-	log.Info("Initializing extension clients - ", extensionName)
+func main() {
+	log.Printf("starting extension - %s\n", extensionName)
+
+	log.Println("loading configuration")
+	configuration, err := clients.LoadConfigurationDetails()
+	if err != nil {
+		log.Fatalf("failed to load aws configuratio %+v", err)
+	}
+
+	err2 := startMain(configuration)
+	if err2 != nil {
+		log.Fatalf("failed to start main %+v", err2)
+	}
 }
 
-func main() {
+func startMain(configuration *clients.Configuration) error {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	log.Info("Loading Configuration")
-	configuration := clients.LoadConfigurationDetails(ctx)
-	log.Info("Configuration loaded successfully!")
-
-	log.Info("Initializing HTTP Server")
+	log.Println("initializing http server")
+	pluginsListClient, err := clients.NewPluginsListClient(ctx, configuration)
+	if err != nil {
+		return fmt.Errorf("error creating asset violations client: %w", err)
+	}
 	httpServerClient = &server.HttpServer{
 		Configuration:     configuration,
-		PluginsListClient: clients.NewPluginsListClient(configuration, log),
+		PluginsListClient: pluginsListClient,
 	}
-	log.Info("HTTP Server initialized successfully!")
+
+	log.Printf("starting http server on port [%s]\n", port)
+	server.Start(port, httpServerClient, configuration.EnableExtension)
 
 	if configuration.EnableExtension {
-		log.Info("Registering extension client", extensionName, lambdaRuntimeAPI)
+		log.Printf("registering extension client [%s] [%s]\n", extensionName, lambdaRuntimeAPI)
 		sigs := make(chan os.Signal, 1)
 		signal.Notify(sigs, syscall.SIGTERM, syscall.SIGINT)
 		go func() {
 			s := <-sigs
 			cancel()
-			log.Info("Received", s)
-			log.Info("Exiting")
+			log.Println("received", s)
+			log.Println("exiting")
 		}()
 
 		// Register the extension client with the Lambda runtime
-		res, err := extensionClient.Register(ctx, extensionName)
-		if err != nil {
-			log.Info("Unable to register extension:", err)
+		res, err2 := extensionClient.Register(ctx, extensionName)
+		if err2 != nil {
+			return fmt.Errorf("failed to register extension client: %w", err2)
 		}
 
-		log.Info("Client Registered:", res)
+		log.Printf("registered extension client: %+v\n", res)
+		// Will block until shutdown event is received or cancelled via the context.
+		processEvents(ctx)
 	}
 
-	log.Info("Starting Local HTTP Server")
-	server.Start(port, httpServerClient)
-
-	// Will block until shutdown event is received or cancelled via the context.
-	processEvents(ctx)
+	return nil
 }
 
-func processEvents(ctx context.Context) {
-	log.Info("Starting Processing events")
+func processEvents(ctx context.Context) error {
+	log.Println("starting processing events")
 	for {
 		select {
 		case <-ctx.Done():
-			log.Info("Context done, exiting event loop")
-			return
+			log.Println("context done, exiting event loop")
+			return nil
 		default:
-			log.Info("Waiting for next event...")
+			log.Println("waiting for next event...")
 			// Fetch the next event and check for errors.
 			_, err := extensionClient.NextEvent(ctx)
 			if err != nil {
-				log.Info("Error fetching next event:", err)
-				return
+				return fmt.Errorf("error fetching next event: %w", err)
 			}
 		}
 	}

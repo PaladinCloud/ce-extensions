@@ -17,52 +17,96 @@
 package clients
 
 import (
-	"context"
+	"fmt"
 	"os"
+	"regexp"
 	"strconv"
-	"svc-plugins-list-layer/models"
 )
 
 type Configuration struct {
-	Region                   string
-	TenantConfigTable        string
-	TenantConfigPartitionKey string
-	RdsSecretName            string
-	RdsHost                  string
-	RdsPort                  string
-	RdsDbName                string
-	RdsCredentials           models.RdsSecret
-	EnableExtension          bool
+	EnableExtension         bool
+	UseAssumeRole           bool
+	AssumeRoleArn           string
+	Region                  string
+	TenantConfigTable       string
+	TenantConfigOutputTable string
+	TenantTablePartitionKey string
+	SecretIdPrefix          string
 }
 
-func LoadConfigurationDetails(ctx context.Context) *Configuration {
-	enableExtensionStr := os.Getenv("ENABLE_EXTENSION")
-	enableExtension, err := strconv.ParseBool(enableExtensionStr)
+func LoadConfigurationDetails() (*Configuration, error) {
+	enableExtension, err := parseEnableExtension()
 	if err != nil {
-		// When we deploy the lambda + extension, set the default runtime to enable extension
-		enableExtension = true
+		return nil, fmt.Errorf("error parsing ENABLE_EXTENSION %w", err)
+	}
+	useAssumeRole, assumeRoleArn, err := parseAssumeRole()
+	if err != nil {
+		return nil, fmt.Errorf("error parsing ASSUME_ROLE_ARN %w", err)
 	}
 
-	region := os.Getenv("REGION")
-	tenantConfigTable := os.Getenv("TENANT_CONFIG_TABLE")
-	tenantConfigPartitionKey := os.Getenv("TENANT_CONFIG_PARTITION_KEY")
-	rdsSecretName := os.Getenv("RDS_SECRET_NAME")
-	rdsHost := os.Getenv("RDS_HOST")
-	rdsPort := os.Getenv("RDS_PORT")
-	rdsDbName := os.Getenv("RDS_DB_NAME")
-
-	secretsClient := NewSecretsClient(region)
-	rdsCredentials, _ := secretsClient.GetRdsSecret(ctx, rdsSecretName)
+	// Load the region and other configuration details and fail if not set
+	region, err := getEnvVariable("REGION")
+	if err != nil {
+		return nil, fmt.Errorf("error getting REGION %w", err)
+	}
+	tenantConfigOutputTable, err := getEnvVariable("TENANT_CONFIG_OUTPUT_TABLE")
+	if err != nil {
+		return nil, fmt.Errorf("error getting TENANT_CONFIG_OUTPUT_TABLE %w", err)
+	}
+	tenantTablePartitionKey, err := getEnvVariable("TENANT_TABLE_PARTITION_KEY")
+	if err != nil {
+		return nil, fmt.Errorf("error getting TENANT_TABLE_PARTITION_KEY %w", err)
+	}
+	secretIdPrefix, err := getEnvVariable("SECRET_NAME_PREFIX")
+	if err != nil {
+		return nil, fmt.Errorf("error getting SECRET_NAME_PREFIX %w", err)
+	}
 
 	return &Configuration{
-		EnableExtension:          enableExtension,
-		Region:                   region,
-		TenantConfigTable:        tenantConfigTable,
-		TenantConfigPartitionKey: tenantConfigPartitionKey,
-		RdsSecretName:            rdsSecretName,
-		RdsHost:                  rdsHost,
-		RdsPort:                  rdsPort,
-		RdsDbName:                rdsDbName,
-		RdsCredentials:           *rdsCredentials,
+		EnableExtension:         enableExtension,
+		UseAssumeRole:           useAssumeRole,
+		AssumeRoleArn:           assumeRoleArn,
+		Region:                  region,
+		TenantConfigOutputTable: tenantConfigOutputTable,
+		TenantTablePartitionKey: tenantTablePartitionKey,
+		SecretIdPrefix:          secretIdPrefix,
+	}, nil
+}
+
+func getEnvVariable(name string) (string, error) {
+	value := os.Getenv(name)
+	if value == "" {
+		return "", fmt.Errorf("required environment variable [%s] is not set", name)
 	}
+
+	return value, nil
+}
+
+func parseEnableExtension() (bool, error) {
+	if val := os.Getenv("ENABLE_EXTENSION"); val != "" {
+		parsedVal, err := strconv.ParseBool(val)
+		if err != nil {
+			return false, fmt.Errorf("invalid value for ENABLE_EXTENSION [%s]", val)
+		}
+
+		return parsedVal, nil
+	}
+
+	return true, nil
+}
+
+func parseAssumeRole() (bool, string, error) {
+	arn := os.Getenv("ASSUME_ROLE_ARN")
+	// We only want to use assume role if dynamodb config table and the secrets manager are in a different account
+	if arn == "" {
+		return false, "", nil
+	}
+
+	// Validate complete IAM role ARN format
+	arnPattern := `^arn:aws:iam::\d{12}:role/[\w+=,.@-]+$`
+	if matched, _ := regexp.MatchString(arnPattern, arn); !matched {
+		return false, "", fmt.Errorf("invalid value for ASSUME_ROLE_ARN [%s]", arn)
+	}
+
+	return true, arn, nil
 }
