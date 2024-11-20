@@ -37,17 +37,14 @@ public class Assets {
     private final AssetRepository assetRepository;
     private final MapperRepository mapperRepository;
     private final DatabaseHelper databaseHelper;
-    private final AssetStateHelper assetStateHelper;
 
     @Inject
     public Assets(AssetRepository assetRepository, AssetTypes assetTypes,
-        MapperRepository mapperRepository, DatabaseHelper databaseHelper,
-        AssetStateHelper assetStateHelper) {
+        MapperRepository mapperRepository, DatabaseHelper databaseHelper) {
         this.assetRepository = assetRepository;
         this.assetTypes = assetTypes;
         this.mapperRepository = mapperRepository;
         this.databaseHelper = databaseHelper;
-        this.assetStateHelper = assetStateHelper;
     }
 
     private List<Map<String, Object>> fetchMapperFiles(String bucket, String path,
@@ -140,20 +137,21 @@ public class Assets {
                         .accountIdToNameFn(this::accountIdToName)
                         .reportingSource(reportingSource)
                         .reportingSourceService(reportingSourceService)
-                        .reportingSourceServiceDisplayName(reportingServiceDisplayName)
-                        .assetState(assetStateHelper.get(dataSource, type));
+                        .reportingSourceServiceDisplayName(reportingServiceDisplayName);
                     var mergeResponse = MergeAssets.process(assetCreator.build(), existingAssets,
                         latestAssets, existingPrimaryAssets);
 
                     LOGGER.info(
                         "Merged mapper assets for {}; {} were updated, {} were added, " +
                             "{} were missing, {} opinions were deleted, " +
-                            "{} stub primary documents were added, {} primary documents were deleted",
+                            "{} stub documents were added, {} stub documents were updated, " +
+                            "{} stub documents were deleted",
                         type, mergeResponse.getUpdatedAssets().size(),
                         mergeResponse.getNewAssets().size(),
                         mergeResponse.getMissingAssets().size(),
                         mergeResponse.getDeletedOpinionAssets().size(),
                         mergeResponse.getNewPrimaryAssets().size(),
+                        mergeResponse.getUpdatedPrimaryAssets().size(),
                         mergeResponse.getDeletedPrimaryAssets().size());
 
                     String finalIndexName = indexName;
@@ -194,7 +192,7 @@ public class Assets {
                     });
 
                     if (featureSuspiciousAssetsEnabled) {
-                        mergeResponse.getNewPrimaryAssets().values().forEach(value -> {
+                        mergeResponse.getExistingPrimaryAssets().values().forEach(value -> {
                             try {
                                 batchIndexer.add(
                                     BatchItem.documentEntry(primaryIndexName, value.getDocId(),

@@ -21,6 +21,7 @@ public class MergeAssets {
     // newPrimaryAssets is only populated when processing secondary sources AND the primary asset
     // is missing
     private final Map<String, AssetDTO> newPrimaryAssets = new HashMap<>();
+    private final Map<String, AssetDTO> updatedPrimaryAssets = new HashMap<>();
     // deletedPrimaryAssets is only populated when processing secondary sources AND the primary
     // asset exists AND the last opinion was removed.
     private final List<AssetDTO> deletedPrimaryAssets = new ArrayList<>();
@@ -63,6 +64,12 @@ public class MergeAssets {
             } else {
                 response.updatedAssets.put(docId, asset);
                 assetHelper.updateFrom(latestDoc, asset);
+
+                if (primaryAssets != null && primaryAssets.containsKey(docId)) {
+                    var primaryAsset = primaryAssets.get(docId);
+                    assetHelper.updateFrom(latestDoc, primaryAsset);
+                    response.updatedPrimaryAssets.put(docId, primaryAsset);
+                }
             }
         });
 
@@ -115,6 +122,12 @@ public class MergeAssets {
         var allAssets = new HashMap<>(getUpdatedAssets());
         allAssets.putAll(getNewAssets());
         allAssets.putAll(getMissingAssets());
+        return Collections.unmodifiableMap(allAssets);
+    }
+
+    public Map<String, AssetDTO> getExistingPrimaryAssets() {
+        var allAssets = new HashMap<>(getUpdatedPrimaryAssets());
+        allAssets.putAll(getNewPrimaryAssets());
         return Collections.unmodifiableMap(allAssets);
     }
 }
