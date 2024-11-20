@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
@@ -60,8 +61,8 @@ public class Assets {
         }
     }
 
-    public void process(String dataSource, String mapperPath, boolean isOpinion, String reportingSource,
-        String reportingSourceService, String reportingServiceDisplayName) {
+    public Set<String> process(String dataSource, String mapperPath, boolean isOpinion,
+        String reportingSource, String reportingSourceService, String reportingServiceDisplayName) {
 
         var bucket = ConfigService.get(ConfigConstants.S3.BUCKET_NAME);
         var featureSuspiciousAssetsEnabled = ConfigService.get(
@@ -76,13 +77,13 @@ public class Assets {
         if (types.isEmpty()) {
             LOGGER.info("There are no types to process for dataSource: {} at {}. Filenames={}",
                 dataSource, mapperPath, allFilenames);
-            return;
+            return Collections.emptySet();
         }
 
         if (allFilenames.isEmpty()) {
             LOGGER.info("There are no files to process for dataSource: {} at {}. Types={}",
                 dataSource, mapperPath, types.keySet());
-            return;
+            return Collections.emptySet();
         }
 
         LOGGER.info("Start processing Asset info; suspiciousAssetsEnabled={}",
@@ -229,6 +230,7 @@ public class Assets {
         }
 
         LOGGER.info("Finished processing asset data for {}", dataSource);
+        return fileTypes.typeFiles.keySet();
     }
 
     private String accountIdToName(String accountId) {

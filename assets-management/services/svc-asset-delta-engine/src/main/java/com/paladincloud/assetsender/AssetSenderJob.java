@@ -2,6 +2,7 @@ package com.paladincloud.assetsender;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.paladincloud.common.AssetStateStartEvent;
 import com.paladincloud.common.ProcessingDoneMessage;
 import com.paladincloud.common.assets.AssetCounts;
 import com.paladincloud.common.assets.AssetGroupStatsCollector;
@@ -76,7 +77,7 @@ public class AssetSenderJob extends JobExecutor {
         if (!isOpinion) {
             assetTypes.setupIndexAndTypes(dataSource);
         }
-        assets.process(dataSource, params.get(S3_PATH), isOpinion,
+        var processedAssetTypes = assets.process(dataSource, params.get(S3_PATH), isOpinion,
             reportingSource,
             params.get(REPORTING_SOURCE_SERVICE),
             params.get(REPORTING_SOURCE_SERVICE_DISPLAY_NAME));
@@ -94,6 +95,12 @@ public class AssetSenderJob extends JobExecutor {
                 }
             }
         }
+
+        // Have the asset state service update the found asset types
+        var assetStateEvent = new AssetStateStartEvent(tenantId, dataSource,
+            processedAssetTypes.stream().sorted().toArray(String[]::new),
+            false);
+        LOGGER.info("finish up with event: '{}'", assetStateEvent.toCommandLine());
 
         // NOTE: enricher source will be set when handling secondary sources
         String enricherSource = null;
