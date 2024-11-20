@@ -14,6 +14,9 @@ import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueReques
 
 public class Configuration {
 
+    private Configuration() {
+    }
+
     private static final Properties properties = new Properties();
 
     public static String get(String propertyName) {

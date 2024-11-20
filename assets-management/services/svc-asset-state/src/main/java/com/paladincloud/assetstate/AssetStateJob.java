@@ -1,12 +1,17 @@
 package com.paladincloud.assetstate;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.paladincloud.common.assets.AssetTypesHelper;
 import com.paladincloud.common.aws.AssetStorageHelper;
-import com.paladincloud.common.errors.JobException;
+import com.paladincloud.common.aws.SQSHelper;
+import com.paladincloud.common.config.ConfigConstants;
+import com.paladincloud.common.config.Configuration;
 import com.paladincloud.common.jobs.JobExecutor;
+import com.paladincloud.common.util.JsonHelper;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
@@ -17,81 +22,93 @@ public class AssetStateJob extends JobExecutor {
 
     private static final Logger LOGGER = LogManager.getLogger(AssetStateJob.class);
 
-    private static final String ASSET_TYPE = "asset_type";
+    private static final String ASSET_TYPES = "asset_types";
     private static final String DATA_SOURCE = "data_source";
-    private static final String EVALUATION_TYPE = "evaluation_type";
+    private static final String IS_FROM_POLICY_ENGINE = "is_from_policy_engine";
     private static final String OMIT_POLICY_EVENT = "omit_policy_event";
 
     private final AssetTypesHelper assetTypesHelper;
     private final AssetStorageHelper searchHelper;
+    private final SQSHelper sqsHelper;
 
     @Inject
-    AssetStateJob(AssetTypesHelper assetTypesHelper, AssetStorageHelper searchHelper) {
+    AssetStateJob(AssetTypesHelper assetTypesHelper, AssetStorageHelper searchHelper,
+        SQSHelper sqsHelper) {
         this.assetTypesHelper = assetTypesHelper;
         this.searchHelper = searchHelper;
+        this.sqsHelper = sqsHelper;
     }
 
     @Override
     protected void execute() {
         var dataSource = params.get(DATA_SOURCE);
-        var assetType = params.get(ASSET_TYPE);
-        var evaluationType = params.get(EVALUATION_TYPE);
+        var assetTypes = params.get(ASSET_TYPES).split(",");
+        var isFromPolicyEngine = params.getOrDefault(IS_FROM_POLICY_ENGINE, "false")
+            .equalsIgnoreCase("true");
+        var omitPolicyEvent = params.getOrDefault(OMIT_POLICY_EVENT, "false")
+            .equalsIgnoreCase("true");
 
-        LOGGER.info("Starting Asset State job: {}", params);
-        // determine type of work
-        //  1: Policy state changed - change status for a class (cloud/type) (to either managed or unmanaged)
-        //          Ignores suspicious & reconciling
-        //          Sets to managed or unmanaged
-        //  2: Evaluate all - determine and set status for a class (cloud/type)
-        //          This is used by both the Delta Engine & Reconciler
-        //          Ignores reconciling
-        //          Sets to managed, unmanaged or suspicious
+        for (var singleAssetType : assetTypes) {
+            // Get cloud/type policy status
+            var isTypeManaged = assetTypesHelper.isTypeManaged(dataSource, singleAssetType);
 
-        // Get cloud/type policy status
-        var isTypeManaged = assetTypesHelper.isTypeManaged(dataSource, assetType);
+            LOGGER.info("Starting Asset State job: {} managed={}", params, isTypeManaged);
 
-        switch (evaluationType.toLowerCase()) {
-            case "evaluate-all":
-                var opinion = searchHelper.getOpinions(dataSource, assetType);
-                var primary = searchHelper.getPrimary(dataSource, assetType);
-                var evaluator = AssetStateEvaluator.builder()
-                    .primaryAssets(toMap(primary))
-                    .opinions(toMap(opinion))
-                    .isManaged(isTypeManaged)
-                    .build();
-
-                evaluator.run();
-                searchHelper.setStates(dataSource, assetType, evaluator.getUpdated());
-
-                if (evaluator.getUpdated().isEmpty()) {
-                    LOGGER.info("None of the {} {} {} asset states were changed", primary.size(),
-                        dataSource, assetType);
-                } else {
-                    LOGGER.info("{} of {} {} {} asset states were changed to {}",
-                        evaluator.getUpdated().size(), primary.size(), dataSource, assetType,
-                        isTypeManaged ? AssetState.MANAGED : AssetState.UNMANAGED);
-                }
-                break;
-            case "policy-changed":
-                // Toggle asset state ONLY for those assets with the opposite status
-                var oldState = isTypeManaged ? AssetState.UNMANAGED : AssetState.MANAGED;
-                var newState = isTypeManaged ? AssetState.MANAGED : AssetState.UNMANAGED;
-                searchHelper.toggleState(dataSource, assetType, oldState, newState);
-                break;
-            default:
-                throw new JobException(
-                    String.format("Invalid evaluation type: '%s'", evaluationType));
+            if (isFromPolicyEngine) {
+                toggleState(dataSource, singleAssetType, isTypeManaged);
+            } else {
+                evaluateAssets(dataSource, singleAssetType, isTypeManaged);
+            }
         }
 
-        // do the work
+        // Send policy engine start event unless the policy engine sent us the event
+        if (!isFromPolicyEngine && !omitPolicyEvent) {
+            var policyEvent = new PolicyEngineStartEvent(
+                String.format("%s-asset-state-%s", dataSource, UUID.randomUUID()),
+                dataSource, null,
+                assetTypes,
+                tenantId, tenantName);
+            try {
+                LOGGER.info("Sending policy event: {}", JsonHelper.toJson(policyEvent));
+            } catch (JsonProcessingException e) {
+                // Intentionally ignore
+            }
 
-        // Send events
-        if ("true".equalsIgnoreCase(params.get(OMIT_POLICY_EVENT))) {
-            LOGGER.info("Omitting policy event");
+            sqsHelper.sendMessage(Configuration.get(ConfigConstants.SHIPPER_DONE_URL),
+                policyEvent,
+                UUID.randomUUID().toString());
+        }
+    }
+
+    // Go through all but the Reconciling assets, updating them to either managed/unmanaged
+    // or suspicious
+    void evaluateAssets(String dataSource, String assetType, boolean isTypeManaged) {
+        var opinion = searchHelper.getOpinions(dataSource, assetType);
+        var primary = searchHelper.getPrimary(dataSource, assetType);
+        var evaluator = AssetStateEvaluator.builder()
+            .primaryAssets(toMap(primary))
+            .opinions(toMap(opinion))
+            .isManaged(isTypeManaged)
+            .build();
+
+        evaluator.run();
+        searchHelper.setStates(dataSource, assetType, evaluator.getUpdated());
+
+        if (evaluator.getUpdated().isEmpty()) {
+            LOGGER.info("None of the {} {} {} asset states were changed", primary.size(),
+                dataSource, assetType);
         } else {
-            // TODO: Fire off policy event
-            LOGGER.error("TODO - fire off the policy event");
+            LOGGER.info("{} of {} {} {} asset states were changed to {}",
+                evaluator.getUpdated().size(), primary.size(), dataSource, assetType,
+                isTypeManaged ? AssetState.MANAGED : AssetState.UNMANAGED);
         }
+    }
+
+    // Toggle asset state ONLY for those assets with the now old state
+    void toggleState(String dataSource, String assetType, boolean isTypeManaged) {
+        var oldState = isTypeManaged ? AssetState.UNMANAGED : AssetState.MANAGED;
+        var newState = isTypeManaged ? AssetState.MANAGED : AssetState.UNMANAGED;
+        searchHelper.toggleState(dataSource, assetType, oldState, newState);
     }
 
     Map<String, PartialAssetDTO> toMap(Collection<PartialAssetDTO> assets) {
@@ -101,11 +118,11 @@ public class AssetStateJob extends JobExecutor {
 
     @Override
     protected List<String> getRequiredFields() {
-        return List.of(ASSET_TYPE, DATA_SOURCE, EVALUATION_TYPE);
+        return List.of(ASSET_TYPES, DATA_SOURCE);
     }
 
     @Override
     protected List<String> getOptionalFields() {
-        return List.of(OMIT_POLICY_EVENT);
+        return List.of(IS_FROM_POLICY_ENGINE, OMIT_POLICY_EVENT);
     }
 }

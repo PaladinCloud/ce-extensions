@@ -9,5 +9,7 @@ public interface ConfigConstants {
 
     String ELASTICSEARCH_HOST = "es-url";
 
+    String SHIPPER_DONE_URL = "shipper-done-url";
+
     String TENANT_NAME = "tenant_name";
 }

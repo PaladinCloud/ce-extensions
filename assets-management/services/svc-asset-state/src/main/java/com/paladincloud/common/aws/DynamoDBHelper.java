@@ -22,7 +22,7 @@ public class DynamoDBHelper {
     private DynamoDBHelper() {
     }
 
-    static private DynamoDbClient getClient(String region,
+    private static DynamoDbClient getClient(String region,
         AwsCredentialsProvider credentialsProvider) {
         var builder = DynamoDbClient.builder().region(Region.of(region));
         if (credentialsProvider != null) {
@@ -75,7 +75,6 @@ public class DynamoDBHelper {
         var configResponse = new HashMap<String, String>();
         fieldMap.forEach((fullFieldName, fieldValue) -> {
             var fieldName = fullFieldName;
-            ;
             var dottedName = "";
             if (fieldName.contains(".")) {
                 fieldName = fullFieldName.substring(0, fullFieldName.lastIndexOf('.'));

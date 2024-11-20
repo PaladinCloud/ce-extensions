@@ -60,7 +60,8 @@ public abstract class JobExecutor {
             tenantId = params.get(TENANT_ID_JOB_ARGUMENT);
 
             var dynamoConfigMap = Map.of(ConfigConstants.TENANT_NAME, ConfigConstants.TENANT_NAME,
-                "datastore_es_ESDomain.endpoint", ConfigConstants.ELASTICSEARCH_HOST);
+                "datastore_es_ESDomain.endpoint", ConfigConstants.ELASTICSEARCH_HOST,
+                "lambda_rule_engine_function_ShipperdoneSQS.id", ConfigConstants.SHIPPER_DONE_URL);
 
             Configuration.retrieveConfiguration(
                 ConfigParams.builder().assumeRoleArn(assumeRoleArn).tenantId(tenantId)
