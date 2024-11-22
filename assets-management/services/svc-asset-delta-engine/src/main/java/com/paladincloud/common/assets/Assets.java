@@ -123,8 +123,8 @@ public class Assets {
                             existingPrimaryAssets.size(),
                             primaryIndexName);
                     }
-                    LOGGER.info("For {}, {} assets and {} tags were fetched from S3 and {} "
-                            + "assets were fetched from ElasticSearch", type, latestAssets.size(),
+                    LOGGER.info("Loaded {}/{}: {} records and {} tags fetched from mapper files and {} "
+                            + "assets fetched from ElasticSearch", dataSource, type, latestAssets.size(),
                         tags.size(), existingAssets.size());
 
                     var docIdFields = Arrays.stream(
@@ -145,14 +145,14 @@ public class Assets {
                         latestAssets, existingPrimaryAssets);
 
                     LOGGER.info(
-                        "Merged mapper assets for {}; {} were updated, {} were added, " +
-                            "{} were missing, {} opinions were deleted, " +
-                            "{} stub primary documents were added, {} primary documents were deleted",
-                        type, mergeResponse.getUpdatedAssets().size(),
+                        "{}/{}: merge results: {} updated, {} added, " +
+                            "{} missing, {} opinions deleted, " +
+                            "{} suspicious primary added, {} primary deleted",
+                        dataSource, type, mergeResponse.getUpdatedAssets().size(),
                         mergeResponse.getNewAssets().size(),
                         mergeResponse.getMissingAssets().size(),
                         mergeResponse.getDeletedOpinionAssets().size(),
-                        mergeResponse.getNewPrimaryAssets().size(),
+                        !featureSuspiciousAssetsEnabled ? 0 : mergeResponse.getNewPrimaryAssets().size(),
                         mergeResponse.getDeletedPrimaryAssets().size());
 
                     String finalIndexName = indexName;

@@ -29,6 +29,7 @@ public class ElasticSearchHelper {
 
     private static final Logger LOGGER = LogManager.getLogger(ElasticSearchHelper.class);
     private RestClient restClient;
+    private String hostForClient = null;
 
     @Inject
     public ElasticSearchHelper() {
@@ -250,8 +251,9 @@ public class ElasticSearchHelper {
     }
 
     private RestClient getRestClient() {
-        if (restClient == null) {
-            var host = ConfigService.get(Elastic.HOST);
+        var host = ConfigService.get(Elastic.HOST);
+        if (restClient == null || !host.equals(hostForClient)) {
+            hostForClient = host;
             var port = Integer.parseInt(ConfigService.get(Elastic.PORT));
             restClient = RestClient.builder(new HttpHost(host, port)).build();
         }
