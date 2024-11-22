@@ -105,6 +105,7 @@ func (c *AssetDetailsClient) GetAssetDetails(ctx context.Context, tenantId, asse
 			Tags:            tags,
 			MandatoryTags:   mandatoryTags,
 			PrimaryProvider: primaryProvider,
+			ResourceId:      commonFields[constants.ResourceId],
 		},
 		Message: message,
 	}
@@ -225,6 +226,8 @@ func (c *AssetDetailsClient) buildLegacyCommonFields(assetDetails map[string]int
 				commonFields[constants.Region] = fmt.Sprintf("%v", value)
 			case legacy_constants.AssetState:
 				commonFields[constants.AssetState] = fmt.Sprintf("%v", value)
+			case legacy_constants.ResourceId:
+				commonFields[constants.ResourceId] = fmt.Sprintf("%v", value)
 			}
 		}
 	}
