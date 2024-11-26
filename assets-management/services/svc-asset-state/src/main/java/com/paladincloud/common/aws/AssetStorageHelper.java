@@ -124,12 +124,10 @@ public class AssetStorageHelper {
                     batch.add(
                         BatchItem.updateState(indexName, asset.getDocId(), asset.getAssetState()));
                 } catch (IOException e) {
-                    // TODO: properly handle
-                    LOGGER.error("Failed batching item to update status", e);
+                    LOGGER.error("Failed batching item to update state", e);
                 }
             });
         } catch (Exception ex) {
-            // TODO: properly handle
             LOGGER.error("Batch state update failed", ex);
         }
     }

@@ -156,7 +156,7 @@ public class MergeAssetsTests {
     // Given no existing primary documents and a new opinion, in addition to creating the opinion,
     // a stub primary should be created.
     @Test
-    void shouldCreateStubPrimaryAssetWithSuspiciousState() {
+    void shouldCreateStubPrimaryAssetWithReconcilingState() {
         var existing = createExisting(List.of());
         var latest = createLatest(List.of("q13"), "secondary");
 

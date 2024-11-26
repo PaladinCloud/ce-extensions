@@ -9,7 +9,7 @@ import javax.inject.Singleton;
 public class AssetTypesHelper {
 
     @Inject
-    AssetTypesHelper() {
+    public AssetTypesHelper() {
     }
 
     public boolean isTypeManaged(String dataSource, String assetType) {
