@@ -1,9 +1,6 @@
 package com.paladincloud.assetsender;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.paladincloud.common.AssetStateStartEvent;
-import com.paladincloud.common.ProcessingDoneMessage;
 import com.paladincloud.common.assets.AssetCounts;
 import com.paladincloud.common.assets.AssetGroupStatsCollector;
 import com.paladincloud.common.assets.Assets;
@@ -100,13 +97,12 @@ public class AssetSenderJob extends JobExecutor {
         var assetStateEvent = new AssetStateStartEvent(tenantId, dataSource,
             processedAssetTypes.stream().sorted().toArray(String[]::new),
             false).toCommandLine();
-        LOGGER.info("finish up with event: '{}'", assetStateEvent);
 
         if ("true".equalsIgnoreCase(ConfigService.get(ConfigConstants.Dev.OMIT_DONE_EVENT))) {
             LOGGER.warn("Omitting asset state event: {}",
                 assetStateEvent);
         } else {
-            sqsHelper.sendMessage(ConfigService.get(ConfigConstants.SQS.ASSET_STATE_START_SQS_URL),
+            sqsHelper.sendString(ConfigService.get(ConfigConstants.SQS.ASSET_STATE_START_SQS_URL),
                 assetStateEvent, UUID.randomUUID().toString());
         }
     }
