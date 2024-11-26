@@ -52,6 +52,6 @@ public interface ConfigConstants {
 
     interface SQS {
 
-        String ASSET_SHIPPER_DONE_SQS_URL = "config.asset-shipper-done-sqs-url";
+        String ASSET_STATE_START_SQS_URL = "config.asset-state-start-sqs-url";
     }
 }

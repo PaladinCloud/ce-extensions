@@ -99,24 +99,15 @@ public class AssetSenderJob extends JobExecutor {
         // Have the asset state service update the found asset types
         var assetStateEvent = new AssetStateStartEvent(tenantId, dataSource,
             processedAssetTypes.stream().sorted().toArray(String[]::new),
-            false);
-        LOGGER.info("finish up with event: '{}'", assetStateEvent.toCommandLine());
+            false).toCommandLine();
+        LOGGER.info("finish up with event: '{}'", assetStateEvent);
 
-        // NOTE: enricher source will be set when handling secondary sources
-        String enricherSource = null;
-        var shipperDoneEvent = new ProcessingDoneMessage(STR."\{dataSource}-asset-shipper",
-            dataSource, enricherSource,
-            tenantId, tenantName);
         if ("true".equalsIgnoreCase(ConfigService.get(ConfigConstants.Dev.OMIT_DONE_EVENT))) {
-            try {
-                LOGGER.warn("Omitting done event: {}",
-                    new ObjectMapper().writeValueAsString(shipperDoneEvent));
-            } catch (JsonProcessingException e) {
-                throw new JobException("Failed serializing event", e);
-            }
+            LOGGER.warn("Omitting asset state event: {}",
+                assetStateEvent);
         } else {
-            sqsHelper.sendMessage(ConfigService.get(ConfigConstants.SQS.ASSET_SHIPPER_DONE_SQS_URL),
-                shipperDoneEvent, UUID.randomUUID().toString());
+            sqsHelper.sendMessage(ConfigService.get(ConfigConstants.SQS.ASSET_STATE_START_SQS_URL),
+                assetStateEvent, UUID.randomUUID().toString());
         }
     }
 

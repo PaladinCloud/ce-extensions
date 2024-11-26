@@ -65,8 +65,8 @@ public abstract class JobExecutor {
 
             tenantId = params.get(TENANT_ID_JOB_ARGUMENT);
 
-            var dynamoConfigMap = Map.of("lambda_rule_engine_function_ShipperdoneSQS",
-                "asset-shipper-done-sqs-url", "paladincloud_app_gateway_CustomDomain",
+            var dynamoConfigMap = Map.of("lambda_rule_engine_function_AssetStateStartSQS",
+                "asset-state-start-sqs-url", "paladincloud_app_gateway_CustomDomain",
                 "base-paladincloud-domain", "tenant_name", "tenant_name",
                 "cognito_userpool_PoolDomain", "cognito-url-prefix");
 
