@@ -6,10 +6,10 @@ import com.paladincloud.common.aws.AssetStorageHelper;
 import com.paladincloud.common.aws.SQSHelper;
 import com.paladincloud.common.config.ConfigConstants;
 import com.paladincloud.common.config.Configuration;
+import com.paladincloud.common.errors.JobException;
 import com.paladincloud.common.jobs.JobExecutor;
 import com.paladincloud.common.util.JsonHelper;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
@@ -22,10 +22,7 @@ public class AssetStateJob extends JobExecutor {
 
     private static final Logger LOGGER = LogManager.getLogger(AssetStateJob.class);
 
-    private static final String ASSET_TYPES = "asset_types";
-    private static final String DATA_SOURCE = "data_source";
-    private static final String IS_FROM_POLICY_ENGINE = "is_from_policy_engine";
-    private static final String OMIT_POLICY_EVENT = "omit_policy_event";
+    private static final String OMIT_POLICY_EVENT = "OMIT_POLICY_EVENT";
 
     private final AssetTypesHelper assetTypesHelper;
     private final AssetStorageHelper searchHelper;
@@ -40,19 +37,19 @@ public class AssetStateJob extends JobExecutor {
     }
 
     @Override
-    protected void execute() {
-        var dataSource = params.get(DATA_SOURCE);
-        var assetTypes = params.get(ASSET_TYPES).split(",");
-        var isFromPolicyEngine = params.getOrDefault(IS_FROM_POLICY_ENGINE, "false")
-            .equalsIgnoreCase("true");
-        var omitPolicyEvent = params.getOrDefault(OMIT_POLICY_EVENT, "false")
-            .equalsIgnoreCase("true");
+    protected void execute(StartMessage message) {
+        var dataSource = message.source();
+        var assetTypes = message.assetTypes();
+        var isFromPolicyEngine =
+            message.isFromPolicyEngine() != null ? message.isFromPolicyEngine() : false;
+        var omitPolicyEvent = "true".equalsIgnoreCase(System.getenv(OMIT_POLICY_EVENT));
 
         for (var singleAssetType : assetTypes) {
             // Get cloud/type policy status
             var isTypeManaged = assetTypesHelper.isTypeManaged(dataSource, singleAssetType);
 
-            LOGGER.info("Starting Asset State job: {} managed={}", params, isTypeManaged);
+            LOGGER.info("Starting Asset State job: dataSource={} assetType={} managed={}",
+                message.source(), singleAssetType, isTypeManaged);
 
             if (isFromPolicyEngine) {
                 toggleState(dataSource, singleAssetType, isTypeManaged);
@@ -62,21 +59,27 @@ public class AssetStateJob extends JobExecutor {
         }
 
         // Send policy engine start event unless the policy engine sent us the event
-        if (!isFromPolicyEngine && !omitPolicyEvent) {
+        if (!isFromPolicyEngine) {
             var policyEvent = new PolicyEngineStartEvent(
                 String.format("%s-asset-state-%s", dataSource, UUID.randomUUID()),
                 dataSource, null,
                 assetTypes,
-                tenantId, tenantName);
+                tenantId, message.tenantName());
+            String asJson = null;
             try {
-                LOGGER.info("Sending policy event: {}", JsonHelper.toJson(policyEvent));
+                asJson = JsonHelper.toJson(policyEvent);
             } catch (JsonProcessingException e) {
-                // Intentionally ignore
+                throw new JobException("Failed converting event to JSON", e);
             }
+            if (omitPolicyEvent) {
+                LOGGER.info("OMITTING policy event: {}", asJson);
+            } else {
+                LOGGER.info("Sending event: {}", asJson);
 
-            sqsHelper.sendMessage(Configuration.get(ConfigConstants.SHIPPER_DONE_URL),
-                policyEvent,
-                UUID.randomUUID().toString());
+                sqsHelper.sendMessage(Configuration.get(ConfigConstants.SHIPPER_DONE_URL),
+                    policyEvent,
+                    UUID.randomUUID().toString());
+            }
         }
     }
 
@@ -116,13 +119,4 @@ public class AssetStateJob extends JobExecutor {
             .collect(Collectors.toMap(PartialAssetDTO::getDocId, Function.identity()));
     }
 
-    @Override
-    protected List<String> getRequiredFields() {
-        return List.of(ASSET_TYPES, DATA_SOURCE);
-    }
-
-    @Override
-    protected List<String> getOptionalFields() {
-        return List.of(IS_FROM_POLICY_ENGINE, OMIT_POLICY_EVENT);
-    }
 }

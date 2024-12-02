@@ -65,6 +65,8 @@ public abstract class JobExecutor {
 
             tenantId = params.get(TENANT_ID_JOB_ARGUMENT);
 
+            // TODO: Use key to lookup correct queue URL
+            // The key will be an environment variable
             var dynamoConfigMap = Map.of("lambda_rule_engine_function_AssetStateStartSQS",
                 "asset-state-start-sqs-url", "paladincloud_app_gateway_CustomDomain",
                 "base-paladincloud-domain", "tenant_name", "tenant_name",

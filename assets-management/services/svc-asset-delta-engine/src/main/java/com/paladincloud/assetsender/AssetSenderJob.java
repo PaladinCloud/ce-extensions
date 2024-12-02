@@ -1,6 +1,8 @@
 package com.paladincloud.assetsender;
 
-import com.paladincloud.common.AssetStateStartEvent;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.paladincloud.common.ProcessingDoneMessage;
 import com.paladincloud.common.assets.AssetCounts;
 import com.paladincloud.common.assets.AssetGroupStatsCollector;
 import com.paladincloud.common.assets.Assets;
@@ -93,17 +95,22 @@ public class AssetSenderJob extends JobExecutor {
             }
         }
 
-        // Have the asset state service update the found asset types
-        var assetStateEvent = new AssetStateStartEvent(tenantId, dataSource,
+        // TODO: Use key to lookup correct queue URL
+        var completedEvent = new ProcessingDoneMessage("delta-engine-" + dataSource, dataSource,
+            null, tenantId, tenantName,
             processedAssetTypes.stream().sorted().toArray(String[]::new),
-            false).toCommandLine();
+            false);
 
         if ("true".equalsIgnoreCase(ConfigService.get(ConfigConstants.Dev.OMIT_DONE_EVENT))) {
-            LOGGER.warn("Omitting asset state event: {}",
-                assetStateEvent);
+            try {
+                LOGGER.warn("Omitting completed event: {}",
+                    new ObjectMapper().writeValueAsString(completedEvent));
+            } catch (JsonProcessingException e) {
+                throw new JobException("Failed serializing event", e);
+            }
         } else {
-            sqsHelper.sendString(ConfigService.get(ConfigConstants.SQS.ASSET_STATE_START_SQS_URL),
-                assetStateEvent, UUID.randomUUID().toString());
+            sqsHelper.sendMessage(ConfigService.get(ConfigConstants.SQS.ASSET_STATE_START_SQS_URL),
+                completedEvent, UUID.randomUUID().toString());
         }
     }
 

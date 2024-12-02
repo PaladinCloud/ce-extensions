@@ -17,10 +17,6 @@ public class SQSHelper {
     public SQSHelper() {
     }
 
-    public String sendString(String queueUrl, String message, String messageGroupId) {
-        return internalSendMessage(queueUrl, message, messageGroupId);
-    }
-
     public <T> String sendMessage(String queueUrl, T message, String messageGroupId) {
         String sqsMessage;
         try {
