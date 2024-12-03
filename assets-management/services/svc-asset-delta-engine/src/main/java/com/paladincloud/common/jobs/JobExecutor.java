@@ -1,7 +1,6 @@
 package com.paladincloud.common.jobs;
 
 import com.paladincloud.common.config.ConfigConstants.PaladinCloud;
-import com.paladincloud.common.config.ConfigConstants.Tenant;
 import com.paladincloud.common.config.ConfigParams;
 import com.paladincloud.common.config.ConfigService;
 import com.paladincloud.common.errors.JobException;
@@ -21,6 +20,10 @@ public abstract class JobExecutor {
 
     // An optional environment variable; it'll be used if provided
     private static final String ASSUME_ROLE_ARN = "ASSUME_ROLE_ARN";
+
+    // An optional environment variable; it's the config key used to get the SQS URL to send the
+    // processing done event. It defaults to the asset state service.
+    private static final String PROCESSING_DONE_SQS_URL_KEY = "PROCESSING_DONE_SQS_URL_KEY";
 
     // The AWS config details - these are required environment variables
     private static final String REGION = "REGION";
@@ -42,7 +45,6 @@ public abstract class JobExecutor {
     protected Map<String, String> envVars = new HashMap<>();
     protected Map<String, String> params = new HashMap<>();
     protected String tenantId;
-    protected String tenantName;
 
     // These are additional job arguments that are supported:
     //      asset_type_override -   A comma separated list of asset types to use, ignoring what's in the database
@@ -57,7 +59,8 @@ public abstract class JobExecutor {
         long startTime = System.nanoTime();
         try {
             setDefaultParams();
-            envVars.putAll(getEnvironmentVariables(List.of(ASSUME_ROLE_ARN)));
+            envVars.putAll(
+                getEnvironmentVariables(List.of(ASSUME_ROLE_ARN, PROCESSING_DONE_SQS_URL_KEY)));
             params.putAll(parseArgs(args));
             validateRequiredFields();
 
@@ -65,11 +68,13 @@ public abstract class JobExecutor {
 
             tenantId = params.get(TENANT_ID_JOB_ARGUMENT);
 
-            // TODO: Use key to lookup correct queue URL
-            // The key will be an environment variable
-            var dynamoConfigMap = Map.of("lambda_rule_engine_function_AssetStateStartSQS",
-                "asset-state-start-sqs-url", "paladincloud_app_gateway_CustomDomain",
-                "base-paladincloud-domain", "tenant_name", "tenant_name",
+            var sqsUrlKey = envVars.get(PROCESSING_DONE_SQS_URL_KEY);
+            if (StringUtils.isBlank(sqsUrlKey)) {
+                sqsUrlKey = "lambda_rule_engine_function_AssetStateStartSQS";
+            }
+
+            var dynamoConfigMap = Map.of(sqsUrlKey, "processing-done-sqs-url",
+                "paladincloud_app_gateway_CustomDomain", "base-paladincloud-domain",
                 "cognito_userpool_PoolDomain", "cognito-url-prefix");
 
             ConfigService.retrieveConfigProperties(
@@ -81,8 +86,6 @@ public abstract class JobExecutor {
                     .tenantConfigTable(envVars.get(TENANT_CONFIG_TABLE))
                     .dynamoConfigMap(dynamoConfigMap).build());
             ConfigService.setProperties("param.", params);
-
-            tenantName = ConfigService.get(Tenant.TENANT_NAME);
 
             var cognitoUrlPrefix = ConfigService.get(PaladinCloud.COGNITO_URL_PREFIX);
             ConfigService.setProperties("", Map.of(PaladinCloud.AUTH_API_URL,

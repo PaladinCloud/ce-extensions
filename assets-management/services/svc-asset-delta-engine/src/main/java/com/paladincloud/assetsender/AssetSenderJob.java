@@ -60,13 +60,14 @@ public class AssetSenderJob extends JobExecutor {
         LOGGER.info(
             "Processing assets; bucket={} dataSource={} path={} tenant={}",
             ConfigService.get(ConfigConstants.S3.BUCKET_NAME), dataSource, params.get(S3_PATH),
-            tenantName);
+            tenantId);
         ConfigService.setProperties("batch.",
             Collections.singletonMap("s3.data", params.get(S3_PATH)));
 
         assetTypes.reset();
 
         var reportingSource = params.get(REPORTING_SOURCE);
+
         // dataSource is the underlying source of the data (gcp, aws, azure) while reporting source
         // is only set if it's different. It's different for secondary sources reporting data
         // (qualys, rapid7); in addition, reporting service is also set only if the data is from
@@ -95,22 +96,24 @@ public class AssetSenderJob extends JobExecutor {
             }
         }
 
-        // TODO: Use key to lookup correct queue URL
         var completedEvent = new ProcessingDoneMessage("delta-engine-" + dataSource, dataSource,
-            null, tenantId, tenantName,
+            null, tenantId, null,
             processedAssetTypes.stream().sorted().toArray(String[]::new),
             false);
 
+        String eventAsJson = null;
+        try {
+            eventAsJson = new ObjectMapper().writeValueAsString(completedEvent);
+        } catch (JsonProcessingException e) {
+            LOGGER.warn("Unable to serialize event as JSON", e);
+        }
+
         if ("true".equalsIgnoreCase(ConfigService.get(ConfigConstants.Dev.OMIT_DONE_EVENT))) {
-            try {
-                LOGGER.warn("Omitting completed event: {}",
-                    new ObjectMapper().writeValueAsString(completedEvent));
-            } catch (JsonProcessingException e) {
-                throw new JobException("Failed serializing event", e);
-            }
+            LOGGER.warn("Omitting completed event: {}", eventAsJson);
         } else {
-            sqsHelper.sendMessage(ConfigService.get(ConfigConstants.SQS.ASSET_STATE_START_SQS_URL),
-                completedEvent, UUID.randomUUID().toString());
+            var sqsUrl = ConfigService.get(ConfigConstants.SQS.ASSET_STATE_START_SQS_URL);
+            LOGGER.info("Sending completed event to {} (event={})", sqsUrl, eventAsJson);
+            sqsHelper.sendMessage(sqsUrl, completedEvent, UUID.randomUUID().toString());
         }
     }
 
