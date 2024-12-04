@@ -178,6 +178,7 @@ public class AssetDocumentHelper {
         dto.setLegacySource(dto.getSource());
         dto.setLegacyDocId(dto.getDocId());
         dto.setLegacyDocType(dto.getDocType());
+        dto.setAssetState(AssetState.RECONCILING);
 
         setCommonPrimaryFields(data, dto, idValue);
 
@@ -280,6 +281,7 @@ public class AssetDocumentHelper {
         dto.setDocId(buildDocId(data));
         dto.setDocType(type);
         dto.setSource(source);
+        dto.setPrimaryProvider("");
 
         setCommonPrimaryFields(data, dto, idValue);
 
@@ -356,6 +358,7 @@ public class AssetDocumentHelper {
 
     private void updatePrimaryFromSecondary(Map<String, Object> data, AssetDTO dto,
         String idValue) {
+        dto.setPrimaryProvider(data.getOrDefault(MapperFields.RAW_DATA, "").toString());
         setCommonPrimaryFields(data, dto, idValue);
     }
 

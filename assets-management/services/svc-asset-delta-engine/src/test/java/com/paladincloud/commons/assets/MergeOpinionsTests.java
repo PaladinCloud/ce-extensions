@@ -343,7 +343,7 @@ public class MergeOpinionsTests {
         assertNotNull(primaryAsset.getEntityTypeDisplayName());
         assertEquals(AssetState.RECONCILING, primaryAsset.getAssetState());
 
-        assertNull(primaryAsset.getPrimaryProvider());
+        assertEquals("", primaryAsset.getPrimaryProvider());
 
         assertNotNull(primaryAsset.getResourceId());
         assertNotNull(primaryAsset.getResourceName());
@@ -361,7 +361,6 @@ public class MergeOpinionsTests {
         assertTrue(primaryAsset.getIsEntity());
 
         assertNull(primaryAsset.getOpinions());
-        assertNull(primaryAsset.getPrimaryProvider());
         assertTrue(primaryAsset.getAdditionalProperties().isEmpty());
     }
 

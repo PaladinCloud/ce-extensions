@@ -77,7 +77,8 @@ public class MergeAssets {
             if (!isAssetProcessed(key, response)) {
                 if (assetHelper.isPrimarySource()) {
                     var assetState = value.getAssetState();
-                    if (assetState == null || !assetState.equals(AssetState.SUSPICIOUS)) {
+                    if (assetState == null || !(assetState.equals(AssetState.SUSPICIOUS)
+                        || assetState.equals(AssetState.RECONCILING))) {
                         response.missingAssets.put(key, value);
                         assetHelper.missing(value);
                     }
