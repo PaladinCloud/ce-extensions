@@ -16,6 +16,8 @@ public class AssetStateEvaluator {
     private static final Logger LOGGER = LogManager.getLogger(AssetStateEvaluator.class);
     @Getter
     private final Set<PartialAssetDTO> updated = new HashSet<>();
+    @Getter
+    private int suspiciousCount = 0;
 
     @NonNull
     private Map<String, PartialAssetDTO> primaryAssets;
@@ -30,6 +32,7 @@ public class AssetStateEvaluator {
                 setAssetState(doc, newState);
             } else if (StringUtils.isBlank(doc.getPrimaryProvider())) {
                 setAssetState(doc, AssetState.SUSPICIOUS);
+                suspiciousCount += 1;
             } else {
                 setAssetState(doc, newState);
             }

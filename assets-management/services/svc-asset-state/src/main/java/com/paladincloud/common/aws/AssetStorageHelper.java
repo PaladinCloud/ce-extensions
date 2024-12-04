@@ -170,10 +170,13 @@ public class AssetStorageHelper {
                         if (assetStateValue != null) {
                             state = AssetState.valueOf(assetStateValue.toString().toUpperCase());
                         }
+                        var primaryProviderObject = hit.source.get(AssetFieldNames.PRIMARY_PROVIDER);
+                        String primaryProvider = primaryProviderObject == null ? null : primaryProviderObject.toString();
                         var asset = PartialAssetDTO.builder()
                             .docId(idValues.getFirst().toString())
-                            .assetState(state).
-                            build();
+                            .assetState(state)
+                            .primaryProvider(primaryProvider)
+                            .build();
 
                         results.add(asset);
                     }

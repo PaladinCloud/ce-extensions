@@ -99,9 +99,12 @@ public class AssetStateJob extends JobExecutor {
             LOGGER.info("None of the {} {} {} asset states were changed", primary.size(),
                 dataSource, assetType);
         } else {
-            LOGGER.info("{} of {} {} {} asset states were changed to {}",
-                evaluator.getUpdated().size(), primary.size(), dataSource, assetType,
-                isTypeManaged ? AssetState.MANAGED : AssetState.UNMANAGED);
+            var totalUpdated = evaluator.getUpdated().size();
+            var suspiciousCount = evaluator.getSuspiciousCount();
+            var otherCount = totalUpdated - suspiciousCount;
+            LOGGER.info("{} of {} {} {} asset states were changed; {} to {} and {} to SUSPICIOUS",
+                evaluator.getUpdated().size(), primary.size(), dataSource, assetType, otherCount,
+                isTypeManaged ? AssetState.MANAGED : AssetState.UNMANAGED, suspiciousCount);
         }
     }
 
