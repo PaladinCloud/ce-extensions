@@ -358,7 +358,6 @@ public class AssetDocumentHelper {
 
     private void updatePrimaryFromSecondary(Map<String, Object> data, AssetDTO dto,
         String idValue) {
-        dto.setPrimaryProvider(data.getOrDefault(MapperFields.RAW_DATA, "").toString());
         setCommonPrimaryFields(data, dto, idValue);
     }
 

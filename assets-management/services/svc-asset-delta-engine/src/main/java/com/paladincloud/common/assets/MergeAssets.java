@@ -103,9 +103,7 @@ public class MergeAssets {
             activeAssets.keySet().forEach(key -> {
                 if (!primaryAssets.containsKey(key)) {
                     var data = latestAssetsDataMap.get(key);
-                    if (data == null) {
-                        LOGGER.error("Missing mapper asset data for key '{}'", key);
-                    } else {
+                    if (data != null) {
                         response.newPrimaryAssets.put(key,
                             assetHelper.createPrimaryFromOpinionData(data));
                     }
