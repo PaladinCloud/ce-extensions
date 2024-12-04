@@ -14,16 +14,13 @@ class AssetStateEvaluatorTests {
     @Test
     void unmanagedAreUpdated() {
         var primaryAssets = List.of(
-            primary("1", AssetState.MANAGED, ""),
-            primary("2", AssetState.MANAGED, ""),
-            primary("3", AssetState.UNMANAGED, ""),
-            primary("4", AssetState.UNMANAGED, ""));
-        var opinionAssets = List.of(
-            opinion("1"), opinion("3"));
+            primary("1", AssetState.MANAGED, "{}"),
+            primary("2", AssetState.MANAGED, "{}"),
+            primary("3", AssetState.UNMANAGED, "{}"),
+            primary("4", AssetState.UNMANAGED, "{}"));
         var evaluator = AssetStateEvaluator.builder()
             .isManaged(true)
             .primaryAssets(toMap(primaryAssets))
-            .opinions(toMap(opinionAssets))
             .build();
         evaluator.run();
 
@@ -36,16 +33,13 @@ class AssetStateEvaluatorTests {
     @Test
     void managedAreUpdated() {
         var primaryAssets = List.of(
-            primary("1", AssetState.MANAGED, ""),
-            primary("2", AssetState.MANAGED, ""),
-            primary("3", AssetState.UNMANAGED, ""),
-            primary("4", AssetState.UNMANAGED, ""));
-        var opinionAssets = List.of(
-            opinion("1"), opinion("3"));
+            primary("1", AssetState.MANAGED, "{}"),
+            primary("2", AssetState.MANAGED, "{}"),
+            primary("3", AssetState.UNMANAGED, "{}"),
+            primary("4", AssetState.UNMANAGED, "{}"));
         var evaluator = AssetStateEvaluator.builder()
             .isManaged(false)
             .primaryAssets(toMap(primaryAssets))
-            .opinions(toMap(opinionAssets))
             .build();
         evaluator.run();
 
@@ -58,16 +52,13 @@ class AssetStateEvaluatorTests {
     @Test
     void newlySuspiciousAreUpdated() {
         var primaryAssets = List.of(
-            primary("1", AssetState.SUSPICIOUS, ""),
-            primary("2", AssetState.MANAGED, ""),
-            primary("3", AssetState.MANAGED, null),
-            primary("4", AssetState.UNMANAGED, ""));
-        var opinionAssets = List.of(
-            opinion("1"), opinion("3"));
+            primary("1", AssetState.SUSPICIOUS, "{}"),
+            primary("2", AssetState.MANAGED, "{}"),
+            primary("3", AssetState.MANAGED, ""),
+            primary("4", AssetState.UNMANAGED, "{}"));
         var evaluator = AssetStateEvaluator.builder()
             .isManaged(false)
             .primaryAssets(toMap(primaryAssets))
-            .opinions(toMap(opinionAssets))
             .build();
         evaluator.run();
 
@@ -81,16 +72,13 @@ class AssetStateEvaluatorTests {
     @Test
     void noLongerSuspiciousAreUpdated() {
         var primaryAssets = List.of(
-            primary("1", AssetState.SUSPICIOUS, ""),
-            primary("2", AssetState.MANAGED, ""),
-            primary("3", AssetState.SUSPICIOUS, null),
-            primary("4", AssetState.UNMANAGED, ""));
-        var opinionAssets = List.of(
-            opinion("1"), opinion("3"));
+            primary("1", AssetState.SUSPICIOUS, "{}"),
+            primary("2", AssetState.MANAGED, "{}"),
+            primary("3", AssetState.SUSPICIOUS, ""),
+            primary("4", AssetState.UNMANAGED, "{}"));
         var evaluator = AssetStateEvaluator.builder()
             .isManaged(false)
             .primaryAssets(toMap(primaryAssets))
-            .opinions(toMap(opinionAssets))
             .build();
         evaluator.run();
 
@@ -110,12 +98,6 @@ class AssetStateEvaluatorTests {
             .docId(id)
             .assetState(assetState)
             .primaryProvider(primaryProvider)
-            .build();
-    }
-
-    PartialAssetDTO opinion(String id) {
-        return PartialAssetDTO.builder()
-            .docId(id)
             .build();
     }
 }

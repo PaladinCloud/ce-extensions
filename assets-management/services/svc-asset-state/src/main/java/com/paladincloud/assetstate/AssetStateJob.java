@@ -41,7 +41,7 @@ public class AssetStateJob extends JobExecutor {
         var dataSource = message.source();
         var assetTypes = message.assetTypes();
         var isFromPolicyEngine =
-            message.isFromPolicyEngine() != null ? message.isFromPolicyEngine() : false;
+            message.isFromPolicyEngine() != null && message.isFromPolicyEngine();
         var omitPolicyEvent = "true".equalsIgnoreCase(System.getenv(OMIT_POLICY_EVENT));
 
         for (var singleAssetType : assetTypes) {
@@ -86,11 +86,9 @@ public class AssetStateJob extends JobExecutor {
     // Go through all but the Reconciling assets, updating them to either managed/unmanaged
     // or suspicious
     void evaluateAssets(String dataSource, String assetType, boolean isTypeManaged) {
-        var opinion = searchHelper.getOpinions(dataSource, assetType);
         var primary = searchHelper.getPrimary(dataSource, assetType);
         var evaluator = AssetStateEvaluator.builder()
             .primaryAssets(toMap(primary))
-            .opinions(toMap(opinion))
             .isManaged(isTypeManaged)
             .build();
 

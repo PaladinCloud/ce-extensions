@@ -6,6 +6,7 @@ import java.util.Set;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -19,40 +20,18 @@ public class AssetStateEvaluator {
     @NonNull
     private Map<String, PartialAssetDTO> primaryAssets;
     @NonNull
-    private Map<String, PartialAssetDTO> opinions;
-    @NonNull
     private boolean isManaged;
 
     public void run() {
-        // Walk through the opinions - any missing primaryProvider data are suspicious
-        opinions.keySet().forEach(docId -> {
-            var primary = primaryAssets.get(docId);
-            if (primary == null) {
-                LOGGER.error("An opinion is missing the matching primary asset: docId={}", docId);
-            } else {
-                if (primary.getPrimaryProvider() == null) {
-                    setAssetState(primary, AssetState.SUSPICIOUS);
-                }
-            }
-        });
-
         // Check each primary as well
         var newState = isManaged ? AssetState.MANAGED : AssetState.UNMANAGED;
         primaryAssets.values().forEach(doc -> {
-            switch (doc.getAssetState()) {
-                case null:
-                case SUSPICIOUS:
-                    if (doc.getPrimaryProvider() == null) {
-                        setAssetState(doc, AssetState.SUSPICIOUS);
-                    } else {
-                        setAssetState(doc, newState);
-                    }
-                    break;
-                case MANAGED, UNMANAGED:
-                    setAssetState(doc, newState);
-                    break;
-                case RECONCILING:
-                    break;
+            if (doc.getPrimaryProvider() == null) {
+                setAssetState(doc, newState);
+            } else if (StringUtils.isBlank(doc.getPrimaryProvider())) {
+                setAssetState(doc, AssetState.SUSPICIOUS);
+            } else {
+                setAssetState(doc, newState);
             }
         });
     }
