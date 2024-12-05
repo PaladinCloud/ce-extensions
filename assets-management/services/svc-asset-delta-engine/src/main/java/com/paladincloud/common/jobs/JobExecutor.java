@@ -70,7 +70,7 @@ public abstract class JobExecutor {
 
             var sqsUrlKey = envVars.get(PROCESSING_DONE_SQS_URL_KEY);
             if (StringUtils.isBlank(sqsUrlKey)) {
-                sqsUrlKey = "lambda_rule_engine_function_AssetStateStartSQS";
+                sqsUrlKey = "lambda_rule_engine_function_ShipperdoneSQS";
             }
 
             var dynamoConfigMap = Map.of(sqsUrlKey, "processing-done-sqs-url",
