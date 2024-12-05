@@ -2,11 +2,6 @@ package com.paladincloud.common.config;
 
 public interface ConfigConstants {
 
-    interface Tenant {
-
-        String TENANT_NAME = "config.tenant_name";
-    }
-
     interface Dev {
 
         String INDEX_PREFIX = "param.index_prefix";
@@ -47,11 +42,10 @@ public interface ConfigConstants {
     interface S3 {
 
         String BUCKET_NAME = "batch.s3";
-        String DATA_PATH = "batch.s3.data";
     }
 
     interface SQS {
 
-        String ASSET_SHIPPER_DONE_SQS_URL = "config.asset-shipper-done-sqs-url";
+        String ASSET_STATE_START_SQS_URL = "config.processing-done-sqs-url";
     }
 }

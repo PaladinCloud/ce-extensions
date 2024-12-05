@@ -8,7 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.paladincloud.common.AssetDocumentFields;
 import com.paladincloud.common.assets.AssetDocumentHelper;
-import com.paladincloud.common.assets.AssetState;
 import com.paladincloud.common.util.JsonHelper;
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -19,7 +18,8 @@ import org.junit.jupiter.api.Test;
  */
 public class AssetDocumentHelperTests {
 
-    static private AssetDocumentHelper getHelper(String dataSource, String idField, String resourceNameField) {
+    static private AssetDocumentHelper getHelper(String dataSource, String idField,
+        String resourceNameField) {
         return AssetDocumentHelper.builder()
             .loadDate(ZonedDateTime.now())
             .idField(idField)
@@ -28,8 +28,7 @@ public class AssetDocumentHelperTests {
             .displayName("ec2")
             .tags(List.of())
             .type("ec2")
-            .accountIdToNameFn( (_) -> null)
-            .assetState(AssetState.MANAGED)
+            .accountIdToNameFn((_) -> null)
             .resourceNameField(resourceNameField)
             .build();
     }
@@ -85,9 +84,9 @@ public class AssetDocumentHelperTests {
 
         // Ensure each value in the sample asset exists in the serialized/deserialized instance
         expectedMap.forEach((key, value) -> {
-                assertTrue(dtoAsMap.containsKey(key), key);
-                assertEquals(value, dtoAsMap.get(key),
-                    STR."'\{key}' value differs. expected=\{value} actual=\{dtoAsMap.get(key)}");
+            assertTrue(dtoAsMap.containsKey(key), key);
+            assertEquals(value, dtoAsMap.get(key),
+                STR."'\{key}' value differs. expected=\{value} actual=\{dtoAsMap.get(key)}");
         });
     }
 
@@ -250,29 +249,29 @@ public class AssetDocumentHelperTests {
 
     /**
      * This is the expected DTO, converted to a map converted to a JSON string
-     *
+     * <p>
      * The validation checks each top-level field; in order to minimize problems, some fields, such
      * as load date, are removed from this sample in order to allow simple comparison
      */
     private String getSamplePrimaryAssetDocument() {
         return """
-            {
-                "_docid": "gcp_ec2_us-central_17",
-                "docType": "ec2",
-                "_cloudType": "gcp",
-                "latest": true,
-                "_entity": "true",
-                "_entitytype": "ec2",
-                "name": "instance-abc",
-                "_resourcename": "instance-abc",
-                "_resourceid": "17",
-                "sourceDisplayName": "GCP",
-                "targettypedisplayname": "ec2",
-                "accountid": "xyz",
-                "discoverydate": "2024-09-05 14:57:00+0000",
-                "firstdiscoveredon": "2024-09-05 14:57:00+0000",
-                "ec2_relations": "ec2"
-            }
-        """.trim();
+                {
+                    "_docid": "gcp_ec2_us-central_17",
+                    "docType": "ec2",
+                    "_cloudType": "gcp",
+                    "latest": true,
+                    "_entity": "true",
+                    "_entitytype": "ec2",
+                    "name": "instance-abc",
+                    "_resourcename": "instance-abc",
+                    "_resourceid": "17",
+                    "sourceDisplayName": "GCP",
+                    "targettypedisplayname": "ec2",
+                    "accountid": "xyz",
+                    "discoverydate": "2024-09-05 14:57:00+0000",
+                    "firstdiscoveredon": "2024-09-05 14:57:00+0000",
+                    "ec2_relations": "ec2"
+                }
+            """.trim();
     }
 }

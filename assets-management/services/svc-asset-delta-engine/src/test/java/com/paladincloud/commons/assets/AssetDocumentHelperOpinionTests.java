@@ -7,11 +7,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.paladincloud.common.assets.AssetDocumentHelper;
-import com.paladincloud.common.assets.AssetState;
 import com.paladincloud.common.util.JsonHelper;
 import java.time.ZonedDateTime;
 import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 public class AssetDocumentHelperOpinionTests {
@@ -26,7 +24,6 @@ public class AssetDocumentHelperOpinionTests {
             .tags(List.of())
             .type("vminstance")
             .accountIdToNameFn((_) -> null)
-            .assetState(AssetState.MANAGED)
             .resourceNameField("resource_name")
             .reportingSource("secondary")
             .reportingSourceService("assets")
