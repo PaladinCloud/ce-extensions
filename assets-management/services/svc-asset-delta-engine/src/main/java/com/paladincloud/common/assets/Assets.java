@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
@@ -36,17 +37,14 @@ public class Assets {
     private final AssetRepository assetRepository;
     private final MapperRepository mapperRepository;
     private final DatabaseHelper databaseHelper;
-    private final AssetStateHelper assetStateHelper;
 
     @Inject
     public Assets(AssetRepository assetRepository, AssetTypes assetTypes,
-        MapperRepository mapperRepository, DatabaseHelper databaseHelper,
-        AssetStateHelper assetStateHelper) {
+        MapperRepository mapperRepository, DatabaseHelper databaseHelper) {
         this.assetRepository = assetRepository;
         this.assetTypes = assetTypes;
         this.mapperRepository = mapperRepository;
         this.databaseHelper = databaseHelper;
-        this.assetStateHelper = assetStateHelper;
     }
 
     private List<Map<String, Object>> fetchMapperFiles(String bucket, String path,
@@ -60,8 +58,8 @@ public class Assets {
         }
     }
 
-    public void process(String dataSource, String mapperPath, boolean isOpinion, String reportingSource,
-        String reportingSourceService, String reportingServiceDisplayName) {
+    public Set<String> process(String dataSource, String mapperPath, boolean isOpinion,
+        String reportingSource, String reportingSourceService, String reportingServiceDisplayName) {
 
         var bucket = ConfigService.get(ConfigConstants.S3.BUCKET_NAME);
         var featureSuspiciousAssetsEnabled = ConfigService.get(
@@ -76,13 +74,13 @@ public class Assets {
         if (types.isEmpty()) {
             LOGGER.info("There are no types to process for dataSource: {} at {}. Filenames={}",
                 dataSource, mapperPath, allFilenames);
-            return;
+            return Collections.emptySet();
         }
 
         if (allFilenames.isEmpty()) {
             LOGGER.info("There are no files to process for dataSource: {} at {}. Types={}",
                 dataSource, mapperPath, types.keySet());
-            return;
+            return Collections.emptySet();
         }
 
         LOGGER.info("Start processing Asset info; suspiciousAssetsEnabled={}",
@@ -139,20 +137,21 @@ public class Assets {
                         .accountIdToNameFn(this::accountIdToName)
                         .reportingSource(reportingSource)
                         .reportingSourceService(reportingSourceService)
-                        .reportingSourceServiceDisplayName(reportingServiceDisplayName)
-                        .assetState(assetStateHelper.get(dataSource, type));
+                        .reportingSourceServiceDisplayName(reportingServiceDisplayName);
                     var mergeResponse = MergeAssets.process(assetCreator.build(), existingAssets,
                         latestAssets, existingPrimaryAssets);
 
                     LOGGER.info(
                         "Merged mapper assets for {}; {} were updated, {} were added, " +
                             "{} were missing, {} opinions were deleted, " +
-                            "{} stub primary documents were added, {} primary documents were deleted",
+                            "{} stub documents were added, {} stub documents were updated, " +
+                            "{} stub documents were deleted",
                         type, mergeResponse.getUpdatedAssets().size(),
                         mergeResponse.getNewAssets().size(),
                         mergeResponse.getMissingAssets().size(),
                         mergeResponse.getDeletedOpinionAssets().size(),
                         mergeResponse.getNewPrimaryAssets().size(),
+                        mergeResponse.getUpdatedPrimaryAssets().size(),
                         mergeResponse.getDeletedPrimaryAssets().size());
 
                     String finalIndexName = indexName;
@@ -193,7 +192,7 @@ public class Assets {
                     });
 
                     if (featureSuspiciousAssetsEnabled) {
-                        mergeResponse.getNewPrimaryAssets().values().forEach(value -> {
+                        mergeResponse.getExistingPrimaryAssets().values().forEach(value -> {
                             try {
                                 batchIndexer.add(
                                     BatchItem.documentEntry(primaryIndexName, value.getDocId(),
@@ -229,6 +228,7 @@ public class Assets {
         }
 
         LOGGER.info("Finished processing asset data for {}", dataSource);
+        return fileTypes.typeFiles.keySet();
     }
 
     private String accountIdToName(String accountId) {

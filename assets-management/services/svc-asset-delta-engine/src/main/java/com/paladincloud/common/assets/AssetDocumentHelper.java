@@ -112,8 +112,6 @@ public class AssetDocumentHelper {
     private List<Map<String, Object>> tags;
     @NonNull
     private Function<String, String> accountIdToNameFn;
-    @NonNull
-    private AssetState assetState;
     private String resourceNameField;
     private String reportingSource;
     private String reportingSourceService;
@@ -168,7 +166,6 @@ public class AssetDocumentHelper {
         // Set the remaining asset fields
         if (isPrimarySource()) {
             dto.setSource(source.toLowerCase());
-            dto.setAssetState(assetState);
             populateNewPrimary(data, dto, idValue);
         } else {
             populateNewOpinion(data, dto);
@@ -181,6 +178,7 @@ public class AssetDocumentHelper {
         dto.setLegacySource(dto.getSource());
         dto.setLegacyDocId(dto.getDocId());
         dto.setLegacyDocType(dto.getDocType());
+        dto.setAssetState(AssetState.RECONCILING);
 
         setCommonPrimaryFields(data, dto, idValue);
 
@@ -283,6 +281,7 @@ public class AssetDocumentHelper {
         dto.setDocId(buildDocId(data));
         dto.setDocType(type);
         dto.setSource(source);
+        dto.setPrimaryProvider("");
 
         setCommonPrimaryFields(data, dto, idValue);
 
@@ -292,7 +291,7 @@ public class AssetDocumentHelper {
         dto.setLegacyDocId(dto.getDocId());
         dto.setLegacyDocType(dto.getDocType());
 
-        dto.setAssetState(AssetState.SUSPICIOUS);
+        dto.setAssetState(AssetState.RECONCILING);
         return dto;
     }
 
@@ -308,7 +307,7 @@ public class AssetDocumentHelper {
         if (isPrimarySource()) {
             updatePrimary(data, dto, idValue);
         } else {
-            if (assetState.equals(AssetState.SUSPICIOUS)) {
+            if (dataSource.equalsIgnoreCase(dto.getSource())) {
                 updatePrimaryFromSecondary(data, dto, idValue);
             } else {
                 updateOpinion(data, dto);
