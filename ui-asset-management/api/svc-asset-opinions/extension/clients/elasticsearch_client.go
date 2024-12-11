@@ -83,11 +83,7 @@ func (c *ElasticSearchClient) FetchAssetOpinions(ctx context.Context, tenantId, 
 }
 
 func buildOpinionsQuery(assetId string) map[string]interface{} {
-	assetIdFilter := map[string]interface{}{
-		"term": map[string]interface{}{
-			"_id": assetId,
-		},
-	}
+	assetIdFilter := buildDocIdFilter(assetId)
 
 	query := map[string]interface{}{
 		"bool": map[string]interface{}{
@@ -96,4 +92,25 @@ func buildOpinionsQuery(assetId string) map[string]interface{} {
 	}
 
 	return query
+}
+
+func buildDocIdFilter(docId string) map[string]interface{} {
+
+	docIdFilter1 := map[string]interface{}{
+		"term": map[string]interface{}{
+			"_docid.keyword": docId,
+		},
+	}
+	docIdFilter2 := map[string]interface{}{
+		"term": map[string]interface{}{
+			"_docId.keyword": docId,
+		},
+	}
+
+	docIdOrFilter := map[string]interface{}{
+		"bool": map[string]interface{}{
+			"should": []interface{}{docIdFilter1, docIdFilter2},
+		},
+	}
+	return docIdOrFilter
 }
