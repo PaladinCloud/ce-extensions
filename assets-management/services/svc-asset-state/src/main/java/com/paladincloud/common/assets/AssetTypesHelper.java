@@ -19,7 +19,7 @@ public class AssetTypesHelper {
         if (rows.size() == 1) {
             var firstRow = rows.getFirst();
             var count = Integer.parseInt(firstRow.get("count(*)"));
-            return count > 1;
+            return count > 0;
         } else {
             throw new JobException(String.format("1 row expected, %d returned for %s and %s", rows.size(), dataSource, assetType));
         }
