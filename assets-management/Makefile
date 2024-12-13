@@ -17,7 +17,12 @@ package-%: build-and-copy-% zip-artifact-%
 # Build, copy, zip, and move zip to dist in one step for a service
 build-and-copy-%: create-dist-dir-%
 	$(MAKE) mvn-build SERVICE_NAME=$*
-	cp services/$*/target/$*-${VERSION}.jar $(DIST_DIR)/$*/$*.jar
+	cp services/$*/target/$*-${VERSION}.jar $(DIST_DIR)/$*/$*.jar 
+	if [ $$? -ne 0 ]; then \
+  		echo "Error: Failed to copy JAR file for $*"; \
+  		exit 1; \
+	fi
+	@echo "Successfully copied JAR file for $*"
 
 # Maven build target
 .PHONY: mvn-build
@@ -45,5 +50,8 @@ zip-artifact-%:
 		echo "Error: $(DIST_DIR)/$*/$*.jar does not exist"; \
 		exit 1; \
 	fi
-	zip -j $(DIST_DIR)/$*/$*.zip $(DIST_DIR)/$*/$*.jar || { echo "Error: Failed to create zip file"; exit 1; }
+	zip -j $(DIST_DIR)/$*/$*.zip $(DIST_DIR)/$*/$*.jar || { \
+		echo "Error: Failed to create zip file for $*"; \
+		exit 1; \
+	}
 	@echo "Successfully created $(DIST_DIR)/$*/$*.zip"
