@@ -1,5 +1,6 @@
 package com.paladincloud.common.jobs;
 
+import com.paladincloud.common.config.ConfigConstants;
 import com.paladincloud.common.config.ConfigConstants.PaladinCloud;
 import com.paladincloud.common.config.ConfigParams;
 import com.paladincloud.common.config.ConfigService;
@@ -23,7 +24,7 @@ public abstract class JobExecutor {
 
     // An optional environment variable; it's the config key used to get the SQS URL to send the
     // processing done event. It defaults to the asset state service.
-    private static final String PROCESSING_DONE_SQS_URL_KEY = "PROCESSING_DONE_SQS_URL_KEY";
+    private static final String OUTPUT_TRIGGER_ASSET_STATE = "OUTPUT_TRIGGER_ASSET_STATE";
 
     // The AWS config details - these are required environment variables
     private static final String REGION = "REGION";
@@ -60,7 +61,7 @@ public abstract class JobExecutor {
         try {
             setDefaultParams();
             envVars.putAll(
-                getEnvironmentVariables(List.of(ASSUME_ROLE_ARN, PROCESSING_DONE_SQS_URL_KEY)));
+                getEnvironmentVariables(List.of(ASSUME_ROLE_ARN, OUTPUT_TRIGGER_ASSET_STATE)));
             params.putAll(parseArgs(args));
             validateRequiredFields();
 
@@ -68,12 +69,8 @@ public abstract class JobExecutor {
 
             tenantId = params.get(TENANT_ID_JOB_ARGUMENT);
 
-            var sqsUrlKey = envVars.get(PROCESSING_DONE_SQS_URL_KEY);
-            if (StringUtils.isBlank(sqsUrlKey)) {
-                sqsUrlKey = "lambda_rule_engine_function_ShipperdoneSQS";
-            }
-
-            var dynamoConfigMap = Map.of(sqsUrlKey, "processing-done-sqs-url",
+            var dynamoConfigMap = Map.of("lambda_rule_engine_function_ShipperdoneSQS",
+                "processing-done-sqs-url",
                 "paladincloud_app_gateway_CustomDomain", "base-paladincloud-domain",
                 "cognito_userpool_PoolDomain", "cognito-url-prefix");
 
@@ -86,6 +83,17 @@ public abstract class JobExecutor {
                     .tenantConfigTable(envVars.get(TENANT_CONFIG_TABLE))
                     .dynamoConfigMap(dynamoConfigMap).build());
             ConfigService.setProperties("param.", params);
+
+            if (ConfigService.isFeatureEnabled("enableAssetStateService")) {
+                var outputSQSUrl = envVars.get(OUTPUT_TRIGGER_ASSET_STATE);
+                if (StringUtils.isNotBlank(outputSQSUrl)) {
+                    ConfigService.setProperties("",
+                        Map.of(ConfigConstants.SQS.ASSET_STATE_START_SQS_URL, outputSQSUrl));
+                } else {
+                    throw new JobException(
+                        "feature flag 'enableAssetStateService' enabled, but missing 'OUTPUT_TRIGGER_ASSET_STATE' environment variable (with URL to SQS)");
+                }
+            }
 
             var cognitoUrlPrefix = ConfigService.get(PaladinCloud.COGNITO_URL_PREFIX);
             ConfigService.setProperties("", Map.of(PaladinCloud.AUTH_API_URL,
