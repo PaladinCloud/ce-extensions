@@ -99,6 +99,7 @@ public class MergeOpinionsTests {
             .tags(List.of())
             .type("vminstance")
             .accountIdToNameFn((_) -> null)
+            .assetStateServiceEnabled(true)
             .resourceNameField("resource_name")
             .reportingSource(reportingSource)
             .reportingSourceService(reportingService)
