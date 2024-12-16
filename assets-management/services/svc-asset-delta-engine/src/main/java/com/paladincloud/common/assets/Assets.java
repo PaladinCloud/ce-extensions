@@ -6,7 +6,7 @@ import com.paladincloud.common.AssetDocumentFields;
 import com.paladincloud.common.assets.FilesAndTypes.SupportingType;
 import com.paladincloud.common.aws.DatabaseHelper;
 import com.paladincloud.common.config.AssetTypes;
-import com.paladincloud.common.config.ConfigConstants;
+import com.paladincloud.common.config.ConfigConstants.S3;
 import com.paladincloud.common.config.ConfigService;
 import com.paladincloud.common.errors.JobException;
 import com.paladincloud.common.mapper.MapperRepository;
@@ -37,14 +37,17 @@ public class Assets {
     private final AssetRepository assetRepository;
     private final MapperRepository mapperRepository;
     private final DatabaseHelper databaseHelper;
+    private final AssetStateHelper assetStateHelper;
 
     @Inject
     public Assets(AssetRepository assetRepository, AssetTypes assetTypes,
-        MapperRepository mapperRepository, DatabaseHelper databaseHelper) {
+        MapperRepository mapperRepository, DatabaseHelper databaseHelper,
+        AssetStateHelper assetStateHelper) {
         this.assetRepository = assetRepository;
         this.assetTypes = assetTypes;
         this.mapperRepository = mapperRepository;
         this.databaseHelper = databaseHelper;
+        this.assetStateHelper = assetStateHelper;
     }
 
     private List<Map<String, Object>> fetchMapperFiles(String bucket, String path,
@@ -61,7 +64,7 @@ public class Assets {
     public Set<String> process(String dataSource, String mapperPath, boolean isOpinion,
         String reportingSource, String reportingSourceService, String reportingServiceDisplayName) {
 
-        var bucket = ConfigService.get(ConfigConstants.S3.BUCKET_NAME);
+        var bucket = ConfigService.get(S3.BUCKET_NAME);
         var featureSuspiciousAssetsEnabled = ConfigService.get(
             "feature_flags.enableSuspiciousAssets", "true").equalsIgnoreCase("true");
         var allFilenames = mapperRepository.listFiles(bucket, mapperPath);
@@ -135,6 +138,8 @@ public class Assets {
                         .dataSource(dataSource)
                         .displayName(displayName).tags(tags).type(type)
                         .accountIdToNameFn(this::accountIdToName)
+                        .assetState(assetStateHelper.get(dataSource, type))
+                        .assetStateServiceEnabled(ConfigService.isFeatureEnabled("enableAssetStateService"))
                         .reportingSource(reportingSource)
                         .reportingSourceService(reportingSourceService)
                         .reportingSourceServiceDisplayName(reportingServiceDisplayName);
@@ -267,7 +272,7 @@ public class Assets {
     }
 
     private void uploadSupportingTypes(String dataSource, String indexName, String bucket,
-        List<FilesAndTypes.SupportingType> supportingTypes, String loadDate) throws IOException {
+        List<SupportingType> supportingTypes, String loadDate) throws IOException {
         if (supportingTypes.isEmpty()) {
             return;
         }

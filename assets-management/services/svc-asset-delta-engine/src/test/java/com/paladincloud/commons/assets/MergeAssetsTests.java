@@ -59,6 +59,7 @@ public class MergeAssetsTests {
             .displayName(type)
             .tags(List.of())
             .type(type)
+            .assetStateServiceEnabled(true)
             .accountIdToNameFn((_) -> null)
             .resourceNameField("resource_name")
             .reportingSource(opinionSource)

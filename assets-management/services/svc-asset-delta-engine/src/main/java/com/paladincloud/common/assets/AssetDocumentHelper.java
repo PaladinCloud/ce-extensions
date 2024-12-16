@@ -116,6 +116,8 @@ public class AssetDocumentHelper {
     private String reportingSource;
     private String reportingSourceService;
     private String reportingSourceServiceDisplayName;
+    private AssetState assetState;
+    private boolean assetStateServiceEnabled;
 
 
     public boolean isPrimarySource() {
@@ -166,6 +168,9 @@ public class AssetDocumentHelper {
         // Set the remaining asset fields
         if (isPrimarySource()) {
             dto.setSource(source.toLowerCase());
+            if (!assetStateServiceEnabled) {
+                dto.setAssetState(assetState);
+            }
             populateNewPrimary(data, dto, idValue);
         } else {
             populateNewOpinion(data, dto);
@@ -178,7 +183,11 @@ public class AssetDocumentHelper {
         dto.setLegacySource(dto.getSource());
         dto.setLegacyDocId(dto.getDocId());
         dto.setLegacyDocType(dto.getDocType());
-        dto.setAssetState(AssetState.RECONCILING);
+        if (assetStateServiceEnabled) {
+            dto.setAssetState(AssetState.RECONCILING);
+        } else {
+            dto.setAssetState(assetState);
+        }
 
         setCommonPrimaryFields(data, dto, idValue);
 
@@ -291,7 +300,11 @@ public class AssetDocumentHelper {
         dto.setLegacyDocId(dto.getDocId());
         dto.setLegacyDocType(dto.getDocType());
 
-        dto.setAssetState(AssetState.RECONCILING);
+        if (assetStateServiceEnabled) {
+            dto.setAssetState(AssetState.RECONCILING);
+        } else {
+            dto.setAssetState(AssetState.SUSPICIOUS);
+        }
         return dto;
     }
 
