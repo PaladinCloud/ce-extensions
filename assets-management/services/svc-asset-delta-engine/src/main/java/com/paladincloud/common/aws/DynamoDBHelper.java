@@ -1,6 +1,7 @@
 package com.paladincloud.common.aws;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -35,7 +36,7 @@ public class DynamoDBHelper {
 
         var request = GetItemRequest.builder().key(keyMap).tableName(tableName).build();
         try (var client = getClient(region, credentialsProvider)) {
-            LOGGER.info(STR."Querying '\{tableName}' for item: \{request} (\{client})");
+            LOGGER.info(STR."Querying '\{tableName}' for item: \{request}");
             var item = client.getItem(request).item();
             return getFieldsFromRow(item, fieldMap);
         }
@@ -65,44 +66,55 @@ public class DynamoDBHelper {
         return Collections.emptyList();
     }
 
-    private static Map<String, String> getFieldsFromRow(Map<String, AttributeValue> row, Map<String, String> fieldMap) {
+    private static Map<String, String> getFieldsFromRow(Map<String, AttributeValue> row,
+        Map<String, String> fieldMap) {
         var configResponse = new HashMap<String, String>();
-        fieldMap.forEach((fieldName, fieldValue) -> {
+        fieldMap.forEach((fullFieldName, fieldValue) -> {
+            var fieldName = fullFieldName;
+            var fieldByLevel = fullFieldName.split("\\.");
+            if (fieldByLevel.length > 1) {
+                fieldName = fieldByLevel[0];
+            }
+
             var rowValue = row.get(fieldName);
             if (rowValue != null) {
                 if (rowValue.hasM()) {
-                    var map = rowValue.m();
-                    if (map.containsKey("id")) {
-                        configResponse.put(fieldValue, map.get("id").s());
-                    } else {
-                        // Add the entire map
-                        convertToJava(map).entrySet().forEach(entry -> {
-                            configResponse.put(fieldValue + "." + entry.getKey(), entry.getValue().toString());
-                        });
+                    var val = getUnderlyingValue(rowValue.m(), Arrays.stream(fieldByLevel).skip(1).toList());
+                    if (val != null) {
+                        configResponse.put(fieldValue, val.toString());
                     }
                 } else if (rowValue.type().equals(Type.S)) {
                     configResponse.put(fieldValue, rowValue.s());
                 } else {
                     LOGGER.error(
-                        STR."Unable to convert value for '\{fieldName}: '\{rowValue}'");
+                        "Unable to convert value for '{}: '{}'", fieldName, rowValue);
                 }
             }
         });
         return configResponse;
     }
 
-    private static Map<String, Object> convertToJava(Map<String, AttributeValue> mapValue) {
-        var newMap = new HashMap<String, Object>(mapValue.size());
-        for (var entry : mapValue.entrySet()) {
-            switch (entry.getValue().type()) {
-                case S:
-                    newMap.put(entry.getKey(), entry.getValue().s());
-                    break;
-                case BOOL:
-                    newMap.put(entry.getKey(), entry.getValue().bool());
-                    break;
+    private static Object getUnderlyingValue(Map<String, AttributeValue> val, List<String> levels) {
+        Map<String, AttributeValue> curMap = val;
+        AttributeValue curVal = null;
+        for (var level : levels) {
+            curVal = curMap.get(level);
+            if (curVal == null) {
+                return null;
+            }
+            if (curVal.hasM()) {
+                curMap = curVal.m();
             }
         }
-        return newMap;
+
+        if (curVal != null) {
+            switch (curVal.type()) {
+                case S:
+                    return curVal.s();
+                case BOOL:
+                    return curVal.bool();
+            }
+        }
+        return null;
     }
 }

@@ -69,10 +69,10 @@ public abstract class JobExecutor {
 
             tenantId = params.get(TENANT_ID_JOB_ARGUMENT);
 
-            var dynamoConfigMap = Map.of("lambda_rule_engine_function_ShipperdoneSQS",
+            var dynamoConfigMap = Map.of("lambda_rule_engine_function_ShipperdoneSQS.id",
                 "processing-done-sqs-url",
-                "paladincloud_app_gateway_CustomDomain", "base-paladincloud-domain",
-                "cognito_userpool_PoolDomain", "cognito-url-prefix");
+                "paladincloud_app_gateway_CustomDomain.id", "base-paladincloud-domain",
+                "cognito_userpool_PoolDomain.id", "cognito-url-prefix");
 
             ConfigService.retrieveConfigProperties(
                 ConfigParams.builder().assumeRoleArn(assumeRoleArn).tenantId(tenantId)
@@ -95,6 +95,9 @@ public abstract class JobExecutor {
                 }
             }
 
+            LOGGER.info("enableAssetStateService={} completionQueue={}",
+                ConfigService.isFeatureEnabled("enableAssetStateService"),
+                ConfigService.get(ConfigConstants.SQS.ASSET_STATE_START_SQS_URL));
             var cognitoUrlPrefix = ConfigService.get(PaladinCloud.COGNITO_URL_PREFIX);
             ConfigService.setProperties("", Map.of(PaladinCloud.AUTH_API_URL,
                 STR."https://\{cognitoUrlPrefix}.auth.us-east-1.amazoncognito.com"));

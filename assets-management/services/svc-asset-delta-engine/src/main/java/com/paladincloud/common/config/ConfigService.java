@@ -12,12 +12,15 @@ import com.paladincloud.common.util.JsonHelper;
 import java.util.Map;
 import java.util.Properties;
 import java.util.stream.Collectors;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient;
 import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueRequest;
 
 public class ConfigService {
 
+    private static final Logger LOGGER = LogManager.getLogger(ConfigService.class);
     private static final Properties properties = new Properties();
     private static final String CONFIG_SERVICE_API_PATH = "/config/batch/prd/latest";
 
@@ -51,6 +54,7 @@ public class ConfigService {
         }
 
         var tenantFeatureFlags = getTenantFeatureFlags(configParams);
+        LOGGER.info("feature flags={}", tenantFeatureFlags);
         ConfigService.setProperties("", tenantFeatureFlags);
 
         var dynamoConfig = getTenantOutputConfiguration(configParams);
@@ -109,7 +113,7 @@ public class ConfigService {
                 var tableKey = configParams.tenantConfigTablePartitionKey;
                 return DynamoDBHelper.get(configParams.awsRegion, dynamoCredentialsProviders,
                     table, tableKey, configParams.tenantId,
-                    Map.of("api_feature_flags", "feature_flags"));
+                    Map.of("tenant_feature_flags.enableAssetStateService.status", "feature_flags.enableAssetStateService"));
             });
     }
 
