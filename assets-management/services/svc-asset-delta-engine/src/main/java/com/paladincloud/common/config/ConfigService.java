@@ -12,12 +12,16 @@ import com.paladincloud.common.util.JsonHelper;
 import java.util.Map;
 import java.util.Properties;
 import java.util.stream.Collectors;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient;
 import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueRequest;
 
 public class ConfigService {
 
+    private static final Logger LOGGER = LogManager.getLogger(ConfigService.class);
+    private static String propertiesTenantId = null;
     private static final Properties properties = new Properties();
     private static final String CONFIG_SERVICE_API_PATH = "/config/batch/prd/latest";
 
@@ -47,8 +51,14 @@ public class ConfigService {
      */
     public static void retrieveConfigProperties(ConfigParams configParams) {
         if (!properties.isEmpty()) {
-            return;
+            if (configParams.tenantId.equals(propertiesTenantId)) {
+                return;
+            }
+            LOGGER.info("Clearing config properties for new tenant");
+            properties.clear();
         }
+
+        propertiesTenantId = configParams.tenantId;
 
         var tenantFeatureFlags = getTenantFeatureFlags(configParams);
         ConfigService.setProperties("", tenantFeatureFlags);
