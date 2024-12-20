@@ -63,7 +63,7 @@ public class ApplicationModule {
 
     @Singleton
     @Provides
-    AssetGroups provideAssetGroups(ElasticSearchHelper elasticSearch, DatabaseHelper database, AuthHelper authHelper) {
+    AssetGroups provideAssetGroups(ElasticSearchHelper elasticSearch, DatabaseHelper database) {
         return new AssetGroups(elasticSearch, database);
     }
 
@@ -75,8 +75,8 @@ public class ApplicationModule {
 
     @Singleton
     @Provides
-    AssetCounts provideAssetCounts(DatabaseHelper databaseHelper, AssetGroups assetGroups, AssetCountsHelper assetCountsHelper) {
-        return new AssetCounts(databaseHelper, assetGroups, assetCountsHelper);
+    AssetCounts provideAssetCounts(DatabaseHelper databaseHelper, AssetCountsHelper assetCountsHelper) {
+        return new AssetCounts(databaseHelper, assetCountsHelper);
     }
 
     @Singleton

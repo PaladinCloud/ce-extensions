@@ -21,6 +21,7 @@ import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueReques
 public class ConfigService {
 
     private static final Logger LOGGER = LogManager.getLogger(ConfigService.class);
+    private static String propertiesTenantId = null;
     private static final Properties properties = new Properties();
     private static final String CONFIG_SERVICE_API_PATH = "/config/batch/prd/latest";
 
@@ -50,8 +51,14 @@ public class ConfigService {
      */
     public static void retrieveConfigProperties(ConfigParams configParams) {
         if (!properties.isEmpty()) {
-            return;
+            if (configParams.tenantId.equals(propertiesTenantId)) {
+                return;
+            }
+            LOGGER.info("Clearing config properties for new tenant");
+            properties.clear();
         }
+
+        propertiesTenantId = configParams.tenantId;
 
         var tenantFeatureFlags = getTenantFeatureFlags(configParams);
         LOGGER.info("feature flags={}", tenantFeatureFlags);
