@@ -149,15 +149,21 @@ func (c *ElasticSearchClient) fetchFromOpensearch(ctx context.Context, tenantId,
 }
 
 func buildDetailsQuery(assetId string) map[string]interface{} {
-	assetIdFilter := map[string]interface{}{
+	assetIdFilter := buildDocIdFilter(assetId)
+	entityFilter := map[string]interface{}{
 		"term": map[string]interface{}{
-			"_id": assetId,
+			"_entity": "true",
+		},
+	}
+	latestFilter := map[string]interface{}{
+		"term": map[string]interface{}{
+			"latest": "true",
 		},
 	}
 
 	query := map[string]interface{}{
 		"bool": map[string]interface{}{
-			"must": [1]map[string]interface{}{assetIdFilter},
+			"must": [3]map[string]interface{}{assetIdFilter, entityFilter, latestFilter},
 		},
 	}
 
@@ -206,4 +212,25 @@ func buildAssetsQuery(docType, resourceId string) map[string]interface{} {
 	}
 
 	return query
+}
+
+func buildDocIdFilter(docId string) map[string]interface{} {
+
+	docIdFilter1 := map[string]interface{}{
+		"term": map[string]interface{}{
+			"_docid.keyword": docId,
+		},
+	}
+	docIdFilter2 := map[string]interface{}{
+		"term": map[string]interface{}{
+			"_docId.keyword": docId,
+		},
+	}
+
+	docIdOrFilter := map[string]interface{}{
+		"bool": map[string]interface{}{
+			"should": []interface{}{docIdFilter1, docIdFilter2},
+		},
+	}
+	return docIdOrFilter
 }

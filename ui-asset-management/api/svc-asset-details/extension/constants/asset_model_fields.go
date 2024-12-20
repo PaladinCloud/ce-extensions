@@ -25,8 +25,8 @@ const (
 	TargetTypeName  = "_entityTypeDisplayName"
 	Region          = "region"
 	PrimaryProvider = "primaryProvider"
-	RawData         = "rawData"
 	AssetState      = "_assetState"
+	ResourceId      = "_resourceid"
 )
 
 var CommonFields = []string{
@@ -38,4 +38,9 @@ var CommonFields = []string{
 	TargetTypeName,
 	Region,
 	AssetState,
+	ResourceId,
 }
+
+const (
+	Suspicious = "suspicious"
+)

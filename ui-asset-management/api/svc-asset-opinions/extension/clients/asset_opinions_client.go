@@ -46,7 +46,7 @@ func (c *AssetOpinionsClient) GetAssetOpinions(ctx context.Context, tenantId, so
 
 	log.Printf("starting to fetch opinions for asset id [%s] and tenant id [%s]\n", assetId, tenantId)
 
-	result, err := c.elasticSearchClient.FetchAssetOpinions(ctx, tenantId, source, targetType, assetId)
+	result, err := c.elasticSearchClient.FetchAssetOpinions(ctx, tenantId, strings.ToLower(source), strings.ToLower(targetType), assetId)
 	if err != nil {
 		log.Printf("error fetching asset Opinions: %+v", err)
 		return &models.Response{Data: nil, Message: "No opinions available for this asset"}, nil

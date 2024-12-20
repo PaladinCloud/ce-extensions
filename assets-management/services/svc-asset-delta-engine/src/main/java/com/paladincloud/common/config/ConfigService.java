@@ -36,6 +36,9 @@ public class ConfigService {
         return properties.getProperty(propertyName, defaultValue);
     }
 
+    public static boolean isFeatureEnabled(String feature) {
+        return "true".equalsIgnoreCase(properties.getProperty("feature_flags." + feature, "false"));
+    }
 
     /**
      * Retrieve configuration properties from the given config service, making them available in the
@@ -76,7 +79,8 @@ public class ConfigService {
     private static Map<String, String> getSecretsWithRole(ConfigParams configParams) {
         return RoleHelper.runAs(configParams.awsRegion, null, configParams.assumeRoleArn,
             secretCredentialsProvider -> {
-                var builder = SecretsManagerClient.builder().region(Region.of(configParams.awsRegion));
+                var builder = SecretsManagerClient.builder()
+                    .region(Region.of(configParams.awsRegion));
                 if (secretCredentialsProvider != null) {
                     builder.credentialsProvider(secretCredentialsProvider);
                 }
@@ -114,7 +118,8 @@ public class ConfigService {
                 var table = configParams.tenantConfigTable;
                 var tableKey = configParams.tenantConfigTablePartitionKey;
                 return DynamoDBHelper.get(configParams.awsRegion, dynamoCredentialsProviders,
-                    table, tableKey, configParams.tenantId, Map.of("api_feature_flags", "feature_flags"));
+                    table, tableKey, configParams.tenantId,
+                    Map.of("api_feature_flags", "feature_flags"));
             });
     }
 

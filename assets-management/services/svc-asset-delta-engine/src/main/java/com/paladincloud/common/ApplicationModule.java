@@ -108,10 +108,4 @@ public class ApplicationModule {
     AssetRepository provideAssetRepository(ElasticSearchHelper elasticSearch) {
         return new ElasticAssetRepository(elasticSearch);
     }
-
-    @Singleton
-    @Provides
-    AssetStateHelper provideAssetStateHelper(DatabaseHelper databaseHelper) {
-        return new AssetStateHelper(databaseHelper);
-    }
 }

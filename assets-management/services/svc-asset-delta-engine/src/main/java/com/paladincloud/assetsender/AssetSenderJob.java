@@ -60,11 +60,12 @@ public class AssetSenderJob extends JobExecutor {
         LOGGER.info(
             "Processing assets; bucket={} dataSource={} path={} tenant={}",
             ConfigService.get(ConfigConstants.S3.BUCKET_NAME), dataSource, params.get(S3_PATH),
-            tenantName);
+            tenantId);
         ConfigService.setProperties("batch.",
             Collections.singletonMap("s3.data", params.get(S3_PATH)));
 
         var reportingSource = params.get(REPORTING_SOURCE);
+
         // dataSource is the underlying source of the data (gcp, aws, azure) while reporting source
         // is only set if it's different. It's different for secondary sources reporting data
         // (qualys, rapid7); in addition, reporting service is also set only if the data is from
@@ -74,7 +75,7 @@ public class AssetSenderJob extends JobExecutor {
         if (!isOpinion) {
             assetTypes.setupIndexAndTypes(dataSource);
         }
-        assets.process(dataSource, params.get(S3_PATH), isOpinion,
+        var processedAssetTypes = assets.process(dataSource, params.get(S3_PATH), isOpinion,
             reportingSource,
             params.get(REPORTING_SOURCE_SERVICE),
             params.get(REPORTING_SOURCE_SERVICE_DISPLAY_NAME));
@@ -93,21 +94,24 @@ public class AssetSenderJob extends JobExecutor {
             }
         }
 
-        // NOTE: enricher source will be set when handling secondary sources
-        String enricherSource = null;
-        var shipperDoneEvent = new ProcessingDoneMessage(STR."\{dataSource}-asset-shipper",
-            dataSource, enricherSource,
-            tenantId, tenantName);
+        var completedEvent = new ProcessingDoneMessage("delta-engine-" + dataSource, dataSource,
+            null, tenantId, null,
+            processedAssetTypes.stream().sorted().toArray(String[]::new),
+            false);
+
+        String eventAsJson = null;
+        try {
+            eventAsJson = new ObjectMapper().writeValueAsString(completedEvent);
+        } catch (JsonProcessingException e) {
+            LOGGER.warn("Unable to serialize event as JSON", e);
+        }
+
         if ("true".equalsIgnoreCase(ConfigService.get(ConfigConstants.Dev.OMIT_DONE_EVENT))) {
-            try {
-                LOGGER.warn("Omitting done event: {}",
-                    new ObjectMapper().writeValueAsString(shipperDoneEvent));
-            } catch (JsonProcessingException e) {
-                throw new JobException("Failed serializing event", e);
-            }
+            LOGGER.warn("Omitting completed event: {}", eventAsJson);
         } else {
-            sqsHelper.sendMessage(ConfigService.get(ConfigConstants.SQS.ASSET_SHIPPER_DONE_SQS_URL),
-                shipperDoneEvent, UUID.randomUUID().toString());
+            var sqsUrl = ConfigService.get(ConfigConstants.SQS.ASSET_STATE_START_SQS_URL);
+            LOGGER.info("Sending completed event to {} (event={})", sqsUrl, eventAsJson);
+            sqsHelper.sendMessage(sqsUrl, completedEvent, UUID.randomUUID().toString());
         }
     }
 

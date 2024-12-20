@@ -59,8 +59,8 @@ public class MergeAssetsTests {
             .displayName(type)
             .tags(List.of())
             .type(type)
+            .assetStateServiceEnabled(true)
             .accountIdToNameFn((_) -> null)
-            .assetState(AssetState.MANAGED)
             .resourceNameField("resource_name")
             .reportingSource(opinionSource)
             .reportingSourceService(opinionSource == null ? null : "vulnerabilities")
@@ -157,7 +157,7 @@ public class MergeAssetsTests {
     // Given no existing primary documents and a new opinion, in addition to creating the opinion,
     // a stub primary should be created.
     @Test
-    void shouldCreateStubPrimaryAssetWithSuspiciousState() {
+    void shouldCreateStubPrimaryAssetWithReconcilingState() {
         var existing = createExisting(List.of());
         var latest = createLatest(List.of("q13"), "secondary");
 
@@ -169,6 +169,6 @@ public class MergeAssetsTests {
 
         var stubAsset = merger.getNewPrimaryAssets().get("aws_ec2_q13");
         assertNotNull(stubAsset);
-        assertEquals(AssetState.SUSPICIOUS, stubAsset.getAssetState());
+        assertEquals(AssetState.RECONCILING, stubAsset.getAssetState());
     }
 }

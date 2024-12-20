@@ -7,6 +7,7 @@ type AssetDetails struct {
 	SourceName      string            `json:"SourceName"`
 	TargetType      string            `json:"targetType"`
 	TargetTypeName  string            `json:"targetTypeName"`
+	ResourceId      string            `json:"resourceId"`
 	Region          string            `json:"region"`
 	AssetState      string            `json:"assetState"`
 	Tags            map[string]string `json:"tags"`

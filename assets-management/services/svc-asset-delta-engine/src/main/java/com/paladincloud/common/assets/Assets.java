@@ -6,7 +6,7 @@ import com.paladincloud.common.AssetDocumentFields;
 import com.paladincloud.common.assets.FilesAndTypes.SupportingType;
 import com.paladincloud.common.aws.DatabaseHelper;
 import com.paladincloud.common.config.AssetTypes;
-import com.paladincloud.common.config.ConfigConstants;
+import com.paladincloud.common.config.ConfigConstants.S3;
 import com.paladincloud.common.config.ConfigService;
 import com.paladincloud.common.errors.JobException;
 import com.paladincloud.common.mapper.MapperRepository;
@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
@@ -60,10 +61,10 @@ public class Assets {
         }
     }
 
-    public void process(String dataSource, String mapperPath, boolean isOpinion, String reportingSource,
-        String reportingSourceService, String reportingServiceDisplayName) {
+    public Set<String> process(String dataSource, String mapperPath, boolean isOpinion,
+        String reportingSource, String reportingSourceService, String reportingServiceDisplayName) {
 
-        var bucket = ConfigService.get(ConfigConstants.S3.BUCKET_NAME);
+        var bucket = ConfigService.get(S3.BUCKET_NAME);
         var featureSuspiciousAssetsEnabled = ConfigService.get(
             "feature_flags.enableSuspiciousAssets", "true").equalsIgnoreCase("true");
         var allFilenames = mapperRepository.listFiles(bucket, mapperPath);
@@ -76,13 +77,13 @@ public class Assets {
         if (types.isEmpty()) {
             LOGGER.info("There are no types to process for dataSource: {} at {}. Filenames={}",
                 dataSource, mapperPath, allFilenames);
-            return;
+            return Collections.emptySet();
         }
 
         if (allFilenames.isEmpty()) {
             LOGGER.info("There are no files to process for dataSource: {} at {}. Types={}",
                 dataSource, mapperPath, types.keySet());
-            return;
+            return Collections.emptySet();
         }
 
         LOGGER.info("Start processing Asset info; suspiciousAssetsEnabled={}",
@@ -137,22 +138,25 @@ public class Assets {
                         .dataSource(dataSource)
                         .displayName(displayName).tags(tags).type(type)
                         .accountIdToNameFn(this::accountIdToName)
+                        .assetState(assetStateHelper.get(dataSource, type))
+                        .assetStateServiceEnabled(ConfigService.isFeatureEnabled("enableAssetStateService"))
                         .reportingSource(reportingSource)
                         .reportingSourceService(reportingSourceService)
-                        .reportingSourceServiceDisplayName(reportingServiceDisplayName)
-                        .assetState(assetStateHelper.get(dataSource, type));
+                        .reportingSourceServiceDisplayName(reportingServiceDisplayName);
                     var mergeResponse = MergeAssets.process(assetCreator.build(), existingAssets,
                         latestAssets, existingPrimaryAssets);
 
                     LOGGER.info(
                         "{}/{}: merge results: {} updated, {} added, " +
                             "{} missing, {} opinions deleted, " +
-                            "{} suspicious primary added, {} primary deleted",
-                        dataSource, type, mergeResponse.getUpdatedAssets().size(),
+                            "{} suspicious primary added, {} primary update, {} primary deleted",
+                        dataSource, type, 
+                        mergeResponse.getUpdatedAssets().size(),
                         mergeResponse.getNewAssets().size(),
                         mergeResponse.getMissingAssets().size(),
                         mergeResponse.getDeletedOpinionAssets().size(),
                         !featureSuspiciousAssetsEnabled ? 0 : mergeResponse.getNewPrimaryAssets().size(),
+                        mergeResponse.getUpdatedPrimaryAssets().size(),
                         mergeResponse.getDeletedPrimaryAssets().size());
 
                     String finalIndexName = indexName;
@@ -193,7 +197,7 @@ public class Assets {
                     });
 
                     if (featureSuspiciousAssetsEnabled) {
-                        mergeResponse.getNewPrimaryAssets().values().forEach(value -> {
+                        mergeResponse.getExistingPrimaryAssets().values().forEach(value -> {
                             try {
                                 batchIndexer.add(
                                     BatchItem.documentEntry(primaryIndexName, value.getDocId(),
@@ -229,6 +233,7 @@ public class Assets {
         }
 
         LOGGER.info("Finished processing asset data for {}", dataSource);
+        return fileTypes.typeFiles.keySet();
     }
 
     private String accountIdToName(String accountId) {
@@ -267,7 +272,7 @@ public class Assets {
     }
 
     private void uploadSupportingTypes(String dataSource, String indexName, String bucket,
-        List<FilesAndTypes.SupportingType> supportingTypes, String loadDate) throws IOException {
+        List<SupportingType> supportingTypes, String loadDate) throws IOException {
         if (supportingTypes.isEmpty()) {
             return;
         }
