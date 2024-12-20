@@ -61,6 +61,7 @@ public class ConfigService {
         propertiesTenantId = configParams.tenantId;
 
         var tenantFeatureFlags = getTenantFeatureFlags(configParams);
+        LOGGER.info("feature flags={}", tenantFeatureFlags);
         ConfigService.setProperties("", tenantFeatureFlags);
 
         var dynamoConfig = getTenantOutputConfiguration(configParams);
@@ -119,7 +120,7 @@ public class ConfigService {
                 var tableKey = configParams.tenantConfigTablePartitionKey;
                 return DynamoDBHelper.get(configParams.awsRegion, dynamoCredentialsProviders,
                     table, tableKey, configParams.tenantId,
-                    Map.of("api_feature_flags", "feature_flags"));
+                    Map.of("tenant_feature_flags.enableAssetStateService.status", "feature_flags.enableAssetStateService"));
             });
     }
 
