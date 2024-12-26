@@ -8,7 +8,7 @@ DATA_MORPHER := data-morpher
 DIST_DIR := dist
 
 # Main target to package all services and move zip files to the dist directory
-package-all: package-asset-management package-ui-asset-management package-ui-common move-zips
+package-all: package-asset-management package-ui-asset-management package-ui-common package-data-morpher move-zips
 	@echo "Packaging completed for all services and artifacts moved to $(DIST_DIR)."
 
 # Package assets-management service
