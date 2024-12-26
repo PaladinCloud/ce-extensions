@@ -2,6 +2,7 @@
 ASSET_MANAGEMENT := assets-management
 UI_ASSET_MANAGEMENT := ui-asset-management
 UI_COMMON := ui-common
+DATA_MORPHER := data-morpher
 
 # Directory where all zip files will be moved/copied
 DIST_DIR := dist
@@ -46,6 +47,18 @@ package-ui-common:
 		$(MAKE) -C $(UI_COMMON) package-all; \
 	fi
 
+# Package data-morpher service
+package-data-morpher:
+	@if [ ! -d "$(DATA_MORPHER)" ]; then \
+		echo "Error: $(DATA_MORPHER) directory not found"; \
+		exit 1; \
+	elif [ ! -f "$(DATA_MORPHER)/Makefile" ]; then \
+		echo "Error: $(DATA_MORPHER)/Makefile not found"; \
+		exit 1; \
+	else \
+		$(MAKE) -C $(DATA_MORPHER) package-all; \
+	fi
+
 # Move zip files to the dist directory after packaging is complete
 move-zips: create-dist-dir
 	# Clean dist directory with safety check
@@ -77,6 +90,14 @@ move-zips: create-dist-dir
 		cp -r $(ASSET_MANAGEMENT)/$(DIST_DIR)/* $(DIST_DIR)/ || exit 1; \
 	else \
 		echo "Error: $(ASSET_MANAGEMENT)/$(DIST_DIR) not found"; \
+		exit 1; \
+	fi
+
+	# Copy data-morpher artifacts
+	@if [ -d "$(DATA_MORPHER)/$(DIST_DIR)" ]; then \
+		cp -r $(DATA_MORPHER)/$(DIST_DIR)/* $(DIST_DIR)/ || exit 1; \
+	else \
+		echo "Error: $(DATA_MORPHER)/$(DIST_DIR) not found"; \
 		exit 1; \
 	fi
 

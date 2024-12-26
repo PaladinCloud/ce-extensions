@@ -1,0 +1,21 @@
+{
+  "top_level_fields": {
+    "id": "$.id",
+    "name": "@checkWithPriority($.graph_entity.originalObject.name,$.graph_entity.originalObject.Name,$.id)",
+    "accountid": "$.subscription_external_id",
+    "region": "$.graph_entity.properties.region",
+    "discoverydate": "@getDiscoveryDate()",
+    "firstdiscoveredon": "$.graph_entity.properties.creationDate",
+    "targetType": "$.targetType",
+    "_cloudType": "@toLowerCase($.graph_entity.properties.cloudPlatform)",
+    "docType": "$.targetType",
+    "accountname": "$.subscription_name",
+    "projects": "$.graph_entity.projects",
+    "originalObject": "$.graph_entity.originalObject",
+    "properties": "$.graph_entity.properties",
+    "wizAssetType": "$.type",
+    "targetTypeDisplayName": "$.targetTypeDisplayName",
+    "_resourceid": "$.graph_entity.properties.externalId",
+    "_docid": "@generateDocId($.graph_entity.properties.cloudPlatform,$.targetType,$.subscription_external_id,$.graph_entity.properties.region,$.graph_entity.properties.externalId)"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "top_level_fields": {
+    "_cloudType": "redhat",
+    "region": "N/A",
+    "id": "$.id",
+    "discoverydate": "$._cq_sync_time",
+    "name": "$.name",
+    "namespace": "$.namespace",
+    "cluster": "$.cluster",
+    "cluster_id": "$.cluster_id",
+    "created": "$.created",
+    "priority": "$.priority",
+    "accountid": "@getAccountId($._cq_source_name,redhat-)",
+    "accountname": "N/A"
+  },
+  "replace": {
+
+  },
+  "metadata": {
+    "plugin_name": "redhat",
+    "asset_type": "deployment",
+    "file_name": "redhat-deployment.data"
+  }
+}

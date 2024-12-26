@@ -1,0 +1,25 @@
+{
+  "top_level_fields": {
+    "_cloudType": "redhat",
+    "region": "N/A",
+    "id": "$.id",
+    "discoverydate": "$._cq_sync_time",
+    "name": "$.name",
+    "created": "$.created",
+    "priority": "$.priority",
+    "cves": "$.cves",
+    "fixable_cves": "$.fixable_cves",
+    "last_updated": "$.last_updated",
+    "components": "$.components",
+    "accountid": "@getAccountId($._cq_source_name,redhat-)",
+    "accountname": "N/A"
+  },
+  "replace": {
+
+  },
+  "metadata": {
+    "plugin_name": "redhat",
+    "asset_type": "image",
+    "file_name": "redhat-image.data"
+  }
+}

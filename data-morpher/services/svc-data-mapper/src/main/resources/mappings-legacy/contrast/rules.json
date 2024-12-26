@@ -1,0 +1,23 @@
+{
+  "top_level_fields": {
+    "policyId":"$.name",
+    "policyUUID":"$.name",
+    "policyName":"$.name",
+    "policyDisplayName":"$.title",
+    "policyDesc":"$.description",
+    "severity":"@convertSeverity($.severity)",
+    "target":"application",
+    "assetgroup":"contrast",
+    "category":"security",
+    "status":"@isPolicyEnabledInContrast($.enabled_dev,$.enabled_prod,$.enabled_qa)",
+    "resolutionUrl": "$.resolution_url"
+  },
+  "replacement_fields": {
+
+  },
+  "metadata": {
+    "plugin_name": "contrast",
+    "asset_type": "policies",
+    "file_name": "contrast-policy.data"
+  }
+}

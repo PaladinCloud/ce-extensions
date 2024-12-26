@@ -1,0 +1,101 @@
+{
+  "top_level_fields": {
+    "created": "$.host_asset.created",
+    "modified": "$.host_asset.modified",
+    "name": "$.host_asset.name",
+    "cloudProvider": "$.host_asset.cloudProvider",
+    "rawData": "@jsonToString($.host_asset)",
+    "_last_scan_date": "$.host_asset.lastVulnScan",
+    "_deep_link": "$.host_asset.deepLink",
+    "reporting_source_service" : "vulnerability_management",
+    "reporting_source_service_display_name" : "VMDR"
+  },
+  "conditional_top_level_fields": [
+    {
+      "field": "cloudProvider",
+      "pattern": "^AWS",
+      "fields": {
+        "source": "aws",
+        "source_display_name": "AWS",
+        "_entityType": "ec2",
+        "_entityTypeDisplayName": "EC2",
+        "instanceid": "@getValueFromSpecificIndex($.host_asset.sourceInfo.list[*].Ec2AssetSourceSimple.instanceId,0)",
+        "account_id": "@getValueFromSpecificIndex($.host_asset.sourceInfo.list[*].Ec2AssetSourceSimple.accountId,0)",
+        "region": "@getValueFromSpecificIndex($.host_asset.sourceInfo.list[*].Ec2AssetSourceSimple.region,0)",
+        "_isActive": "@getAssetStateFromHostAsset($.host_asset.sourceInfo.list[*].Ec2AssetSourceSimple.instanceState,0)"
+
+      }
+    },
+    {
+      "field": "cloudProvider",
+      "pattern": "^AZURE",
+      "fields": {
+        "source": "azure",
+        "source_display_name": "Azure",
+        "_entityType": "virtualmachine",
+        "_entityTypeDisplayName": "VM",
+        "id": "@getValueFromSpecificIndex($.host_asset.sourceInfo.list[*].AzureAssetSourceSimple.vmId,0)",
+        "subscription": "@getValueFromSpecificIndex($.host_asset.sourceInfo.list[*].AzureAssetSourceSimple.subscriptionId,0)",
+        "region": "@getValueFromSpecificIndex($.host_asset.sourceInfo.list[*].AzureAssetSourceSimple.location,0)",
+        "_isActive": "@getAssetStateFromHostAsset($.host_asset.sourceInfo.list[*].AzureAssetSourceSimple.state,0)",
+        "resourceGroupName" : "@getValueFromSpecificIndex($.host_asset.sourceInfo.list[*].AzureAssetSourceSimple.resourceGroupName,0)",
+        "name": "@getValueFromSpecificIndex($.host_asset.sourceInfo.list[*].AzureAssetSourceSimple.name,0)"
+      }
+    },
+    {
+      "field": "cloudProvider",
+      "pattern": "^GCP",
+      "fields": {
+        "source": "gcp",
+        "source_display_name": "GCP",
+        "_entityType": "vminstance",
+        "_entityTypeDisplayName": "VM",
+        "id": "@getValueFromSpecificIndex($.host_asset.sourceInfo.list[*].GcpAssetSourceSimple.instanceId,0)",
+        "projectId": "@getValueFromSpecificIndex($.host_asset.sourceInfo.list[*].GcpAssetSourceSimple.projectId,0)",
+        "region": "@getValueFromSpecificIndex($.host_asset.sourceInfo.list[*].GcpAssetSourceSimple.zone,0)",
+        "_isActive": "@getAssetStateFromHostAsset($.host_asset.sourceInfo.list[*].GcpAssetSourceSimple.state,0)"
+
+      }
+    }
+  ],
+  "replacement_fields": {},
+  "metadata": {
+    "plugin_name": "qualys",
+    "post_process_fn": "generateDocID",
+    "filtered_outputs": [
+      {
+        "file_name": "aws-ec2.data",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "cloudProvider",
+            "pattern": "^AWS"
+          }
+        ],
+        "external_datasource": "aws"
+      },
+      {
+        "file_name": "azure-virtualmachine.data",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "cloudProvider",
+            "pattern": "^AZURE"
+          }
+        ],
+        "external_datasource": "azure"
+      },
+      {
+        "file_name": "gcp-vminstance.data",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "cloudProvider",
+            "pattern": "^GCP"
+          }
+        ],
+        "external_datasource": "gcp"
+      }
+    ]
+  }
+}
