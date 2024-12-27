@@ -85,7 +85,7 @@ func NewDynamoDBClient(ctx context.Context, useAssumeRole bool, assumeRoleArn, r
 }
 
 func (d *DynamodbClient) GetConfigDynamodbItem(ctx context.Context, tenantId, projection string) (*models.DynamodbItems, error) {
-	result, err := GetItem[models.DynamodbItems, string](
+	result, err := GetItem[models.DynamodbItems](
 		ctx,
 		*d,
 		tenantId,
@@ -100,7 +100,7 @@ func (d *DynamodbClient) GetConfigDynamodbItem(ctx context.Context, tenantId, pr
 }
 
 func (d *DynamodbClient) GetTenantFeatureFlags(ctx context.Context, tenantId string) (*models.TenantFeatureFlags, error) {
-	result, err := GetItem[models.TenantFeatureFlags, string](
+	result, err := GetItem[models.TenantFeatureFlags](
 		ctx,
 		*d,
 		tenantId,
@@ -115,7 +115,7 @@ func (d *DynamodbClient) GetTenantFeatureFlags(ctx context.Context, tenantId str
 }
 
 func (d *DynamodbClient) GetOpenSearchDomain(ctx context.Context, tenantId string) (*models.OpenSearchProperties, error) {
-	result, err := GetItem[models.OpenSearchProperties, string](
+	result, err := GetItem[models.OpenSearchProperties](
 		ctx,
 		*d,
 		tenantId,
