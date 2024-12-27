@@ -85,7 +85,9 @@ func (c *ElasticSearchClient) FetchAssetDetails(ctx context.Context, tenantId, a
 		return nil, fmt.Errorf("error while fetching asset details from opensearch client for asset id [%s]", assetId)
 	}
 	var result map[string]interface{}
-	json.NewDecoder(response.Body).Decode(&result)
+	if err := json.NewDecoder(response.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("failed to decode response body for asset [%s]: %w", assetId, err)
+	}
 	return &result, nil
 }
 
