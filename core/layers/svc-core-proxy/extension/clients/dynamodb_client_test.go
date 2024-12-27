@@ -73,12 +73,12 @@ func TestDynamodbClient_GetTenantFeatureFlags(t *testing.T) {
 
 	response, err := client.GetTenantFeatureFlags(ctx, tenantId)
 	if err != nil {
-		t.Fatalf("Error while fetching OpenSearch Domain: %+v", err)
+		t.Fatalf("Error while fetching Tenant Feature Flags: %+v", err)
 	}
 
 	if response == nil {
 		t.Fatal("Expected response to be not nil")
 	}
 
-	t.Logf("Successfully fetched OpenSearch Domain %+v", response)
+	t.Logf("Successfully fetched Tenant Feature Flags %+v", response)
 }
