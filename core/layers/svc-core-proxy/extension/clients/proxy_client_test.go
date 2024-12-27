@@ -21,7 +21,7 @@ import (
 	"testing"
 )
 
-func TestPoxyClient_GetTenantFeatureFlags(t *testing.T) {
+func TestProxyClient_GetTenantFeatureFlags(t *testing.T) {
 	ctx := context.Background()
 
 	tenantId := "98c28482-9bae-46bd-bd4e-58fa132e72c0"

@@ -23,3 +23,7 @@ package-all: package-ext
 # Dependencies: create required directories if they don't exist
 dependencies:
 	mkdir -p $(EXTENSIONS_BIN_DIR)
+
+clean:
+	rm -rf $(EXTENSIONS_BIN_DIR)/*.zip
+	rm -rf $(EXTENSIONS_BIN_DIR)/$(LAMBDA_LAYER_NAME)

@@ -30,5 +30,6 @@ package models
 // feature flags -> services GET /tenant/{tenantid}/ui/features -> should return a key/value object from "ui_feature_flags" projection
 
 type Response struct {
-	Data map[string]interface{}
+	Data    map[string]interface{} `json:"data"`
+	Message string                 `json:"message,omitempty"`
 }

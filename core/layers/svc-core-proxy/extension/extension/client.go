@@ -21,8 +21,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
+	"time"
 )
 
 // RegisterResponse is the body of the response for /register
@@ -62,9 +63,9 @@ const (
 	// Shutdown is a shutdown event for the environment
 	Shutdown EventType = "SHUTDOWN"
 
-	extensionNameHeader      = "Lambda-Extension-Name"
-	extensionIdentiferHeader = "Lambda-Extension-Identifier"
-	extensionErrorType       = "Lambda-Extension-Function-Error-Type"
+	extensionNameHeader       = "Lambda-Extension-Name"
+	extensionIdentifierHeader = "Lambda-Extension-Identifier"
+	extensionErrorType        = "Lambda-Extension-Function-Error-Type"
 )
 
 // Client is a simple client for the Lambda Extensions API
@@ -75,11 +76,11 @@ type Client struct {
 }
 
 // NewClient returns a Lambda Extensions API client
-func NewClient(awsLambdaRuntimeAPI string) *Client {
+func NewClient(awsLambdaRuntimeAPI string, timeout time.Duration) *Client {
 	baseURL := fmt.Sprintf("http://%s/2020-01-01/extension", awsLambdaRuntimeAPI)
 	return &Client{
 		baseURL:    baseURL,
-		httpClient: &http.Client{},
+		httpClient: &http.Client{Timeout: timeout},
 	}
 }
 
@@ -107,11 +108,11 @@ func (e *Client) Register(ctx context.Context, filename string) (*RegisterRespon
 	}
 
 	if httpRes.StatusCode != 200 {
-		return nil, fmt.Errorf("[extension][register[ request failed with status [%s]", httpRes.Status)
+		return nil, fmt.Errorf("[extension][register] request failed with status [%s]", httpRes.Status)
 	}
 
 	defer httpRes.Body.Close()
-	body, err := ioutil.ReadAll(httpRes.Body)
+	body, err := io.ReadAll(httpRes.Body)
 	if err != nil {
 		return nil, fmt.Errorf("[extension][register] error reading response body %w", err)
 	}
@@ -122,7 +123,7 @@ func (e *Client) Register(ctx context.Context, filename string) (*RegisterRespon
 		return nil, fmt.Errorf("[extension][register] error unmarshalling response body %w", err)
 	}
 
-	e.extensionID = httpRes.Header.Get(extensionIdentiferHeader)
+	e.extensionID = httpRes.Header.Get(extensionIdentifierHeader)
 	print(e.extensionID)
 	return &res, nil
 }
@@ -137,7 +138,7 @@ func (e *Client) NextEvent(ctx context.Context) (*NextEventResponse, error) {
 		return nil, fmt.Errorf("[extension][nextevent] error creating http request %w", err)
 	}
 
-	httpReq.Header.Set(extensionIdentiferHeader, e.extensionID)
+	httpReq.Header.Set(extensionIdentifierHeader, e.extensionID)
 	httpRes, err := e.httpClient.Do(httpReq)
 	if err != nil {
 		return nil, fmt.Errorf("[extension][nextevent] error making http request %w", err)
@@ -148,7 +149,7 @@ func (e *Client) NextEvent(ctx context.Context) (*NextEventResponse, error) {
 	}
 
 	defer httpRes.Body.Close()
-	body, err := ioutil.ReadAll(httpRes.Body)
+	body, err := io.ReadAll(httpRes.Body)
 	if err != nil {
 		return nil, fmt.Errorf("[extension][nextevent] error reading response body %w", err)
 	}
@@ -171,7 +172,7 @@ func (e *Client) InitError(ctx context.Context, errorType string) (*StatusRespon
 	if err != nil {
 		return nil, fmt.Errorf("[extension][initerror] error creating http request %w", err)
 	}
-	httpReq.Header.Set(extensionIdentiferHeader, e.extensionID)
+	httpReq.Header.Set(extensionIdentifierHeader, e.extensionID)
 	httpReq.Header.Set(extensionErrorType, errorType)
 	httpRes, err := e.httpClient.Do(httpReq)
 	if err != nil {
@@ -183,7 +184,7 @@ func (e *Client) InitError(ctx context.Context, errorType string) (*StatusRespon
 	}
 
 	defer httpRes.Body.Close()
-	body, err := ioutil.ReadAll(httpRes.Body)
+	body, err := io.ReadAll(httpRes.Body)
 	if err != nil {
 		return nil, fmt.Errorf("[extension][initerror] error reading response body %w", err)
 	}
@@ -207,7 +208,7 @@ func (e *Client) ExitError(ctx context.Context, errorType string) (*StatusRespon
 		return nil, fmt.Errorf("[extension][exiterror] error creating http request %w", err)
 	}
 
-	httpReq.Header.Set(extensionIdentiferHeader, e.extensionID)
+	httpReq.Header.Set(extensionIdentifierHeader, e.extensionID)
 	httpReq.Header.Set(extensionErrorType, errorType)
 	httpRes, err := e.httpClient.Do(httpReq)
 	if err != nil {
@@ -219,7 +220,7 @@ func (e *Client) ExitError(ctx context.Context, errorType string) (*StatusRespon
 	}
 
 	defer httpRes.Body.Close()
-	body, err := ioutil.ReadAll(httpRes.Body)
+	body, err := io.ReadAll(httpRes.Body)
 	if err != nil {
 		return nil, fmt.Errorf("[extension][exiterror] error reading response body %w", err)
 	}

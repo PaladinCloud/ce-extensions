@@ -26,6 +26,7 @@ import (
 	"svc-core-proxy-layer/clients"
 	"svc-core-proxy-layer/extension"
 	"svc-core-proxy-layer/server"
+	"time"
 
 	"syscall"
 )
@@ -33,10 +34,11 @@ import (
 var (
 	httpServerClient *server.HttpServer
 	port             = "4568"
+	timeout          = 5 * time.Second
 
 	extensionName    = filepath.Base(os.Args[0]) // extension name has to match the filename
 	lambdaRuntimeAPI = os.Getenv("AWS_LAMBDA_RUNTIME_API")
-	extensionClient  = extension.NewClient(lambdaRuntimeAPI)
+	extensionClient  = extension.NewClient(lambdaRuntimeAPI, timeout)
 )
 
 func main() {
@@ -88,8 +90,11 @@ func startMain(configuration *clients.Configuration) error {
 		}
 
 		log.Printf("registered extension client: %+v\n", res)
+
 		// Will block until shutdown event is received or cancelled via the context.
-		processEvents(ctx)
+		if err := processEvents(ctx); err != nil {
+			log.Printf("Error in event processing: %v", err)
+		}
 	}
 
 	return nil
