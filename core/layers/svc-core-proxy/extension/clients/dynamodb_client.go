@@ -33,17 +33,19 @@ import (
 
 const (
 	projectionExpressionOpenSearchDomain = "datastore_es_ESDomain"
+	projectionTenantFeatureFlags         = "tenant_feature_flags"
 )
 
 type DynamodbClient struct {
 	region                  string
+	tenantConfigTable       string
 	tenantConfigOutputTable string
 	tenantTablePartitionKey string
 	client                  *dynamodb.Client
 }
 
 // NewDynamoDBClient inits a DynamoDB session to be used throughout the layers
-func NewDynamoDBClient(ctx context.Context, useAssumeRole bool, assumeRoleArn, region, tenantConfigOutputTable, tenantTablePartitionKey string) (*DynamodbClient, error) {
+func NewDynamoDBClient(ctx context.Context, useAssumeRole bool, assumeRoleArn, region, tenantConfigTable, tenantConfigOutputTable, tenantTablePartitionKey string) (*DynamodbClient, error) {
 	// Load the default AWS configuration
 	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(region))
 	if err != nil {
@@ -76,6 +78,7 @@ func NewDynamoDBClient(ctx context.Context, useAssumeRole bool, assumeRoleArn, r
 	return &DynamodbClient{
 		region:                  region,
 		client:                  svc,
+		tenantConfigTable:       tenantConfigTable,
 		tenantConfigOutputTable: tenantConfigOutputTable,
 		tenantTablePartitionKey: tenantTablePartitionKey,
 	}, nil
@@ -88,6 +91,21 @@ func (d *DynamodbClient) GetConfigDynamodbItem(ctx context.Context, tenantId, pr
 		tenantId,
 		d.tenantConfigOutputTable,
 		projection,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get config dynamodb item for tenant id [%s]: %w", tenantId, err)
+	}
+
+	return result, nil
+}
+
+func (d *DynamodbClient) GetTenantFeatureFlags(ctx context.Context, tenantId string) (*models.TenantFeatureFlags, error) {
+	result, err := GetItem[models.TenantFeatureFlags, string](
+		ctx,
+		*d,
+		tenantId,
+		d.tenantConfigTable,
+		projectionTenantFeatureFlags,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get config dynamodb item for tenant id [%s]: %w", tenantId, err)

@@ -30,7 +30,7 @@ type ProxyClient struct {
 }
 
 func NewProxyClient(ctx context.Context, config *Configuration) (*ProxyClient, error) {
-	dynamodbClient, err := NewDynamoDBClient(ctx, config.UseAssumeRole, config.AssumeRoleArn, config.Region, config.TenantConfigOutputTable, config.TenantTablePartitionKey)
+	dynamodbClient, err := NewDynamoDBClient(ctx, config.UseAssumeRole, config.AssumeRoleArn, config.Region, config.TenantConfigTable, config.TenantConfigOutputTable, config.TenantTablePartitionKey)
 	if err != nil {
 		return nil, fmt.Errorf("error creating dynamodb client %w", err)
 	}
@@ -60,13 +60,17 @@ const (
 	empty      = "<missing>"
 )
 
-const (
-	osUrl = "osUrl"
-)
-
 func (c *ProxyClient) GetTenantFeatures(ctx context.Context, tenantId string) (*models.Response, error) {
+	tenantFeatures, err := c.dynamodbClient.GetTenantFeatureFlags(ctx, tenantId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get tenant feature flags %w", err)
+	}
 
-	return nil, nil
+	if tenantFeatures == nil {
+		return nil, fmt.Errorf("tenant feature flags are missing")
+	}
+
+	return models.ConvertTenantFeatureFlagsToResponse(*tenantFeatures), nil
 }
 
 func (c *ProxyClient) GetTenantRdsDetails(ctx context.Context, tenantId string) (*models.Response, error) {
@@ -79,7 +83,7 @@ func (c *ProxyClient) GetTenantRdsDetails(ctx context.Context, tenantId string) 
 		return nil, fmt.Errorf("rds credentials are missing")
 	}
 
-	return ConvertRdsSecretToResponse(rdsCredentials), nil
+	return models.ConvertRdsSecretToResponse(rdsCredentials), nil
 }
 
 func (c *ProxyClient) GetTenantOpenSearchDetails(ctx context.Context, tenantId string) (*models.Response, error) {
@@ -88,25 +92,5 @@ func (c *ProxyClient) GetTenantOpenSearchDetails(ctx context.Context, tenantId s
 		return nil, fmt.Errorf("failed to get OpenSearch domain: %w", err)
 	}
 
-	return ConvertOsPropertiesToResponse(osProperties), nil
-}
-
-func ConvertRdsSecretToResponse(secret *models.RdsSecret) *models.Response {
-	return &models.Response{
-		Data: map[string]string{
-			"DB_USERNAME": secret.DbUsername,
-			"DB_PASSWORD": secret.DbPassword,
-			"DB_NAME":     secret.DbName,
-			"RDS_HOST":    secret.DbHost,
-			"RDS_PORT":    secret.DbPort,
-		},
-	}
-}
-
-func ConvertOsPropertiesToResponse(osProperties *models.OpenSearchProperties) *models.Response {
-	return &models.Response{
-		Data: map[string]string{
-			osUrl: osProperties.EsDomain.Endpoint,
-		},
-	}
+	return models.ConvertOsPropertiesToResponse(osProperties), nil
 }

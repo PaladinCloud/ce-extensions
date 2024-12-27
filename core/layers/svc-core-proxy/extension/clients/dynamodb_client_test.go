@@ -21,20 +21,19 @@ import (
 	"testing"
 )
 
-func TestGetOpenSearchDomain(t *testing.T) {
+func TestDynamodbClient_GetOpenSearchDomain(t *testing.T) {
 	ctx := context.Background()
 
 	useAssumeRole := false
 	assumeRole := "arn:aws:iam::{accountID}:role/{roleName}"
-
 	region := "us-east-1"
-
 	tenantId := "98c28482-9bae-46bd-bd4e-58fa132e72c0"
 
+	tenantConfigTable := "tenant-config"
 	tenantConfigOutputTable := "tenant-output"
 	tenantConfigTablePartitionKey := "tenant_id"
 
-	client, err := NewDynamoDBClient(ctx, useAssumeRole, assumeRole, region, tenantConfigOutputTable, tenantConfigTablePartitionKey)
+	client, err := NewDynamoDBClient(ctx, useAssumeRole, assumeRole, region, tenantConfigTable, tenantConfigOutputTable, tenantConfigTablePartitionKey)
 	if err != nil {
 		t.Fatalf("Failed to create DynamoDB client: %+v", err)
 	}
@@ -50,6 +49,35 @@ func TestGetOpenSearchDomain(t *testing.T) {
 
 	if response.EsDomain.Endpoint == "" {
 		t.Fatal("Expected response.EsDomain.Endpoint to be not nil")
+	}
+
+	t.Logf("Successfully fetched OpenSearch Domain %+v", response)
+}
+
+func TestDynamodbClient_GetTenantFeatureFlags(t *testing.T) {
+	ctx := context.Background()
+
+	useAssumeRole := false
+	assumeRole := "arn:aws:iam::{accountID}:role/{roleName}"
+	region := "us-east-1"
+	tenantId := "98c28482-9bae-46bd-bd4e-58fa132e72c0"
+
+	tenantConfigTable := "tenant-config"
+	tenantConfigOutputTable := "tenant-output"
+	tenantConfigTablePartitionKey := "tenant_id"
+
+	client, err := NewDynamoDBClient(ctx, useAssumeRole, assumeRole, region, tenantConfigTable, tenantConfigOutputTable, tenantConfigTablePartitionKey)
+	if err != nil {
+		t.Fatalf("Failed to create DynamoDB client: %+v", err)
+	}
+
+	response, err := client.GetTenantFeatureFlags(ctx, tenantId)
+	if err != nil {
+		t.Fatalf("Error while fetching OpenSearch Domain: %+v", err)
+	}
+
+	if response == nil {
+		t.Fatal("Expected response to be not nil")
 	}
 
 	t.Logf("Successfully fetched OpenSearch Domain %+v", response)
