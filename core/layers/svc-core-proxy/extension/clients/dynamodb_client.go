@@ -129,7 +129,7 @@ func (d *DynamodbClient) GetOpenSearchDomain(ctx context.Context, tenantId strin
 	return result, nil
 }
 
-func GetItem[T any, K comparable](ctx context.Context, d DynamodbClient, tenantId, tableName, projectionExpression string) (*T, error) {
+func GetItem[T any](ctx context.Context, d DynamodbClient, tenantId, tableName, projectionExpression string) (*T, error) {
 	log.Printf("fetching item from table [%s] with tenant id [%v] and projection [%s]\n", tableName, tenantId, projectionExpression)
 	key := struct {
 		TenantId string `dynamodbav:"tenant_id" json:"tenant_id"`
