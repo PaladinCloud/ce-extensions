@@ -68,7 +68,7 @@ func startMain(configuration *clients.Configuration) error {
 	}
 
 	log.Printf("starting http server on port [%s]\n", port)
-	server.Start(configuration, httpServerClient)
+	server.Start(port, httpServerClient, configuration.EnableExtension)
 
 	if configuration.EnableExtension {
 		log.Printf("registering extension client [%s] [%s]\n", extensionName, lambdaRuntimeAPI)

@@ -19,7 +19,6 @@ package clients
 import (
 	"context"
 	"fmt"
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"log"
 	"svc-core-proxy-layer/models"
 
@@ -80,46 +79,6 @@ func NewDynamoDBClient(ctx context.Context, useAssumeRole bool, assumeRoleArn, r
 		tenantConfigOutputTable: tenantConfigOutputTable,
 		tenantTablePartitionKey: tenantTablePartitionKey,
 	}, nil
-}
-
-func (d *DynamodbClient) GetPluginsFeatureFlags(ctx context.Context, tenant string) (*models.PluginsFeatures, error) {
-	tenantId := tenant
-
-	// Define the query input
-	input := &dynamodb.QueryInput{
-		TableName: aws.String(d.configuration.TenantConfigTable),
-		KeyConditions: map[string]*dynamodb.Condition{
-			d.configuration.TenantConfigPartitionKey: {
-				ComparisonOperator: aws.String("EQ"),
-				AttributeValueList: []*dynamodb.AttributeValue{
-					{
-						S: aws.String(tenantId),
-					},
-				},
-			},
-		},
-		ProjectionExpression: aws.String("plugin_feature_flags"),
-	}
-
-	// Retrieve the item from DynamoDB
-	result, err := d.client.QueryWithContext(ctx, input)
-	if err != nil {
-		return &models.PluginsFeatures{}, fmt.Errorf("failed to get item from DynamoDB: %v", err)
-	}
-
-	// Check if the item is found
-	if len(result.Items) == 0 {
-		return &models.PluginsFeatures{}, fmt.Errorf("tenant_id %s not found", tenantId)
-	}
-
-	// Unmarshal the result into TenantConfig struct
-	var config models.TenantConfig
-	err = dynamodbattribute.UnmarshalMap(result.Items[0], &config)
-	if err != nil {
-		return &models.PluginsFeatures{}, fmt.Errorf("failed to unmarshal result: %v", err)
-	}
-
-	return &config.PluginsFeatures, nil
 }
 
 func (d *DynamodbClient) GetConfigDynamodbItem(ctx context.Context, tenantId, projection string) (*models.DynamodbItems, error) {
