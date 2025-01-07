@@ -1,0 +1,550 @@
+{
+  "common_fields": {
+    "_cloudType": "gcp",
+    "projectId": "$.project_id",
+    "discoverydate": "@getDiscoveryDate()",
+    "rawData": "@jsonToString($)",
+    "sourceDisplayName": "GCP"
+  },
+  "target_type_common_fields" : [ {
+    "targetType" : "computeautoscalers",
+    "targetTypeDisplayName" : "Compute Autoscaler",
+    "rawDataFile" : "compute_autoscalers.json",
+    "id" : "$.id",
+    "name" : "$.name",
+    "region" : "@findValueAtIndex($.zone,/,8)",
+    "createdDate" : "$.creation_timestamp",
+    "tags" : "$.labels"
+  }, {
+    "targetType" : "computeexternalvpngateways",
+    "targetTypeDisplayName" : "Compute External VPN Gateway",
+    "rawDataFile" : "compute_external_vpn_gateways.json",
+    "id" : "$.id",
+    "name" : "$.name",
+    "region" : "N/A",
+    "createdDate" : "$.creation_timestamp",
+    "tags" : "$.labels"
+  }, {
+    "targetType" : "computeglobaladdresses",
+    "targetTypeDisplayName" : "IP Address",
+    "rawDataFile" : "compute_global_addresses.json",
+    "id" : "$.id",
+    "name" : "$.name",
+    "region" : "N/A",
+    "createdDate" : "$.creation_timestamp",
+    "tags" : "$.labels"
+  }, {
+    "targetType" : "computeimages",
+    "targetTypeDisplayName" : "Image",
+    "rawDataFile" : "compute_images.json",
+    "id" : "$.id",
+    "name" : "$.name",
+    "region" : "$.region",
+    "createdDate" : "$.creation_timestamp",
+    "tags" : "$.labels"
+  }, {
+    "targetType" : "computeinstancegroups",
+    "targetTypeDisplayName" : "Instance Group",
+    "rawDataFile" : "compute_instance_groups.json",
+    "id" : "$.id",
+    "name" : "$.name",
+    "region" : "@findValueAtIndex($.zone,/,8)",
+    "createdDate" : "$.creation_timestamp",
+    "tags" : null
+  }, {
+    "targetType" : "computeinterconnectattachments",
+    "targetTypeDisplayName" : "Interconnect Attachment (VLAN)",
+    "rawDataFile" : "compute_interconnect_attachments.json",
+    "id" : "$.id",
+    "name" : "$.name",
+    "region" : "$.region",
+    "createdDate" : "$.creation_timestamp",
+    "tags" : "$.labels"
+  }, {
+    "targetType" : "computeinterconnects",
+    "targetTypeDisplayName" : "Cloud Interconnect",
+    "rawDataFile" : "compute_interconnects.json",
+    "id" : "$.id",
+    "name" : "$.name",
+    "region" : "$.location",
+    "createdDate" : "$.creation_timestamp",
+    "tags" : "$.labels"
+  }, {
+    "targetType" : "appengineapps",
+    "targetTypeDisplayName" : "App Engine",
+    "rawDataFile" : "appengine_apps.json",
+    "id" : "$.id",
+    "name" : "$.name",
+    "region" : "$.location_id",
+    "createdDate" : null,
+    "tags" : null
+  }, {
+    "targetType" : "batchjobs",
+    "targetTypeDisplayName" : "Batch",
+    "rawDataFile" : "batch_jobs.json",
+    "id" : "$.uid",
+    "name" : "$.name",
+    "region" : "N/A",
+    "createdDate" : "$.create_time",
+    "tags" : "$.labels"
+  }, {
+    "targetType" : "cloudtaskstasks",
+    "targetTypeDisplayName" : "Cloud Task",
+    "rawDataFile" : "cloudtasks_tasks.json",
+    "id" : "$.name",
+    "name" : "$.name",
+    "region" : "N/A",
+    "createdDate" : "$.create_time",
+    "tags" : "$.labels"
+  }, {
+    "targetType" : "workflowsworkflows",
+    "targetTypeDisplayName" : "Workflow",
+    "rawDataFile" : "workflows_workflows.json",
+    "id" : "$.name",
+    "name" : "$.name",
+    "region" : "N/A",
+    "createdDate" : "$.create_time",
+    "tags" : "$.labels"
+  }, {
+    "targetType" : "bigquerydatatransferconfigs",
+    "targetTypeDisplayName" : "TransferConfig",
+    "rawDataFile" : "bigquerydatatransfer_configs.json",
+    "id" : "$.name",
+    "name" : "$.name",
+    "region" : "N/A",
+    "createdDate" : null,
+    "tags" : "$.labels"
+  }, {
+    "targetType" : "composerenvironments",
+    "targetTypeDisplayName" : "Cloud Composer",
+    "rawDataFile" : "composer_environments.json",
+    "id" : "$.name",
+    "name" : "$.name",
+    "region" : "N/A",
+    "createdDate" : "$.create_time",
+    "tags" : "$.labels"
+  }, {
+    "targetType" : "datafusioninstances",
+    "targetTypeDisplayName" : "Cloud Data Fusion",
+    "rawDataFile" : "datafusion_instances.json",
+    "id" : "$.name",
+    "name" : "$.name",
+    "region" : "N/A",
+    "createdDate" : "$.create_time",
+    "tags" : "$.labels"
+  }, {
+    "targetType" : "dataflowjobs",
+    "targetTypeDisplayName" : "Dataflow",
+    "rawDataFile" : "dataflow_jobs.json",
+    "id" : "$.id",
+    "name" : "$.name",
+    "region" : "$.location",
+    "createdDate" : "$.create_time",
+    "tags" : "$.labels"
+  }, {
+    "targetType" : "lookerinstances",
+    "targetTypeDisplayName" : "Looker",
+    "rawDataFile" : "looker_instances.json",
+    "id" : "$.name",
+    "name" : "$.name",
+    "region" : "N/A",
+    "createdDate" : "$.create_time",
+    "tags" : null
+  }, {
+    "targetType" : "artifactregistryrepositories",
+    "targetTypeDisplayName" : "Artifact Registry ",
+    "rawDataFile" : "artifactregistry_repositories.json",
+    "id" : "$.name",
+    "name" : "@findValueAtIndex($.name,/,5)",
+    "region" : "@findValueAtIndex($.name,/,3)",
+    "createdDate" : "$.create_time",
+    "tags" : "$.labels"
+  }, {
+    "targetType" : "cloudbuildbuilds",
+    "targetTypeDisplayName" : "Cloud Build",
+    "rawDataFile" : "cloudbuild_builds.json",
+    "id" : "$.id",
+    "name" : "$.name",
+    "region" : "N/A",
+    "createdDate" : "$.create_time",
+    "tags" : "$.labels"
+  }, {
+    "targetType" : "clouddeploydeliverypipelines",
+    "targetTypeDisplayName" : "Cloud Deploy",
+    "rawDataFile" : "clouddeploy_delivery_pipelines.json",
+    "id" : "$.name",
+    "name" : "$.name",
+    "region" : "N/A",
+    "createdDate" : "$.create_time",
+    "tags" : "$.labels"
+  }, {
+    "targetType" : "sourcereporepos",
+    "targetTypeDisplayName" : "Cloud Source Repository",
+    "rawDataFile" : "sourcerepo_repos.json",
+    "id" : "$.name",
+    "name" : "$.name",
+    "region" : "N/A",
+    "createdDate" : "$.create_time",
+    "tags" : "$.labels"
+  }, {
+    "targetType" : "firebasehostingsites",
+    "targetTypeDisplayName" : "Firebase Hosting  Site",
+    "rawDataFile" : "firebase_hosting_sites.json",
+    "id" : "$.name",
+    "name" : "$.name",
+    "region" : "N/A",
+    "createdDate" : null,
+    "tags" : "$.labels"
+  }, {
+    "targetType" : "certificatemanagercertificates",
+    "targetTypeDisplayName" : "Certificate Manager",
+    "rawDataFile" : "certificatemanager_certificates.json",
+    "id" : "$.name",
+    "name" : "$.name",
+    "region" : "N/A",
+    "createdDate" : "$.create_time",
+    "tags" : "$.labels"
+  }, {
+    "targetType" : "iamroles",
+    "targetTypeDisplayName" : "IAM Role",
+    "rawDataFile" : "iam_roles.json",
+    "id" : "$.name",
+    "name" : "$.name",
+    "region" : "N/A",
+    "createdDate" : null,
+    "tags" : null
+  }, {
+    "targetType" : "secretmanagersecrets",
+    "targetTypeDisplayName" : "Secret Manager",
+    "rawDataFile" : "secretmanager_secrets.json",
+    "id" : "$.name",
+    "name" : "$.name",
+    "region" : "N/A",
+    "createdDate" : "$.create_time",
+    "tags" : "$.labels"
+  }, {
+    "targetType" : "aiplatformmodels",
+    "targetTypeDisplayName" : "Vertex AI Model",
+    "rawDataFile" : "aiplatform_models.json",
+    "id" : "$.name",
+    "name" : "$.name",
+    "region" : "N/A",
+    "createdDate" : "$.create_time",
+    "tags" : "$.labels"
+  }, {
+    "targetType" : "livestreamchannels",
+    "targetTypeDisplayName" : "Live Stream API",
+    "rawDataFile" : "livestream_channels.json",
+    "id" : "$.name",
+    "name" : "$.name",
+    "region" : "N/A",
+    "createdDate" : "$.create_time",
+    "tags" : "$.labels"
+  }, {
+    "targetType" : "apigatewayapis",
+    "targetTypeDisplayName" : "API Gateway",
+    "rawDataFile" : "apigateway_apis.json",
+    "id" : "$.name",
+    "name" : "$.name",
+    "region" : "N/A",
+    "createdDate" : "$.create_time",
+    "tags" : "$.labels"
+  }, {
+    "targetType" : "domainsregistrations",
+    "targetTypeDisplayName" : "Domains Registration",
+    "rawDataFile" : "domains_registrations.json",
+    "id" : "$.name",
+    "name" : "$.name",
+    "region" : "N/A",
+    "createdDate" : "$.create_time",
+    "tags" : "$.labels"
+  }, {
+    "targetType" : "vpcaccessconnectors",
+    "targetTypeDisplayName" : "Connector",
+    "rawDataFile" : "vpcaccess_connectors.json",
+    "id" : "$.name",
+    "name" : "$.name",
+    "region" : "N/A",
+    "createdDate" : null,
+    "tags" : null
+  }, {
+    "targetType" : "bigtableadmininstances",
+    "targetTypeDisplayName" : "Cloud Bigtable",
+    "rawDataFile" : "bigtableadmin_instances.json",
+    "id" : "$.name",
+    "name" : "$.name",
+    "region" : "N/A",
+    "createdDate" : null,
+    "tags" : "$.labels"
+  }, {
+    "targetType" : "bigtableadmintables",
+    "targetTypeDisplayName" : "Cloud Bigtable Table",
+    "rawDataFile" : "bigtableadmin_tables.json",
+    "id" : "$.name",
+    "name" : "$.name",
+    "region" : "N/A",
+    "createdDate" : null,
+    "tags" : null
+  }, {
+    "targetType" : "filestoreinstances",
+    "targetTypeDisplayName" : "Cloud Filestore",
+    "rawDataFile" : "filestore_instances.json",
+    "id" : "$.name",
+    "name" : "$.name",
+    "region" : "N/A",
+    "createdDate" : "$.create_time",
+    "tags" : "$.labels"
+  }, {
+    "targetType" : "filestoresnapshots",
+    "targetTypeDisplayName" : "Filestore Snapshot",
+    "rawDataFile" : "filestore_snapshots.json",
+    "id" : "$.name",
+    "name" : "$.name",
+    "region" : "N/A",
+    "createdDate" : "$.create_time",
+    "tags" : "$.labels"
+  }, {
+    "targetType" : "firestoredatabases",
+    "targetTypeDisplayName" : "Firestore Database",
+    "rawDataFile" : "firestore_databases.json",
+    "id" : "$.name",
+    "name" : "$.name",
+    "region" : "N/A",
+    "createdDate" : "$.create_time",
+    "tags" : null
+  }, {
+    "targetType" : "memorystoreinstances",
+    "targetTypeDisplayName" : "Memorystore",
+    "rawDataFile" : "memorystore_instances.json",
+    "id" : "$.name",
+    "name" : "$.name",
+    "region" : "$.current_location_id",
+    "createdDate" : "$.create_time",
+    "tags" : "$.labels"
+  }, {
+    "targetType" : "redisinstances",
+    "targetTypeDisplayName" : "Redis Instance",
+    "rawDataFile" : "redis_instances.json",
+    "id" : "$.name",
+    "name" : "$.name",
+    "region" : "$.location_id",
+    "createdDate" : "$.create_time",
+    "tags" : "$.labels"
+  }, {
+    "targetType" : "computerouters",
+    "targetTypeDisplayName" : "Cloud Router",
+    "rawDataFile" : "compute_routers.json",
+    "id" : "$.self_link",
+    "name" : "$.name",
+    "region" : "$.region",
+    "createdDate" : "$.creation_timestamp",
+    "tags" : null
+  }, {
+    "targetType" : "computevpngateways",
+    "targetTypeDisplayName" : "Cloud VPN",
+    "rawDataFile" : "compute_vpn_gateways.json",
+    "id" : "$.self_link",
+    "name" : "$.name",
+    "region" : "$.region",
+    "createdDate" : "$.creation_timestamp",
+    "tags" : "$.labels"
+  }, {
+    "targetType" : "networkintelligencecenteroperations",
+    "targetTypeDisplayName" : "Network intelligence Center Operation",
+    "rawDataFile" : "networkintelligencecenter_operations.json",
+    "id" : "$.name",
+    "name" : "$.name",
+    "region" : "N/A",
+    "createdDate" : null,
+    "tags" : null
+  }, {
+    "targetType" : "vpcaccessconnectors",
+    "targetTypeDisplayName" : "VPC Access Connector",
+    "rawDataFile" : "vpcaccess_connectors.json",
+    "id" : "$.name",
+    "name" : "$.name",
+    "region" : "N/A",
+    "createdDate" : null,
+    "tags" : null
+  }, {
+    "targetType" : "monitoringalertpolicies",
+    "targetTypeDisplayName" : "Cloud Monitoring",
+    "rawDataFile" : "monitoring_alert_policies.json",
+    "id" : "$.name",
+    "name" : "$.display_name",
+    "region" : "N/A",
+    "createdDate" : null,
+    "tags" : "$.user_labels"
+  }, {
+    "targetType" : "applicationintegrationintegrationversions",
+    "targetTypeDisplayName" : "Integration Connector",
+    "rawDataFile" : "applicationintegration_integration_versions.json",
+    "id" : "$.name",
+    "name" : "$.name",
+    "region" : "N/A",
+    "createdDate" : "$.create_time",
+    "tags" : null
+  }, {
+    "targetType" : "baremetalsolutioninstances",
+    "targetTypeDisplayName" : "Bare Metal Solution",
+    "rawDataFile" : "baremetalsolution_instances.json",
+    "id" : "$.id",
+    "name" : "$.name",
+    "region" : "N/A",
+    "createdDate" : "$.create_time",
+    "tags" : "$.labels"
+  }, {
+    "targetType" : "kmsekmconnections",
+    "targetTypeDisplayName" : "Cloud External Key Manager (Cloud EKM)",
+    "rawDataFile" : "kms_ekm_connections.json",
+    "id" : "$.name",
+    "name" : "$.name",
+    "region" : "N/A",
+    "createdDate" : "$.create_time",
+    "tags" : null
+  }, {
+    "targetType" : "runservices",
+    "targetTypeDisplayName" : "Cloud Run",
+    "rawDataFile" : "run_services.json",
+    "id" : "$.name",
+    "name" : "$.name",
+    "region" : "N/A",
+    "createdDate" : "$.create_time",
+    "tags" : "$.labels"
+  }, {
+    "targetType" : "eventarctriggers",
+    "targetTypeDisplayName" : "Eventarc",
+    "rawDataFile" : "eventarc_triggers.json",
+    "id" : "$.uid",
+    "name" : "$.name",
+    "region" : "N/A",
+    "createdDate" : "$.create_time",
+    "tags" : "$.labels"
+  }, {
+    "targetType" : "aiplatformdatasets",
+    "targetTypeDisplayName" : "Vertex AI Dataset",
+    "rawDataFile" : "aiplatform_datasets.json",
+    "id" : "$.name",
+    "name" : "$.name",
+    "region" : "N/A",
+    "createdDate" : "$.create_time",
+    "tags" : "$.labels"
+  }, {
+    "targetType" : "aiplatformendpoints",
+    "targetTypeDisplayName" : "Vertex AI Endpoint",
+    "rawDataFile" : "aiplatform_endpoints.json",
+    "id" : "$.name",
+    "name" : "$.name",
+    "region" : "N/A",
+    "createdDate" : "$.create_time",
+    "tags" : "$.labels"
+  }, {
+    "targetType" : "networkintelligencecenterconnectivitytests",
+    "targetTypeDisplayName" : "Network Intelligence Center",
+    "rawDataFile" : "networkintelligencecenter_connectivity_tests.json",
+    "id" : "$.name",
+    "name" : "$.name",
+    "region" : "$.location_id",
+    "createdDate" : null,
+    "tags" : "$.labels"
+  }, {
+    "targetType" : "aiplatformfeaturestores",
+    "targetTypeDisplayName" : "Vertex AI Feature Store",
+    "rawDataFile" : "aiplatform_featurestores.json",
+    "id" : "$.name",
+    "name" : "$.name",
+    "region" : "N/A",
+    "createdDate" : "$.create_time",
+    "tags" : "$.labels"
+  }, {
+    "targetType" : "aiplatformindexendpoints",
+    "targetTypeDisplayName" : "Vertex AI Index Endpoint",
+    "rawDataFile" : "aiplatform_index_endpoints.json",
+    "id" : "$.name",
+    "name" : "$.display_name",
+    "region" : "N/A",
+    "createdDate" : "$.create_time",
+    "tags" : "$.labels"
+  }, {
+    "targetType" : "aiplatformindexes",
+    "targetTypeDisplayName" : "Vertex AI Index",
+    "rawDataFile" : "aiplatform_indexes.json",
+    "id" : "$.name",
+    "name" : "$.display_name",
+    "region" : "N/A",
+    "createdDate" : "$.create_time",
+    "tags" : "$.labels"
+  }, {
+    "targetType" : "aiplatformpipelinejobs",
+    "targetTypeDisplayName" : "Vertex AI Pipeline Job",
+    "rawDataFile" : "aiplatform_pipeline_jobs.json",
+    "id" : "$.name",
+    "name" : "$.display_name",
+    "region" : "N/A",
+    "createdDate" : "$.create_time",
+    "tags" : "$.labels"
+  }, {
+    "targetType" : "aiplatformtrainingpipelines",
+    "targetTypeDisplayName" : "Vertex AI Training Pipeline",
+    "rawDataFile" : "aiplatform_training_pipelines.json",
+    "id" : "$.name",
+    "name" : "$.display_name",
+    "region" : "N/A",
+    "createdDate" : "$.create_time",
+    "tags" : "$.labels"
+  }, {
+    "targetType" : "aiplatformtensorboards",
+    "targetTypeDisplayName" : "Vertex AI Tensorboard",
+    "rawDataFile" : "aiplatform_tensorboards.json",
+    "id" : "$.name",
+    "name" : "$.display_name",
+    "region" : "N/A",
+    "createdDate" : "$.create_time",
+    "tags" : "$.labels"
+  }, {
+    "targetType" : "aiplatformbatchpredictionjobs",
+    "targetTypeDisplayName" : "Vertex AI Batch Prediction Job",
+    "rawDataFile" : "aiplatform_batch_prediction_jobs.json",
+    "id" : "$.name",
+    "name" : "$.display_name",
+    "region" : "N/A",
+    "createdDate" : "$.create_time",
+    "tags" : "$.labels"
+  }, {
+    "targetType" : "aiplatformcustomjobs",
+    "targetTypeDisplayName" : "Vertex AI Custom Job",
+    "rawDataFile" : "aiplatform_custom_jobs.json",
+    "id" : "$.name",
+    "name" : "$.display_name",
+    "region" : "N/A",
+    "createdDate" : "$.create_time",
+    "tags" : "$.labels"
+  }, {
+    "targetType" : "computesubnetworks",
+    "targetTypeDisplayName" : "Subnet",
+    "rawDataFile" : "compute_subnetworks.json",
+    "id" : "$.id",
+    "name" : "$.name",
+    "region" : "$.region",
+    "createdDate" : "$.creation_timestamp",
+    "tags" : null
+  }, {
+    "targetType" : "dataflowsnapshots",
+    "targetTypeDisplayName" : "Dataflow Snapshot",
+    "rawDataFile" : "dataflow_snapshots.json",
+    "id" : "$.id",
+    "name" : "N/A",
+    "region" : "$.region",
+    "createdDate" : "$.create_time",
+    "tags" : null
+  },{
+    "targetType" : "artifactregistrydockerimages",
+    "targetTypeDisplayName" : "Container Image",
+    "rawDataFile" : "artifactregistry_docker_images.json",
+    "id" : "@extractDigest($.name)",
+    "name" : "@extractArtifactNameFromID($.name)",
+    "region" : "@findValueAtIndex($.name,/,3)",
+    "createdDate" : "N/A",
+    "tags" : "N/A"
+  } ]
+}

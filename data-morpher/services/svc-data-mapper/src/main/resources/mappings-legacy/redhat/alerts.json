@@ -1,0 +1,30 @@
+{
+  "top_level_fields": {
+    "_cloudType": "redhat",
+    "region": "N/A",
+    "annotationid": "$.id",
+    "accountid": "@getAccountId($._cq_source_name,redhat-)",
+    "accountname": "N/A",
+    "policyCategory":"security",
+    "issueStatus":"@convertStatus($.state)",
+    "severity":"@convertSeverity($.policy.severity)",
+    "policyId":"$.policy.id",
+    "policyName":"$.policy.name",
+    "desc":"$.policy.description",
+    "issueDetails":"$.policy.description",
+    "createdDate":"$.time",
+    "modifiedDate":"$.time",
+    "pac_ds":"redhat",
+    "_resourceid": "$.deployment.id",
+    "type": "issue",
+    "url": "@generateRedHatURL(https://acs-,$._cq_source_name,redhat-,.acs.rhcloud.com/main/violations/,$.id)"
+  },
+  "replace": {
+
+  },
+  "metadata": {
+    "plugin_name": "redhat",
+    "asset_type": "violations",
+    "file_name": "redhat-issues-deployment.data"
+  }
+}
