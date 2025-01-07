@@ -46,10 +46,16 @@ type Config struct {
 func Start(port string, server *HttpServer, enableExtension bool) {
 	if enableExtension {
 		log.Println("Starting the server in background")
-		go startHTTPServer(port, server)
+		go func() {
+			if err := startHTTPServer(port, server); err != nil {
+				log.Fatalf("Failed to start server in background: %v", err)
+			}
+		}()
 	} else {
 		log.Println("Starting the server")
-		startHTTPServer(port, server)
+		if err := startHTTPServer(port, server); err != nil {
+			log.Fatalf("Failed to start server: %v", err)
+		}
 	}
 }
 
