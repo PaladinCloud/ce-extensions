@@ -30,7 +30,7 @@ func TestNewRDSClient(t *testing.T) {
 	region := "us-east-1"
 	secretIdPrefix := "paladincloud/secret/"
 
-	secretsClient, _ := NewSecretsClient(ctx, useAssumeRole, assumeRoleArn, region)
+	secretsClient, _ := NewSecretsClient(ctx, useAssumeRole, assumeRoleArn, region, secretIdPrefix)
 
 	client, err := NewRdsClient(secretsClient, secretIdPrefix)
 	if err != nil {

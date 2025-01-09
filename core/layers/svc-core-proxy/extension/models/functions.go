@@ -21,7 +21,8 @@ import (
 )
 
 const (
-	osUrl = "osUrl"
+	success = "success"
+	osUrl   = "osUrl"
 )
 
 func ConvertRdsSecretToResponse(secret *RdsSecret) *Response {
@@ -33,6 +34,7 @@ func ConvertRdsSecretToResponse(secret *RdsSecret) *Response {
 			"RDS_HOST":    secret.DbHost,
 			"RDS_PORT":    secret.DbPort,
 		},
+		Message: success,
 	}
 }
 
@@ -41,12 +43,14 @@ func ConvertOsPropertiesToResponse(osProperties *OpenSearchProperties) *Response
 		Data: map[string]interface{}{
 			osUrl: osProperties.EsDomain.Endpoint,
 		},
+		Message: success,
 	}
 }
 
 func ConvertTenantFeatureFlagsToResponse(flags TenantFeatureFlags) *Response {
 	response := Response{
-		Data: make(map[string]interface{}),
+		Data:    make(map[string]interface{}),
+		Message: success,
 	}
 	now := time.Now()
 
@@ -57,4 +61,11 @@ func ConvertTenantFeatureFlagsToResponse(flags TenantFeatureFlags) *Response {
 	}
 
 	return &response
+}
+
+func ConvertSecretToResponse(secret map[string]interface{}) *Response {
+	return &Response{
+		Data:    secret,
+		Message: success,
+	}
 }

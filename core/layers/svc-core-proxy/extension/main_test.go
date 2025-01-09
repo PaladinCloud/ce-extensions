@@ -29,6 +29,7 @@ func TestStartMain(t *testing.T) {
 			UseAssumeRole:           false,
 			AssumeRoleArn:           "",
 			Region:                  "us-east-1",
+			TenantConfigTable:       "tenant-config",
 			TenantConfigOutputTable: "tenant-output",
 			TenantTablePartitionKey: "tenant_id",
 			SecretIdPrefix:          "paladincloud/secret/",
