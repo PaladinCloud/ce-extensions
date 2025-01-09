@@ -28,11 +28,11 @@ func TestNewRDSClient(t *testing.T) {
 	useAssumeRole := false
 	assumeRoleArn := ""
 	region := "us-east-1"
-	secretIdPrefix := "paladincloud/secret/"
+	SecretPrefixString := "paladincloud/secret/"
 
-	secretsClient, _ := NewSecretsClient(ctx, useAssumeRole, assumeRoleArn, region)
+	secretsClient, _ := NewSecretsClient(ctx, useAssumeRole, assumeRoleArn, region, SecretPrefixString)
 
-	client, err := NewRdsClient(secretsClient, secretIdPrefix)
+	client, err := NewRdsClient(secretsClient)
 	if err != nil {
 		t.Fatalf("Failed to create RDS client: %v", err)
 	}

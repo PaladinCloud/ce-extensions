@@ -4,6 +4,18 @@
 
 The Lambda Proxy Extension is a powerful tool designed to enhance the functionality and efficiency of AWS Lambda functions in a multi-tenant environment. This extension serves as a bridge between the Lambda application business layer and the storage persistence layer, providing seamless access to common multi-tenant configurations and resources.
 
+### UML Sequence Diagram
+    Lambda->>Extension: Invoke Extension
+    Extension->>DynamoDB: Fetch Tenant Configuration
+    DynamoDB-->>Extension: Return Configuration
+    Extension->>SecretsManager: Retrieve RDS Credentials
+    SecretsManager-->>Extension: Return Credentials
+    Extension->>RDS: Connect and Fetch Tags
+    RDS-->>Extension: Return Mandatory Tags
+    Extension->>OpenSearch: Fetch Domain Details
+    OpenSearch-->>Extension: Return Domain Properties
+    Extension->>Lambda: Provide Tenant Details
+
 ## Key Features
 
 1. **Automatic Injection**: The Proxy Extension is automatically injected into all Lambda functions through the CI/CD pipeline by default, ensuring consistent implementation across your serverless architecture.
