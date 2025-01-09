@@ -31,7 +31,7 @@ type Configuration struct {
 	TenantConfigTable       string
 	TenantConfigOutputTable string
 	TenantTablePartitionKey string
-	SecretIdPrefix          string
+	SecretPrefixString      string
 }
 
 func LoadConfigurationDetails() (*Configuration, error) {
@@ -61,7 +61,7 @@ func LoadConfigurationDetails() (*Configuration, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error getting TENANT_TABLE_PARTITION_KEY %w", err)
 	}
-	secretIdPrefix, err := getEnvVariable("SECRET_NAME_PREFIX")
+	secretPrefixString, err := getEnvVariable("SECRET_NAME_PREFIX")
 	if err != nil {
 		return nil, fmt.Errorf("error getting SECRET_NAME_PREFIX %w", err)
 	}
@@ -74,7 +74,7 @@ func LoadConfigurationDetails() (*Configuration, error) {
 		TenantConfigTable:       tenantConfigTable,
 		TenantConfigOutputTable: tenantConfigOutputTable,
 		TenantTablePartitionKey: tenantTablePartitionKey,
-		SecretIdPrefix:          secretIdPrefix,
+		SecretPrefixString:      secretPrefixString,
 	}, nil
 }
 

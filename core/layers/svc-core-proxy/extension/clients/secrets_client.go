@@ -33,8 +33,8 @@ import (
 )
 
 type SecretsClient struct {
-	secretsClient *secretsmanager.Client
-	prefixId      string
+	secretsClient      *secretsmanager.Client
+	SecretPrefixString string
 }
 
 var (
@@ -42,7 +42,7 @@ var (
 )
 
 // NewSecretsClient initializes the SecretsManager client
-func NewSecretsClient(ctx context.Context, useAssumeRole bool, assumeRoleArn, region, prefixId string) (*SecretsClient, error) {
+func NewSecretsClient(ctx context.Context, useAssumeRole bool, assumeRoleArn, region, SecretPrefixString string) (*SecretsClient, error) {
 	// Load the default configuration with region
 	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(region))
 	if err != nil {
@@ -74,8 +74,8 @@ func NewSecretsClient(ctx context.Context, useAssumeRole bool, assumeRoleArn, re
 
 	log.Println("initialized secrets client")
 	return &SecretsClient{
-		secretsClient: svc,
-		prefixId:      prefixId,
+		secretsClient:      svc,
+		SecretPrefixString: SecretPrefixString,
 	}, nil
 }
 
@@ -115,7 +115,7 @@ func (r *SecretsClient) GetTenantRdsSecret(ctx context.Context, tenantId string)
 // getTenantSecretString retrieves any secret from AWS Secrets Manager
 func (r *SecretsClient) getTenantSecretString(ctx context.Context, tenantId, secretName string) (string, error) {
 	// Create the secretId using the prefix and tenantId
-	secretId := fmt.Sprintf("%s%s", r.prefixId, tenantId)
+	secretId := fmt.Sprintf("%s%s", r.SecretPrefixString, tenantId)
 	log.Printf("getting secret for [%s]\n", secretId)
 	if secretName != "" {
 		secretId = fmt.Sprintf("%s/%s", secretId, secretName)

@@ -32,7 +32,7 @@ func TestStartMain(t *testing.T) {
 			TenantConfigTable:       "tenant-config",
 			TenantConfigOutputTable: "tenant-output",
 			TenantTablePartitionKey: "tenant_id",
-			SecretIdPrefix:          "paladincloud/secret/",
+			SecretPrefixString:      "paladincloud/secret/",
 		}
 
 		err := startMain(config)

@@ -34,7 +34,7 @@ func TestProxyClient_GetTenantFeatureFlags(t *testing.T) {
 		TenantConfigTable:       "tenant-config",
 		TenantConfigOutputTable: "tenant-output",
 		TenantTablePartitionKey: "tenant_id",
-		SecretIdPrefix:          "paladincloud/secret/",
+		SecretPrefixString:      "paladincloud/secret/",
 	}
 
 	client, _ := NewProxyClient(ctx, configuration)

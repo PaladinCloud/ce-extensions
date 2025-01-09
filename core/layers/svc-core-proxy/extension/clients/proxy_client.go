@@ -35,7 +35,7 @@ func NewProxyClient(ctx context.Context, config *Configuration) (*ProxyClient, e
 		return nil, fmt.Errorf("error creating dynamodb client %w", err)
 	}
 
-	secretsClient, err := NewSecretsClient(ctx, config.UseAssumeRole, config.AssumeRoleArn, config.Region, config.SecretIdPrefix)
+	secretsClient, err := NewSecretsClient(ctx, config.UseAssumeRole, config.AssumeRoleArn, config.Region, config.SecretPrefixString)
 	if err != nil {
 		return nil, fmt.Errorf("error creating secrets client %w", err)
 	}

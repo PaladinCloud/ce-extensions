@@ -28,9 +28,9 @@ func TestNewSecretsClient(t *testing.T) {
 		useAssumeRole := false
 		assumeRoleArn := ""
 		region := "us-east-1"
-		prefixId := "paladincloud/secret/"
+		SecretPrefixString := "paladincloud/secret/"
 
-		_, err := NewSecretsClient(ctx, useAssumeRole, assumeRoleArn, region, prefixId)
+		_, err := NewSecretsClient(ctx, useAssumeRole, assumeRoleArn, region, SecretPrefixString)
 		if err != nil {
 			t.Errorf("Error loading AWS config: %+v", err)
 		}
