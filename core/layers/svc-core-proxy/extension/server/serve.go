@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"svc-core-proxy-layer/clients"
 	"svc-core-proxy-layer/models"
 
@@ -65,6 +66,7 @@ func startHTTPServer(port string, httpConfig *HttpServer) error {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
+	r.Get("/tenant/{tenantId}/secrets/{id}", handleRequestWithId(httpConfig.ProxyClient.GetTenantSecretDetails))
 	r.Get("/tenant/{tenantId}/features", handleRequest(httpConfig.ProxyClient.GetTenantFeatures))
 	r.Get("/tenant/{tenantId}/rds", handleRequest(httpConfig.ProxyClient.GetTenantRdsDetails))
 	r.Get("/tenant/{tenantId}/os", handleRequest(httpConfig.ProxyClient.GetTenantOpenSearchDetails))
@@ -80,6 +82,32 @@ func handleRequest(getDetails func(ctx context.Context, tenantId string) (*model
 		log.Printf("Fetching details for tenant ID [%s]\n", tenantId)
 
 		details, err := getDetails(r.Context(), tenantId)
+		if err != nil {
+			logError("Error fetching details", err)
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+
+		if err := json.NewEncoder(w).Encode(details); err != nil {
+			logError("Error encoding response", err)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+		}
+	}
+}
+
+// handleRequest is a generic handler for tenant-related requests
+func handleRequestWithId(getDetailsWithId func(ctx context.Context, tenantId, id string) (*models.Response, error)) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		tenantId := chi.URLParam(r, tenantIDParam)
+		id, err := url.QueryUnescape(chi.URLParam(r, "id"))
+		if err != nil {
+			logError("Error unescaping id parameter", err)
+			http.Error(w, "Invalid id parameter", http.StatusBadRequest)
+			return
+		}
+		log.Printf("Fetching details for tenant ID [%s]\n", tenantId)
+
+		details, err := getDetailsWithId(r.Context(), tenantId, id)
 		if err != nil {
 			logError("Error fetching details", err)
 			http.Error(w, err.Error(), http.StatusNotFound)

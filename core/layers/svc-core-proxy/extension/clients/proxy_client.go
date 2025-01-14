@@ -35,12 +35,12 @@ func NewProxyClient(ctx context.Context, config *Configuration) (*ProxyClient, e
 		return nil, fmt.Errorf("error creating dynamodb client %w", err)
 	}
 
-	secretsClient, err := NewSecretsClient(ctx, config.UseAssumeRole, config.AssumeRoleArn, config.Region)
+	secretsClient, err := NewSecretsClient(ctx, config.UseAssumeRole, config.AssumeRoleArn, config.Region, config.SecretPrefixString)
 	if err != nil {
 		return nil, fmt.Errorf("error creating secrets client %w", err)
 	}
 
-	rdsClient, err := NewRdsClient(secretsClient, config.SecretIdPrefix)
+	rdsClient, err := NewRdsClient(secretsClient)
 	if err != nil {
 		return nil, fmt.Errorf("error creating rds client %w", err)
 	}
@@ -53,12 +53,18 @@ func NewProxyClient(ctx context.Context, config *Configuration) (*ProxyClient, e
 	}, nil
 }
 
-// TODO: migrate to asset model v2 when available
-const (
-	allSources = "all-sources"
-	success    = "success"
-	empty      = "<missing>"
-)
+func (c *ProxyClient) GetTenantSecretDetails(ctx context.Context, tenantId, secretName string) (*models.Response, error) {
+	secret, err := c.secretsClient.GetTenantSecretData(ctx, tenantId, secretName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get secret %w", err)
+	}
+
+	if secret == nil {
+		return nil, fmt.Errorf("secret is missing")
+	}
+
+	return models.ConvertSecretToResponse(secret), nil
+}
 
 func (c *ProxyClient) GetTenantFeatures(ctx context.Context, tenantId string) (*models.Response, error) {
 	tenantFeatures, err := c.dynamodbClient.GetTenantFeatureFlags(ctx, tenantId)
@@ -74,7 +80,7 @@ func (c *ProxyClient) GetTenantFeatures(ctx context.Context, tenantId string) (*
 }
 
 func (c *ProxyClient) GetTenantRdsDetails(ctx context.Context, tenantId string) (*models.Response, error) {
-	rdsCredentials, err := c.secretsClient.GetRdsSecret(ctx, c.configuration.SecretIdPrefix, tenantId)
+	rdsCredentials, err := c.secretsClient.GetTenantRdsSecret(ctx, tenantId)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get rds credentials %w", err)
 	}

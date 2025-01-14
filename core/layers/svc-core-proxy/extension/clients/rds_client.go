@@ -29,22 +29,17 @@ import (
 )
 
 type RdsClient struct {
-	secretIdPrefix string
 	secretsClient  *SecretsClient
 	rdsClientCache sync.Map
 }
 
-func NewRdsClient(secretsClient *SecretsClient, secretIdPrefix string) (*RdsClient, error) {
+func NewRdsClient(secretsClient *SecretsClient) (*RdsClient, error) {
 	if secretsClient == nil {
 		return nil, fmt.Errorf("secretsClient cannot be nil")
 	}
-	if secretIdPrefix == "" {
-		return nil, fmt.Errorf("secretIdPrefix cannot be empty")
-	}
 
 	return &RdsClient{
-		secretIdPrefix: secretIdPrefix,
-		secretsClient:  secretsClient,
+		secretsClient: secretsClient,
 	}, nil
 }
 
@@ -58,7 +53,7 @@ func (r *RdsClient) CreateNewRdsClient(ctx context.Context, tenantId string) (*s
 		return nil, fmt.Errorf("invalid rds client type in cache")
 	}
 
-	rdsCredentials, err := r.secretsClient.GetRdsSecret(ctx, r.secretIdPrefix, tenantId)
+	rdsCredentials, err := r.secretsClient.GetTenantRdsSecret(ctx, tenantId)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get rds credentials %w", err)
 	}
