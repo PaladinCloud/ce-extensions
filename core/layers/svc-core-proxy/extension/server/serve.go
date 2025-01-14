@@ -100,6 +100,11 @@ func handleRequestWithId(getDetailsWithId func(ctx context.Context, tenantId, id
 	return func(w http.ResponseWriter, r *http.Request) {
 		tenantId := chi.URLParam(r, tenantIDParam)
 		id, err := url.QueryUnescape(chi.URLParam(r, "id"))
+		if err != nil {
+			logError("Error unescaping id parameter", err)
+			http.Error(w, "Invalid id parameter", http.StatusBadRequest)
+			return
+		}
 		log.Printf("Fetching details for tenant ID [%s]\n", tenantId)
 
 		details, err := getDetailsWithId(r.Context(), tenantId, id)

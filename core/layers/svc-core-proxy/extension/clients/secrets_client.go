@@ -106,7 +106,7 @@ func (r *SecretsClient) GetTenantRdsSecret(ctx context.Context, tenantId string)
 	var secretData models.RdsSecret
 	err = json.Unmarshal([]byte(secretString), &secretData)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal secret data for [%s][%s] %w", tenantId, err)
+		return nil, fmt.Errorf("failed to unmarshal secret data for [%s] %w", tenantId, err)
 	}
 
 	return &secretData, nil
