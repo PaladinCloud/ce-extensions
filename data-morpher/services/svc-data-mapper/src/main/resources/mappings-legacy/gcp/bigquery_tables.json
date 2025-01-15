@@ -1,0 +1,34 @@
+{
+  "top_level_fields": {
+    "_cloudType": "gcp",
+    "region": "$.location",
+    "id": "$.table_reference.tableId",
+    "projectId": "$.project_id",
+    "tags": "$.labels",
+    "tableId": "$.table_reference.tableId",
+    "description": "$.description",
+    "friendlyName": "$.friendly_name",
+    "generatedId": "$.id",
+    "labels": "$.labels",
+    "kmsKeyName": "$.encryption_configuration.kmsKeyName",
+    "dataSetId": "$.table_reference.datasetId",
+    "iamResourceName": "@getIAMResourceName($.table_reference.projectId,$.table_reference.datasetId,$.table_reference.tableId)",
+    "expirationTime": "@getFormattedDate($.expiration_time)",
+    "creationTime": "@getFormattedDate($.creation_time)",
+    "lastModifiedTime": "@getFormattedDate($.last_modified_time)",
+    "etag": "$.etag",
+    "selfLink": "$.self_link",
+    "rowNum": "$.num_rows",
+    "numBytes": "$.num_bytes",
+    "discoverydate": "@getDiscoveryDate()",
+    "rawData": "@jsonToString($)",
+    "sourceDisplayName": "GCP",
+    "targetTypeDisplayName" : "BigQuery Table"
+  },
+  "metadata": {
+    "plugin_name": "gcp",
+    "asset_type": "bigquerytable",
+    "file_name": "gcp-bigquerytable.data",
+    "delta_engine_enabled": "true"
+  }
+}
