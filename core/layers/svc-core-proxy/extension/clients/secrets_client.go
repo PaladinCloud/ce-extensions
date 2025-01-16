@@ -116,7 +116,6 @@ func (r *SecretsClient) GetTenantRdsSecret(ctx context.Context, tenantId string)
 func (r *SecretsClient) getTenantSecretString(ctx context.Context, tenantId, secretName string) (string, error) {
 	// Create the secretId using the prefix and tenantId
 	secretId := fmt.Sprintf("%s%s", r.SecretPrefixString, tenantId)
-	log.Printf("getting secret for [%s]\n", secretId)
 	if secretName != "" {
 		secretId = fmt.Sprintf("%s/%s", secretId, secretName)
 	}
@@ -127,7 +126,7 @@ func (r *SecretsClient) getTenantSecretString(ctx context.Context, tenantId, sec
 // GetSecret retrieves any secret from AWS Secrets Manager
 func (r *SecretsClient) getSecret(ctx context.Context, secretId string) (string, error) {
 	log.Printf("getting secret for [%s]\n", secretId)
-
+	
 	// Prepare the input for retrieving the secret
 	input := &secretsmanager.GetSecretValueInput{
 		SecretId:     aws.String(secretId),

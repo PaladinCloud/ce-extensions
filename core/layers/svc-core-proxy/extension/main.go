@@ -38,7 +38,7 @@ var (
 
 	extensionName    = filepath.Base(os.Args[0]) // extension name has to match the filename
 	lambdaRuntimeAPI = os.Getenv("AWS_LAMBDA_RUNTIME_API")
-	extensionClient  = extension.NewClient(lambdaRuntimeAPI, timeout)
+	extensionClient  = extension.NewClient(lambdaRuntimeAPI)
 )
 
 func main() {
@@ -47,7 +47,7 @@ func main() {
 	log.Println("loading configuration")
 	configuration, err := clients.LoadConfigurationDetails()
 	if err != nil {
-		log.Fatalf("failed to load aws configuratio %+v", err)
+		log.Fatalf("failed to load aws configuration %+v", err)
 	}
 
 	err2 := startMain(configuration)
@@ -58,6 +58,7 @@ func main() {
 
 func startMain(configuration *clients.Configuration) error {
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	log.Println("initializing http server")
 	proxyClient, err := clients.NewProxyClient(ctx, configuration)

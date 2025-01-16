@@ -79,7 +79,7 @@ func startHTTPServer(port string, httpConfig *HttpServer) error {
 func handleRequest(getDetails func(ctx context.Context, tenantId string) (*models.Response, error)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tenantId := chi.URLParam(r, tenantIDParam)
-		log.Printf("Fetching details for tenant ID [%s]\n", tenantId)
+		log.Printf("fetching details for tenant id [%s]\n", tenantId)
 
 		details, err := getDetails(r.Context(), tenantId)
 		if err != nil {
@@ -105,7 +105,7 @@ func handleRequestWithId(getDetailsWithId func(ctx context.Context, tenantId, id
 			http.Error(w, "Invalid id parameter", http.StatusBadRequest)
 			return
 		}
-		log.Printf("Fetching details for tenant ID [%s]\n", tenantId)
+		log.Printf("fetching details for tenant id [%s]\n", tenantId)
 
 		details, err := getDetailsWithId(r.Context(), tenantId, id)
 		if err != nil {

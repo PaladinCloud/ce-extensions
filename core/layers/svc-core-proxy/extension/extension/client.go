@@ -21,9 +21,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
+	"io/ioutil"
 	"net/http"
-	"time"
 )
 
 // RegisterResponse is the body of the response for /register
@@ -53,7 +52,7 @@ type StatusResponse struct {
 	Status string `json:"status"`
 }
 
-// EventType represents the type of events recieved from /event/next
+// EventType represents the type of events received from /event/next
 type EventType string
 
 const (
@@ -76,11 +75,11 @@ type Client struct {
 }
 
 // NewClient returns a Lambda Extensions API client
-func NewClient(awsLambdaRuntimeAPI string, timeout time.Duration) *Client {
+func NewClient(awsLambdaRuntimeAPI string) *Client {
 	baseURL := fmt.Sprintf("http://%s/2020-01-01/extension", awsLambdaRuntimeAPI)
 	return &Client{
 		baseURL:    baseURL,
-		httpClient: &http.Client{Timeout: timeout},
+		httpClient: &http.Client{},
 	}
 }
 
@@ -112,7 +111,7 @@ func (e *Client) Register(ctx context.Context, filename string) (*RegisterRespon
 	}
 
 	defer httpRes.Body.Close()
-	body, err := io.ReadAll(httpRes.Body)
+	body, err := ioutil.ReadAll(httpRes.Body)
 	if err != nil {
 		return nil, fmt.Errorf("[extension][register] error reading response body %w", err)
 	}
@@ -149,7 +148,7 @@ func (e *Client) NextEvent(ctx context.Context) (*NextEventResponse, error) {
 	}
 
 	defer httpRes.Body.Close()
-	body, err := io.ReadAll(httpRes.Body)
+	body, err := ioutil.ReadAll(httpRes.Body)
 	if err != nil {
 		return nil, fmt.Errorf("[extension][nextevent] error reading response body %w", err)
 	}
@@ -184,7 +183,7 @@ func (e *Client) InitError(ctx context.Context, errorType string) (*StatusRespon
 	}
 
 	defer httpRes.Body.Close()
-	body, err := io.ReadAll(httpRes.Body)
+	body, err := ioutil.ReadAll(httpRes.Body)
 	if err != nil {
 		return nil, fmt.Errorf("[extension][initerror] error reading response body %w", err)
 	}
@@ -220,7 +219,7 @@ func (e *Client) ExitError(ctx context.Context, errorType string) (*StatusRespon
 	}
 
 	defer httpRes.Body.Close()
-	body, err := io.ReadAll(httpRes.Body)
+	body, err := ioutil.ReadAll(httpRes.Body)
 	if err != nil {
 		return nil, fmt.Errorf("[extension][exiterror] error reading response body %w", err)
 	}

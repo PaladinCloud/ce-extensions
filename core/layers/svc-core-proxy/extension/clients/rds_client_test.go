@@ -24,7 +24,7 @@ import (
 func TestNewRDSClient(t *testing.T) {
 	ctx := context.Background()
 
-	tenantId := "9c35f4eb-b880-4e63-bcef-ed47569d9408"
+	tenantId := ""
 	useAssumeRole := false
 	assumeRoleArn := ""
 	region := "us-east-1"
