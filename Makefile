@@ -2,12 +2,13 @@
 ASSET_MANAGEMENT := assets-management
 UI_ASSET_MANAGEMENT := ui-asset-management
 UI_COMMON := ui-common
+CORE_PROXY := core
 
 # Directory where all zip files will be moved/copied
 DIST_DIR := dist
 
 # Main target to package all services and move zip files to the dist directory
-package-all: package-asset-management package-ui-asset-management package-ui-common move-zips
+package-all: package-asset-management package-ui-asset-management package-ui-common package-core-proxy move-zips
 	@echo "Packaging completed for all services and artifacts moved to $(DIST_DIR)."
 
 # Package assets-management service
@@ -46,6 +47,18 @@ package-ui-common:
 		$(MAKE) -C $(UI_COMMON) package-all; \
 	fi
 
+# Package core-proxy service
+package-core-proxy:
+	@if [ ! -d "$(CORE_PROXY)" ]; then \
+		echo "Error: $(CORE_PROXY) directory not found"; \
+		exit 1; \
+	elif [ ! -f "$(CORE_PROXY)/Makefile" ]; then \
+		echo "Error: $(CORE_PROXY)/Makefile not found"; \
+		exit 1; \
+	else \
+		$(MAKE) -C $(CORE_PROXY) package-all; \
+	fi
+
 # Move zip files to the dist directory after packaging is complete
 move-zips: create-dist-dir
 	# Clean dist directory with safety check
@@ -77,6 +90,14 @@ move-zips: create-dist-dir
 		cp -r $(ASSET_MANAGEMENT)/$(DIST_DIR)/* $(DIST_DIR)/ || exit 1; \
 	else \
 		echo "Error: $(ASSET_MANAGEMENT)/$(DIST_DIR) not found"; \
+		exit 1; \
+	fi
+
+	# Copy core-proxy artifacts
+	@if [ -d "$(CORE_PROXY)/$(DIST_DIR)" ]; then \
+		cp -r $(CORE_PROXY)/$(DIST_DIR)/* $(DIST_DIR)/ || exit 1; \
+	else \
+		echo "Error: $(CORE_PROXY)/$(DIST_DIR) not found"; \
 		exit 1; \
 	fi
 
