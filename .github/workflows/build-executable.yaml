@@ -202,7 +202,5 @@ jobs:
             inputs: {
               environment: 'dev',                // Adjust if dynamic
               aws_region: 'us-east-1',           // Adjust if dynamic
-              release_version: 'vlatest',        // Adjust if dynamic
-              api_gateway_account_id: ''         // Optional, use only if environment is prod
-            }
+              release_version: 'vlatest'        // Adjust if dynamic       
           });
