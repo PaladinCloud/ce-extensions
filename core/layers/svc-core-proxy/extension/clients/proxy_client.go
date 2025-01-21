@@ -23,10 +23,11 @@ import (
 )
 
 type ProxyClient struct {
-	configuration  *Configuration
-	secretsClient  *SecretsClient
-	dynamodbClient *DynamodbClient
-	rdsClient      *RdsClient
+	configuration       *Configuration
+	secretsClient       *SecretsClient
+	dynamodbClient      *DynamodbClient
+	rdsClient           *RdsClient
+	elasticSearchClient *ElasticSearchClient
 }
 
 func NewProxyClient(ctx context.Context, config *Configuration) (*ProxyClient, error) {
@@ -34,6 +35,8 @@ func NewProxyClient(ctx context.Context, config *Configuration) (*ProxyClient, e
 	if err != nil {
 		return nil, fmt.Errorf("error creating dynamodb client %w", err)
 	}
+
+	osClient := NewElasticSearchClient(dynamodbClient)
 
 	secretsClient, err := NewSecretsClient(ctx, config.UseAssumeRole, config.AssumeRoleArn, config.Region, config.SecretPrefixString)
 	if err != nil {
@@ -46,10 +49,11 @@ func NewProxyClient(ctx context.Context, config *Configuration) (*ProxyClient, e
 	}
 
 	return &ProxyClient{
-		configuration:  config,
-		secretsClient:  secretsClient,
-		dynamodbClient: dynamodbClient,
-		rdsClient:      rdsClient,
+		configuration:       config,
+		secretsClient:       secretsClient,
+		dynamodbClient:      dynamodbClient,
+		rdsClient:           rdsClient,
+		elasticSearchClient: osClient,
 	}, nil
 }
 
@@ -99,4 +103,17 @@ func (c *ProxyClient) GetTenantOpenSearchDetails(ctx context.Context, tenantId s
 	}
 
 	return models.ConvertOsPropertiesToResponse(osProperties), nil
+}
+
+func (c *ProxyClient) GetAssetDetails(ctx context.Context, tenantId string, assetID string) (*models.Response, error) {
+	details, err := c.elasticSearchClient.FetchAssetDetails(ctx, tenantId, "all-sources", assetID, 1)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch asset details %w", err)
+	}
+
+	if details == nil {
+		return nil, fmt.Errorf("asset details are missing")
+	}
+
+	return models.ConvertAssetDetailToResponse(*details), nil
 }

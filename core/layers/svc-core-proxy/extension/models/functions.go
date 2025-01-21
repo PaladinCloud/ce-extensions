@@ -69,3 +69,10 @@ func ConvertSecretToResponse(secret map[string]interface{}) *Response {
 		Message: success,
 	}
 }
+
+func ConvertAssetDetailToResponse(assetDetails map[string]interface{}) *Response {
+	return &Response{
+		Data:    assetDetails,
+		Message: success,
+	}
+}
