@@ -434,12 +434,14 @@ public class AssetDocumentHelper {
                 dto.setLegacyAccountName(v.toString());
             });
 
-        if (data.containsKey(AssetDocumentFields.SUBSCRIPTION)) {
-            dto.setAccountId(data.get(AssetDocumentFields.SUBSCRIPTION).toString());
-            dto.setLegacyAccountId(data.get(AssetDocumentFields.SUBSCRIPTION).toString());
-        } else if (data.containsKey(AssetDocumentFields.PROJECT_ID)) {
-            dto.setAccountId(data.get(AssetDocumentFields.PROJECT_ID).toString());
-            dto.setLegacyAccountId(data.get(AssetDocumentFields.PROJECT_ID).toString());
+        var subscription = data.getOrDefault(AssetDocumentFields.SUBSCRIPTION, null);
+        var projectId = data.getOrDefault(AssetDocumentFields.PROJECT_ID, null);
+        if (subscription != null) {
+            dto.setAccountId(subscription.toString());
+            dto.setLegacyAccountId(subscription.toString());
+        } else if (projectId != null) {
+            dto.setAccountId(projectId.toString());
+            dto.setLegacyAccountId(projectId.toString());
         }
     }
 
