@@ -65,6 +65,17 @@ public class AssetSenderJob extends JobExecutor {
             Collections.singletonMap("s3.data", params.get(S3_PATH)));
 
         var reportingSource = params.get(REPORTING_SOURCE);
+        var reportingSourceService = params.get(REPORTING_SOURCE_SERVICE);
+        var reportingSourceServiceDisplayName = params.get(REPORTING_SOURCE_SERVICE_DISPLAY_NAME);
+
+        // Until this information comes from elsewhere this code has a hack to treat a reporting
+        // source of k8s as the original source -- essentially ignoring reporting source.
+        if ("k8s".equalsIgnoreCase(reportingSource)) {
+            reportingSource = null;
+            reportingSourceService = null;
+            reportingSourceServiceDisplayName = null;
+            LOGGER.info("Ignoring K8S reporting source, using {} as the source", dataSource);
+        }
 
         // dataSource is the underlying source of the data (gcp, aws, azure) while reporting source
         // is only set if it's different. It's different for secondary sources reporting data
@@ -77,8 +88,8 @@ public class AssetSenderJob extends JobExecutor {
         }
         var processedAssetTypes = assets.process(dataSource, params.get(S3_PATH), isOpinion,
             reportingSource,
-            params.get(REPORTING_SOURCE_SERVICE),
-            params.get(REPORTING_SOURCE_SERVICE_DISPLAY_NAME));
+            reportingSourceService,
+            reportingSourceServiceDisplayName);
 
         if (!isOpinion) {
             if ("true".equalsIgnoreCase(ConfigService.get(Dev.SKIP_ASSET_COUNT))) {

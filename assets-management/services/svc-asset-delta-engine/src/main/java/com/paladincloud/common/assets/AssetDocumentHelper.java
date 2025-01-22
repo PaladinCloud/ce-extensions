@@ -53,6 +53,7 @@ public class AssetDocumentHelper {
             MapperFields.REPORTING_SERVICE,
             MapperFields.FIRST_SCAN_DATE,
             MapperFields.LAST_SCAN_DATE,
+            MapperFields.ENTITY_TYPE_DISPLAY_NAME,
 
             AssetDocumentFields.LEGACY_NAME,
             AssetDocumentFields.ASSET_ID_DISPLAY_NAME,
@@ -565,6 +566,8 @@ public class AssetDocumentHelper {
         String RAW_DATA = "rawData";
         String REPORTING_SOURCE = "reporting_source";
         String REPORTING_SERVICE = "reporting_service";
+
+        String ENTITY_TYPE_DISPLAY_NAME = "_entityTypeDisplayName";
 
         String SOURCE_DISPLAY_NAME = "source_display_name";
         String LEGACY_SOURCE_DISPLAY_NAME = "sourceDisplayName";
