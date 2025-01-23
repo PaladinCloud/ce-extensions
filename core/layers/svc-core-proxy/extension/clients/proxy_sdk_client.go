@@ -33,7 +33,7 @@ const (
 
 // Helper func, given context and a url sends get request to that url
 // expects to get a model.Response back from sever and returns that
-func SendGetReq(ctx context.Context, url string) (*models.Response, error) {
+func DoGetReq(ctx context.Context, url string) (*models.Response, error) {
 	httpReq, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error creating http request %w", err)
@@ -53,7 +53,7 @@ func SendGetReq(ctx context.Context, url string) (*models.Response, error) {
 	return &result, nil
 }
 
-// sends get request  for tenant secret to proxy
+// sends get request for tenant secret to proxy, returns marshalled result
 func getTenantSecret(ctx context.Context, tenantID string, id string) (*models.Response, error) {
 	encodedTenantID := url.QueryEscape(tenantID)
 	encodedID := url.QueryEscape(id)
@@ -62,21 +62,21 @@ func getTenantSecret(ctx context.Context, tenantID string, id string) (*models.R
 
 }
 
-// sends get request  for tenant features to proxy
+// sends get request for tenant features to proxy, returns marshalled result
 func getTenantFeatures(ctx context.Context, tenantID string) (*models.Response, error) {
 	encodedTenantID := url.QueryEscape(tenantID)
 	reqUrl := fmt.Sprintf("%s/tenant/%s/features", base_url, encodedTenantID)
 	return DoGetReq(ctx, reqUrl)
 }
 
-// sends get request  for tenant rds details to proxy
+// sends get request for tenant rds details to proxy, returns marshalled result
 func getTenantRdsDetails(ctx context.Context, tenantID string) (*models.Response, error) {
 	encodedTenantID := url.QueryEscape(tenantID)
 	reqUrl := fmt.Sprintf("%s/tenant/%s/rds", base_url, encodedTenantID)
 	return DoGetReq(ctx, reqUrl)
 }
 
-// sends get request  for tenant open search details to proxy
+// sends get request for tenant open search details to proxy, returns marshalled result
 func getTenantOpeanSeachDetails(ctx context.Context, tenantID string) (*models.Response, error) {
 	encodedTenantID := url.QueryEscape(tenantID)
 	reqUrl := fmt.Sprintf("%s/tenant/%s/os", base_url, encodedTenantID)
