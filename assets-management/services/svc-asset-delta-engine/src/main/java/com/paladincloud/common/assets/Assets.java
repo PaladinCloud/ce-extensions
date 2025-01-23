@@ -140,6 +140,7 @@ public class Assets {
                         .accountIdToNameFn(this::accountIdToName)
                         .assetState(assetStateHelper.get(dataSource, type))
                         .assetStateServiceEnabled(ConfigService.isFeatureEnabled("enableAssetStateService"))
+                        .resourceNameField(assetTypes.getResourceNameType(dataSource, type))
                         .reportingSource(reportingSource)
                         .reportingSourceService(reportingSourceService)
                         .reportingSourceServiceDisplayName(reportingServiceDisplayName);
