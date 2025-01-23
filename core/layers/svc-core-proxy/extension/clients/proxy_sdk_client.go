@@ -31,7 +31,9 @@ const (
 	base_url   = "https://" + proxy_host + ":" + proxy_host
 )
 
-func DoGetReq(ctx context.Context, url string) (*models.Response, error) {
+// Helper func, given context and a url sends get request to that url
+// expects to get a model.Response back from sever and returns that
+func SendGetReq(ctx context.Context, url string) (*models.Response, error) {
 	httpReq, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error creating http request %w", err)
@@ -51,6 +53,7 @@ func DoGetReq(ctx context.Context, url string) (*models.Response, error) {
 	return &result, nil
 }
 
+// sends get request  for tenant secret to proxy
 func getTenantSecret(ctx context.Context, tenantID string, id string) (*models.Response, error) {
 	encodedTenantID := url.QueryEscape(tenantID)
 	encodedID := url.QueryEscape(id)
@@ -59,18 +62,21 @@ func getTenantSecret(ctx context.Context, tenantID string, id string) (*models.R
 
 }
 
+// sends get request  for tenant features to proxy
 func getTenantFeatures(ctx context.Context, tenantID string) (*models.Response, error) {
 	encodedTenantID := url.QueryEscape(tenantID)
 	reqUrl := fmt.Sprintf("%s/tenant/%s/features", base_url, encodedTenantID)
 	return DoGetReq(ctx, reqUrl)
 }
 
+// sends get request  for tenant rds details to proxy
 func getTenantRdsDetails(ctx context.Context, tenantID string) (*models.Response, error) {
 	encodedTenantID := url.QueryEscape(tenantID)
 	reqUrl := fmt.Sprintf("%s/tenant/%s/rds", base_url, encodedTenantID)
 	return DoGetReq(ctx, reqUrl)
 }
 
+// sends get request  for tenant open search details to proxy
 func getTenantOpeanSeachDetails(ctx context.Context, tenantID string) (*models.Response, error) {
 	encodedTenantID := url.QueryEscape(tenantID)
 	reqUrl := fmt.Sprintf("%s/tenant/%s/os", base_url, encodedTenantID)
