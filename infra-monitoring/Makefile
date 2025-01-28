@@ -8,8 +8,11 @@ package-all: $(addprefix package-, $(SERVICES))
 
 # Target to package a single service
 package-%: create-dist-dir
-	zip -j $(DIST_DIR)/$*.zip $*/lambda_function.py
-	@echo "Packaged $*/lambda_function.py into $(DIST_DIR)/$*.zip"
+	# Create service-specific folder inside dist directory
+	mkdir -p $(DIST_DIR)/$*
+	# Package the service into its own folder with service-specific zip file
+	zip -j $(DIST_DIR)/$*/$*.zip $*/lambda_function.py
+	@echo "Packaged $*/lambda_function.py into $(DIST_DIR)/$*/$*.zip"
 
 # Create the distribution directory if it doesn't exist
 create-dist-dir:
