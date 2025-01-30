@@ -100,3 +100,12 @@ func (c *ProxyClient) GetTenantOpenSearchDetails(ctx context.Context, tenantId s
 
 	return models.ConvertOsPropertiesToResponse(osProperties), nil
 }
+
+func (c *ProxyClient) GetTenantOutputDetails(ctx context.Context, tenantId string, key string) (*models.Response, error) {
+	props, err := c.dynamodbClient.GetTenantOutput(ctx, tenantId, key)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get tenant output: %w", err)
+	}
+
+	return models.ConvertOutputResponse(props), nil
+}
