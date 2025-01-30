@@ -1,0 +1,56 @@
+{
+  "top_level_fields": {
+    "id": "$.id",
+    "externalAccountId": "$.cid",
+    "externalId": "$.aid",
+    "instanceId": "$.host_info.instance_id",
+    "hostName": "$.host_info.hostname",
+    "cveId": "$.cve.id",
+    "severity": "@toLowerCase($.cve.severity)",
+    "accountid": "$.host_info.service_provider_account_id",
+    "apps": "$.apps",
+    "createdDate": "$.created_timestamp",
+    "closedDate": "$.closed_timestamp",
+    "cloudType": "@getCloudTypeFromNameOrDefault(#[hosts.[%s].service_provider;$.aid],crowdstrike)",
+    "targetType": "@toLowerCase(#[hosts.[%s].product_type_desc;$.aid])",
+    "region": "$.region"
+  },
+  "conditional_top_level_fields": [
+    {
+      "field": "cloudType",
+      "pattern": "^aws",
+      "fields": {
+        "targetType": "@getTargetType(aws,@toLowerCase(#[hosts.[%s].product_type_desc;$.aid]))"
+      }
+    },
+    {
+      "field": "_cloudType",
+      "pattern": "^gcp",
+      "fields": {
+        "targetType": "@getTargetType(gcp,@toLowerCase(#[hosts.[%s].product_type_desc;$.aid]))"
+      }
+    },
+    {
+      "field": "_cloudType",
+      "pattern": "^azure",
+      "fields": {
+        "targetType": "@getTargetType(azure,@toLowerCase(#[hosts.[%s].product_type_desc;$.aid]))"
+      }
+    }
+  ],
+  "replacement_fields": {},
+  "metadata": {
+    "plugin_name": "crowdstrike",
+    "asset_type": "vulnerabilities",
+    "post_process_fn": "groupCSVulnerabilities",
+    "file_name": "crowdstrike-vulnerabilities.data",
+    "relation_mapping": [
+      {
+        "assetType": "hosts",
+        "primaryKey": "device_id",
+        "foreignKey": "$.aid",
+        "isMandatory": false
+      }
+    ]
+  }
+}

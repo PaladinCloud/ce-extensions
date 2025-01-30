@@ -1,0 +1,87 @@
+{
+  "top_level_fields": {
+    "id": "$.id",
+    "has_agent": "$.has_agent",
+    "has_plugin_results": "$.has_plugin_results",
+    "created_at": "$.created_at",
+    "terminated_at": "$.terminated_at",
+    "updated_at": "$.updated_at",
+    "ipv4s": "$.ipv4s",
+    "fqdns": "$.fqdns",
+    "mac_addresses": "$.mac_addresses",
+    "operating_systems": "$.operating_systems",
+    "system_types": "$.system_types",
+    "netbios_names": "$.netbios_names",
+    "network_interfaces": "$.network_interfaces",
+    "tags": "$.tags",
+    "open_ports": "$.open_ports",
+    "azure_vm_id": "$.azure_vm_id",
+    "azure_resource_id": "$.azure_resource_id",
+    "gcp_project_id": "$.gcp_project_id",
+    "gcp_zone": "$.gcp_zone",
+    "gcp_instance_id": "$.gcp_instance_id",
+    "aws_ec2_instance_ami_id": "$.aws_ec2_instance_ami_id",
+    "aws_ec2_instance_id": "$.aws_ec2_instance_id",
+    "agent_uuid": "$.agent_uuid",
+    "bios_uuid": "$.bios_uuid",
+    "network_id": "$.network_id",
+    "network_name": "$.network_name",
+    "aws_owner_id": "$.aws_owner_id",
+    "aws_availability_zone": "$.aws_availability_zone",
+    "aws_region": "$.aws_region",
+    "aws_vpc_id": "$.aws_vpc_id",
+    "aws_ec2_instance_group_name": "$.aws_ec2_instance_group_name",
+    "aws_ec2_instance_state_name": "$.aws_ec2_instance_state_name",
+    "aws_ec2_instance_type": "$.aws_ec2_instance_type",
+    "aws_subnet_id": "$.aws_subnet_id",
+    "aws_ec2_product_code": "$.aws_ec2_product_code",
+    "aws_ec2_name": "$.aws_ec2_name",
+    "mcafee_epo_guid": "$.mcafee_epo_guid",
+    "mcafee_epo_agent_guid": "$.mcafee_epo_agent_guid",
+    "servicenow_sysid": "$.servicenow_sysid",
+    "docType": "all_asset"
+  },
+  "conditional_top_level_fields": [
+    {
+      "field": "aws_ec2_instance_id",
+      "pattern": ".+",
+      "fields": {
+        "targetType": "ec2",
+        "instanceId": "$.aws_ec2_instance_id",
+        "cloudType": "aws",
+        "accountid": "$.aws_owner_id",
+        "region": "$.aws_region"
+      }
+    },
+    {
+      "field": "gcp_instance_id",
+      "pattern": ".+",
+      "fields": {
+        "targetType": "vminstance",
+        "instanceId": "$.gcp_instance_id",
+        "cloudType": "gcp",
+        "accountid": "$.gcp_project_id",
+        "region": "$.gcp_zone"
+      }
+    },
+    {
+      "field": "azure_vm_id",
+      "pattern": ".+",
+      "fields": {
+        "targetType": "virtualmachine",
+        "instanceId": "$.azure_resource_id",
+        "cloudType": "azure",
+        "azure_vm_id": "$.azure_vm_id"
+
+      }
+    }
+  ],
+  "replacement_fields": {},
+  "metadata": {
+    "plugin_name": "tenable",
+    "asset_type": "all_asset",
+    "post_process_fn":"",
+    "file_name": "tenable-all_asset.data",
+    "relation_mapping": []
+  }
+}

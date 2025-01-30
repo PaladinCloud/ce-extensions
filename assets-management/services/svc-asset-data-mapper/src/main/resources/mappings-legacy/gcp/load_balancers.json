@@ -1,0 +1,26 @@
+{
+  "top_level_fields": {
+    "_cloudType": "gcp",
+    "region": "$.region",
+    "id": "$.id",
+    "projectId": "$.project_id",
+    "tags": "$.labels",
+    "urlMap": "$.url_map",
+    "targetHttpsProxy": "$.target_https_proxies",
+    "httpProxyDetailList": "$.http_proxy_details",
+    "logConfigEnabled": "$.log_config_enabled",
+    "quicNegotiation": "$.quic_negotiations",
+    "sslPolicyList": "$.ssl_policies",
+    "unusedBackendService": "$.unused_backend_service",
+    "discoverydate": "@getDiscoveryDate()",
+    "rawData": "@jsonToString($)",
+    "sourceDisplayName": "GCP",
+    "targetTypeDisplayName" : "Load Balancer"
+  },
+  "metadata": {
+    "plugin_name": "gcp",
+    "asset_type": "gcploadbalancer",
+    "file_name": "gcp-gcploadbalancer.data",
+    "delta_engine_enabled": "true"
+  }
+}

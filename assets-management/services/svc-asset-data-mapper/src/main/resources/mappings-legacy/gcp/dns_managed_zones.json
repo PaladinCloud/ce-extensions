@@ -1,0 +1,21 @@
+{
+  "top_level_fields": {
+    "_cloudType": "gcp",
+    "region": "$.name",
+    "id": "$.id",
+    "projectId": "$.project_id",
+    "tags": "$.labels",
+    "dnsSecConfigState": "$.dnssec_config.state",
+    "dnsName": "$.dns_name",
+    "discoverydate": "@getDiscoveryDate()",
+    "rawData": "@jsonToString($)",
+    "sourceDisplayName": "GCP",
+    "targetTypeDisplayName" : "Cloud DNS"
+  },
+  "metadata": {
+    "plugin_name": "gcp",
+    "asset_type": "clouddns",
+    "file_name": "gcp-clouddns.data",
+    "delta_engine_enabled": "true"
+  }
+}

@@ -1,0 +1,1573 @@
+[
+  {
+    "plugin_name": "wiz",
+    "asset_type": "BUCKET",
+    "raw_file_name": "wiz_bucket.json",
+    "filtered_outputs": [
+      {
+        "file_name": "gcp-cloudstorage.data",
+        "target_type": "cloudstorage",
+        "target_type_display_name": "Storage - Object",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^gcp"
+          }
+        ],
+        "external_datasource": "gcp"
+      },
+      {
+        "file_name": "aws-s3.data",
+        "target_type": "s3",
+        "target_type_display_name": "Storage - Object",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^aws"
+          }
+        ],
+        "external_datasource": "aws"
+      },
+      {
+        "file_name": "azure-blobcontainer.data",
+        "target_type": "blobcontainer",
+        "target_type_display_name": "Storage - Object",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^azure"
+          }
+        ],
+        "external_datasource": "azure"
+      }
+    ]
+  },
+  {
+    "plugin_name": "wiz",
+    "asset_type": "VIRTUAL_MACHINE",
+    "raw_file_name": "wiz_virtual_machine.json",
+    "filtered_outputs": [
+      {
+        "file_name": "gcp-vminstance.data",
+        "target_type": "vminstance",
+        "target_type_display_name": "Virtual Machine",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^gcp"
+          }
+        ],
+        "external_datasource": "gcp"
+      },
+      {
+        "file_name": "aws-ec2.data",
+        "target_type": "ec2",
+        "target_type_display_name": "Virtual Machine",
+        "auto_created": false,
+        "conditional_top_level_fields": {
+          "statename": "$.graph_entity.originalObject.State.Name",
+          "publicipaddress": "$.graph_entity.originalObject.PublicIpAddress",
+          "privateipaddress": "$.graph_entity.originalObject.PrivateIpAddress",
+          "instanceid": "$.graph_entity.originalObject.InstanceId"
+        },
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^aws"
+          }
+        ],
+        "external_datasource": "aws"
+      },
+      {
+        "file_name": "azure-virtualmachine.data",
+        "target_type": "virtualmachine",
+        "target_type_display_name": "Virtual Machine",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^azure"
+          }
+        ],
+        "external_datasource": "azure"
+      }
+    ]
+  },
+  {
+    "plugin_name": "wiz",
+    "asset_type": "FIREWALL",
+    "raw_file_name": "wiz_firewall.json",
+    "filtered_outputs": [
+      {
+        "file_name": "gcp-vpcfirewall.data",
+        "target_type": "vpcfirewall",
+        "target_type_display_name": "Firewall",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^gcp"
+          }
+        ],
+        "external_datasource": "gcp"
+      },
+      {
+        "file_name": "aws-sg.data",
+        "target_type": "sg",
+        "target_type_display_name": "Firewall",
+        "auto_created": false,
+        "conditional_top_level_fields": {
+          "groupid": "$.graph_entity.originalObject.GroupId"
+        },
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^aws"
+          }
+        ],
+        "external_datasource": "aws"
+      },
+      {
+        "file_name": "azure-nsg.data",
+        "target_type": "nsg",
+        "target_type_display_name": "Firewall",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^azure"
+          }
+        ],
+        "external_datasource": "azure"
+      }
+    ]
+  },
+  {
+    "plugin_name": "wiz",
+    "asset_type": "SUBNET",
+    "raw_file_name": "wiz_subnet.json",
+    "filtered_outputs": [
+      {
+        "file_name": "aws-subnet.data",
+        "target_type": "subnet",
+        "target_type_display_name": "Subnet",
+        "auto_created": false,
+        "conditional_top_level_fields": {
+          "subnetid": "$.graph_entity.originalObject.SubnetId"
+        },
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^aws"
+          }
+        ],
+        "external_datasource": "aws"
+      },
+      {
+        "file_name": "azure-subnets.data",
+        "target_type": "subnets",
+        "target_type_display_name": "Subnet",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^azure"
+          }
+        ],
+        "external_datasource": "azure"
+      }
+    ]
+  },
+  {
+    "plugin_name": "wiz",
+    "asset_type": "SUBSCRIPTION",
+    "raw_file_name": "wiz_subscription.json",
+    "filtered_outputs": [
+      {
+        "file_name": "gcp-project.data",
+        "target_type": "project",
+        "target_type_display_name": "Project",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^gcp"
+          }
+        ],
+        "external_datasource": "gcp"
+      },
+      {
+        "file_name": "aws-account.data",
+        "target_type": "account",
+        "target_type_display_name": "Account",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^aws"
+          }
+        ],
+        "external_datasource": "aws"
+      },
+      {
+        "file_name": "azure-subscription.data",
+        "target_type": "subscription",
+        "target_type_display_name": "Subscription",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^azure"
+          }
+        ],
+        "external_datasource": "azure"
+      }
+    ]
+  },
+  {
+    "plugin_name": "wiz",
+    "asset_type": "API_GATEWAY",
+    "raw_file_name": "wiz_api_gateway.json",
+    "filtered_outputs": [
+      {
+        "file_name": "aws-apigateway.data",
+        "target_type": "apigateway",
+        "target_type_display_name": "API Gateway",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^aws"
+          }
+        ],
+        "external_datasource": "aws"
+      },
+      {
+        "file_name": "azure-apigatewayv2.data",
+        "target_type": "apigatewayv2",
+        "target_type_display_name": "API Gateway",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^azure"
+          }
+        ],
+        "external_datasource": "azure"
+      }
+    ]
+  },
+  {
+    "plugin_name": "wiz",
+    "asset_type": "CLOUD_LOG_CONFIGURATION",
+    "raw_file_name": "wiz_cloud_log_configuration.json",
+    "filtered_outputs": [
+      {
+        "file_name": "gcp-loggingsink.data",
+        "target_type": "loggingsink",
+        "target_type_display_name": "Logging",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^gcp"
+          }
+        ],
+        "external_datasource": "gcp"
+      },
+      {
+        "file_name": "aws-cloudtrail.data",
+        "target_type": "cloudtrail",
+        "target_type_display_name": "Logging",
+        "auto_created": false,
+        "conditional_top_level_fields": {
+          "trailarn": "$.graph_entity.originalObject.Arn"
+        },
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^aws"
+          }
+        ],
+        "external_datasource": "aws"
+      },
+      {
+        "file_name": "azure-cloudtrail.data",
+        "target_type": "cloudtrail",
+        "target_type_display_name": "Logging",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^azure"
+          }
+        ],
+        "external_datasource": "azure"
+      }
+    ]
+  },
+  {
+    "plugin_name": "wiz",
+    "asset_type": "CLOUD_ORGANIZATION",
+    "raw_file_name": "wiz_cloud_organization.json",
+    "filtered_outputs": [
+      {
+        "file_name": "gcp-gcpcloudmanagement.data",
+        "target_type": "gcpcloudmanagement",
+        "target_type_display_name": "Cloud Management",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^gcp"
+          }
+        ],
+        "external_datasource": "gcp"
+      },
+      {
+        "file_name": "aws-awscloudmanagement.data",
+        "target_type": "awscloudmanagement",
+        "target_type_display_name": "Cloud Management",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^aws"
+          }
+        ],
+        "external_datasource": "aws"
+      },
+      {
+        "file_name": "azure-azurecloudmanagement.data",
+        "target_type": "azurecloudmanagement",
+        "target_type_display_name": "Cloud Management",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^azure"
+          }
+        ],
+        "external_datasource": "azure"
+      }
+    ]
+  },
+  {
+    "plugin_name": "wiz",
+    "asset_type": "COMPUTE_INSTANCE_GROUP",
+    "raw_file_name": "wiz_compute_instance_group.json",
+    "filtered_outputs": [
+      {
+        "file_name": "aws-asg.data",
+        "target_type": "asg",
+        "target_type_display_name": "Auto Scale Group",
+        "auto_created": false,
+        "conditional_top_level_fields": {
+          "autoscalinggrouparn": "$.graph_entity.originalObject.Group.AutoScalingGroupARN"
+        },
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^aws"
+          }
+        ],
+        "external_datasource": "aws"
+      },
+      {
+        "file_name": "azure-virtualmachinescaleset.data",
+        "target_type": "virtualmachinescaleset",
+        "target_type_display_name": "Auto Scale Group",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^azure"
+          }
+        ],
+        "external_datasource": "azure"
+      }
+    ]
+  },
+  {
+    "plugin_name": "wiz",
+    "asset_type": "CONFIG_MAP",
+    "raw_file_name": "wiz_config_map.json",
+    "filtered_outputs": [
+      {
+        "file_name": "aws-configmap.data",
+        "target_type": "configmap",
+        "target_type_display_name": "Container Management",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^aws"
+          }
+        ],
+        "external_datasource": "aws"
+      },
+      {
+        "file_name": "azure-configmap.data",
+        "target_type": "configmap",
+        "target_type_display_name": "Container Management",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^azure"
+          }
+        ],
+        "external_datasource": "azure"
+      }
+    ]
+  },
+  {
+    "plugin_name": "wiz",
+    "asset_type": "CONTAINER",
+    "raw_file_name": "wiz_container.json",
+    "filtered_outputs": [
+      {
+        "file_name": "aws-container.data",
+        "target_type": "container",
+        "target_type_display_name": "Container",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^aws"
+          }
+        ],
+        "external_datasource": "aws"
+      },
+      {
+        "file_name": "azure-container.data",
+        "target_type": "container",
+        "target_type_display_name": "Container",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^azure"
+          }
+        ],
+        "external_datasource": "azure"
+      }
+    ]
+  },
+  {
+    "plugin_name": "wiz",
+    "asset_type": "CONTAINER_IMAGE",
+    "raw_file_name": "wiz_container_image.json",
+    "filtered_outputs": [
+      {
+        "file_name": "azure-containerimage.data",
+        "target_type": "containerimage",
+        "target_type_display_name": "Container Image",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^azure"
+          }
+        ],
+        "external_datasource": "azure"
+      },
+      {
+        "file_name": "aws-awscontainerimage.data",
+        "target_type": "awscontainerimage",
+        "target_type_display_name": "Container Image",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^aws"
+          }
+        ],
+        "external_datasource": "aws"
+      }
+    ]
+  },
+  {
+    "plugin_name": "wiz",
+    "asset_type": "CONTAINER_REPOSITORY",
+    "raw_file_name": "wiz_container_repository.json",
+    "filtered_outputs": [
+      {
+        "file_name": "azure-containerrepository.data",
+        "target_type": "containerrepository",
+        "target_type_display_name": "Container Registry",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^azure"
+          }
+        ],
+        "external_datasource": "azure"
+      },
+      {
+        "file_name": "aws-awscontainerrepository.data",
+        "target_type": "awscontainerrepository",
+        "target_type_display_name": "Container Registry",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^aws"
+          }
+        ],
+        "external_datasource": "aws"
+      }
+    ]
+  },
+  {
+    "plugin_name": "wiz",
+    "asset_type": "CONTAINER_REGISTRY",
+    "raw_file_name": "wiz_container_registry.json",
+    "filtered_outputs": [
+      {
+        "file_name": "aws-ecr.data",
+        "target_type": "ecr",
+        "target_type_display_name": "Container Registry",
+        "auto_created": false,
+        "conditional_top_level_fields": {
+          "repositoryArn": "$.graph_entity.originalObject.RegistryId"
+        },
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^aws"
+          }
+        ],
+        "external_datasource": "aws"
+      }
+    ]
+  },
+  {
+    "plugin_name": "wiz",
+    "asset_type": "CONTAINER_SERVICE",
+    "raw_file_name": "wiz_container_service.json",
+    "filtered_outputs": [
+      {
+        "file_name": "aws-ecscluster.data",
+        "target_type": "ecscluster",
+        "target_type_display_name": "Container Service",
+        "auto_created": false,
+        "conditional_top_level_fields": {
+          "clusterarn": "$.graph_entity.originalObject.ClusterArn"
+        },
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^aws"
+          }
+        ],
+        "external_datasource": "aws"
+      }
+    ]
+  },
+  {
+    "plugin_name": "wiz",
+    "asset_type": "DATA_WORKLOAD",
+    "raw_file_name": "wiz_data_workload.json",
+    "filtered_outputs": [
+      {
+        "file_name": "aws-dataworkload.data",
+        "target_type": "dataworkload",
+        "target_type_display_name": "Data Transformation",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^aws"
+          }
+        ],
+        "external_datasource": "aws"
+      }
+    ]
+  },
+  {
+    "plugin_name": "wiz",
+    "asset_type": "DEPLOYMENT",
+    "raw_file_name": "wiz_deployment.json",
+    "filtered_outputs": [
+      {
+        "file_name": "azure-azuredeployment.data",
+        "target_type": "azuredeployment",
+        "target_type_display_name": "Kubernetes Deployment",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^azure"
+          }
+        ],
+        "external_datasource": "azure"
+      },
+      {
+        "file_name": "aws-awsdeployment.data",
+        "target_type": "awsdeployment",
+        "target_type_display_name": "Kubernetes Deployment",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^aws"
+          }
+        ],
+        "external_datasource": "aws"
+      },
+      {
+        "file_name": "gcp-gcpdeployment.data",
+        "target_type": "gcpdeployment",
+        "target_type_display_name": "Kubernetes Deployment",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^gcp"
+          }
+        ],
+        "external_datasource": "gcp"
+      }
+    ]
+  },
+  {
+    "plugin_name": "wiz",
+    "asset_type": "ENCRYPTION_KEY",
+    "raw_file_name": "wiz_encryption_key.json",
+    "filtered_outputs": [
+      {
+        "file_name": "aws-kms.data",
+        "target_type": "kms",
+        "target_type_display_name": "Encryption Key",
+        "auto_created": false,
+        "conditional_top_level_fields": {
+          "keyid": "$.graph_entity.originalObject.KeyId"
+        },
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^aws"
+          }
+        ],
+        "external_datasource": "aws"
+      }
+    ]
+  },
+  {
+    "plugin_name": "wiz",
+    "asset_type": "GATEWAY",
+    "raw_file_name": "wiz_gateway.json",
+    "filtered_outputs": [
+      {
+        "file_name": "aws-internetgw.data",
+        "target_type": "internetgw",
+        "target_type_display_name": "Internet Gateway",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^aws"
+          }
+        ],
+        "external_datasource": "aws"
+      },
+      {
+        "file_name": "azure-internetgatewayv2.data",
+        "target_type": "internetgatewayv2",
+        "target_type_display_name": "Internet Gateway",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^azure"
+          }
+        ],
+        "external_datasource": "azure"
+      },
+      {
+        "file_name": "gcp-computeroute.data",
+        "target_type": "computeroute",
+        "target_type_display_name": "Virtual Network",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^gcp"
+          }
+        ],
+        "external_datasource": "gcp"
+      }
+    ]
+  },
+  {
+    "plugin_name": "wiz",
+    "asset_type": "KUBERNETES_CLUSTER",
+    "raw_file_name": "wiz_kubernetes_cluster.json",
+    "filtered_outputs": [
+      {
+        "file_name": "azure-kubecluster.data",
+        "target_type": "kubecluster",
+        "target_type_display_name": "Container Service",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^azure"
+          }
+        ],
+        "external_datasource": "azure"
+      },
+      {
+        "file_name": "aws-awskubecluster.data",
+        "target_type": "awskubecluster",
+        "target_type_display_name": "AWS Container Service",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^aws"
+          }
+        ],
+        "external_datasource": "aws"
+      }
+    ]
+  },
+  {
+    "plugin_name": "wiz",
+    "asset_type": "KUBERNETES_NODE",
+    "raw_file_name": "wiz_kubernetes_node.json",
+    "filtered_outputs": [
+      {
+        "file_name": "azure-node.data",
+        "target_type": "node",
+        "target_type_display_name": "Kubernetes Node",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^azure"
+          }
+        ],
+        "external_datasource": "azure"
+      },
+      {
+        "file_name": "aws-node.data",
+        "target_type": "node",
+        "target_type_display_name": "Kubernetes Node",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^aws"
+          }
+        ],
+        "external_datasource": "aws"
+      }
+    ]
+  },
+  {
+    "plugin_name": "wiz",
+    "asset_type": "KUBERNETES_SERVICE",
+    "raw_file_name": "wiz_kubernetes_service.json",
+    "filtered_outputs": [
+      {
+        "file_name": "azure-service.data",
+        "target_type": "service",
+        "target_type_display_name": "Kubernetes Platform",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^azure"
+          }
+        ],
+        "external_datasource": "azure"
+      },
+      {
+        "file_name": "aws-eks.data",
+        "target_type": "eks",
+        "target_type_display_name": "Kubernetes Platform",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^aws"
+          }
+        ],
+        "external_datasource": "aws"
+      }
+    ]
+  },
+  {
+    "plugin_name": "wiz",
+    "asset_type": "LOAD_BALANCER",
+    "raw_file_name": "wiz_load_balancer.json",
+    "filtered_outputs": [
+      {
+        "file_name": "azure-loadbalancer.data",
+        "target_type": "loadbalancer",
+        "target_type_display_name": "Load Balancer",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^azure"
+          }
+        ],
+        "external_datasource": "azure"
+      },
+      {
+        "file_name": "aws-appelb.data",
+        "target_type": "appelb",
+        "target_type_display_name": "Load Balancer",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^aws"
+          }
+        ],
+        "external_datasource": "aws"
+      },
+      {
+        "file_name": "aws-classicelb.data",
+        "target_type": "classicelb",
+        "target_type_display_name": "Load Balancer",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^aws"
+          }
+        ],
+        "external_datasource": "aws"
+      }
+    ]
+  },
+  {
+    "plugin_name": "wiz",
+    "asset_type": "MANAGED_CERTIFICATE",
+    "raw_file_name": "wiz_managed_certificate.json",
+    "filtered_outputs": [
+      {
+        "file_name": "aws-acmcertificate.data",
+        "target_type": "acmcertificate",
+        "target_type_display_name": "Certificate",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^aws"
+          }
+        ],
+        "external_datasource": "aws"
+      }
+    ]
+  },
+  {
+    "plugin_name": "wiz",
+    "asset_type": "MANAGEMENT_SERVICE",
+    "raw_file_name": "wiz_management_service.json",
+    "filtered_outputs": [
+      {
+        "file_name": "aws-guardduty.data",
+        "target_type": "guardduty",
+        "target_type_display_name": "Security Monitor",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^aws"
+          }
+        ],
+        "external_datasource": "aws"
+      }
+    ]
+  },
+  {
+    "plugin_name": "wiz",
+    "asset_type": "MESSAGING_SERVICE",
+    "raw_file_name": "wiz_messaging_service.json",
+    "filtered_outputs": [
+      {
+        "file_name": "aws-eventbus.data",
+        "target_type": "eventbus",
+        "target_type_display_name": "Messaging",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^aws"
+          }
+        ],
+        "external_datasource": "aws"
+      },
+      {
+        "file_name": "aws-snstopic.data",
+        "target_type": "snstopic",
+        "target_type_display_name": "Messaging",
+        "auto_created": false,
+        "conditional_top_level_fields": {
+          "topicarn": "$.graph_entity.originalObject.TopicArn"
+        },
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^aws"
+          }
+        ],
+        "external_datasource": "aws"
+      },
+      {
+        "file_name": "aws-sqs.data",
+        "target_type": "sqs",
+        "target_type_display_name": "Messaging",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^aws"
+          }
+        ],
+        "external_datasource": "aws"
+      }
+    ]
+  },
+  {
+    "plugin_name": "wiz",
+    "asset_type": "NETWORK_INTERFACE",
+    "raw_file_name": "wiz_network_interface.json",
+    "filtered_outputs": [
+      {
+        "file_name": "azure-networkinterface.data",
+        "target_type": "networkinterface",
+        "target_type_display_name": "Network Interface",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^azure"
+          }
+        ],
+        "external_datasource": "azure"
+      },
+      {
+        "file_name": "aws-awsnetworkinterface.data",
+        "target_type": "awsnetworkinterface",
+        "target_type_display_name": "Network Interface",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^aws"
+          }
+        ],
+        "external_datasource": "aws"
+      },
+      {
+        "file_name": "gcp-computenetworkinterface.data",
+        "target_type": "computenetworkinterface",
+        "target_type_display_name": "Network Interface",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^gcp"
+          }
+        ],
+        "external_datasource": "gcp"
+      }
+    ]
+  },
+  {
+    "plugin_name": "wiz",
+    "asset_type": "RAW_ACCESS_POLICY",
+    "raw_file_name": "wiz_raw_access_policy.json",
+    "filtered_outputs": [
+      {
+        "file_name": "aws-iampolicies.data",
+        "target_type": "iampolicies",
+        "target_type_display_name": "Access Policy",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^aws"
+          }
+        ],
+        "external_datasource": "aws"
+      }
+    ]
+  },
+  {
+    "plugin_name": "wiz",
+    "asset_type": "REGION",
+    "raw_file_name": "wiz_region.json",
+    "filtered_outputs": [
+      {
+        "file_name": "azure-location.data",
+        "target_type": "location",
+        "target_type_display_name": "Region",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^azure"
+          }
+        ],
+        "external_datasource": "azure"
+      },
+      {
+        "file_name": "aws-region.data",
+        "target_type": "region",
+        "target_type_display_name": "Region",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^aws"
+          }
+        ],
+        "external_datasource": "aws"
+      },
+      {
+        "file_name": "gcp-computeregion.data",
+        "target_type": "computeregion",
+        "target_type_display_name": "Region",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^gcp"
+          }
+        ],
+        "external_datasource": "gcp"
+      }
+    ]
+  },
+  {
+    "plugin_name": "wiz",
+    "asset_type": "REGISTERED_DOMAIN",
+    "raw_file_name": "wiz_registered_domain.json",
+    "filtered_outputs": [
+      {
+        "file_name": "aws-domain.data",
+        "target_type": "domain",
+        "target_type_display_name": "Domain Name Service",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^aws"
+          }
+        ],
+        "external_datasource": "aws"
+      }
+    ]
+  },
+  {
+    "plugin_name": "wiz",
+    "asset_type": "REGISTERED_DOMAIN",
+    "raw_file_name": "wiz_registered_domain.json",
+    "filtered_outputs": [
+      {
+        "file_name": "azure-resourcegroup.data",
+        "target_type": "resourcegroup",
+        "target_type_display_name": "Resource Group",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^azure"
+          }
+        ],
+        "external_datasource": "azure"
+      }
+    ]
+  },
+  {
+    "plugin_name": "wiz",
+    "asset_type": "SECRET",
+    "raw_file_name": "wiz_secret.json",
+    "filtered_outputs": [
+      {
+        "file_name": "azure-keypair.data",
+        "target_type": "keypair",
+        "target_type_display_name": "Encryption Key",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^azure"
+          }
+        ],
+        "external_datasource": "azure"
+      }
+    ]
+  },
+  {
+    "plugin_name": "wiz",
+    "asset_type": "SECRET_CONTAINER",
+    "raw_file_name": "wiz_secret_container.json",
+    "filtered_outputs": [
+      {
+        "file_name": "aws-secretsmanager.data",
+        "target_type": "secretsmanager",
+        "target_type_display_name": "Secrets Manager",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^aws"
+          }
+        ],
+        "external_datasource": "aws"
+      }
+    ]
+  },
+  {
+    "plugin_name": "wiz",
+    "asset_type": "SERVERLESS",
+    "raw_file_name": "wiz_serverless.json",
+    "filtered_outputs": [
+      {
+        "file_name": "aws-lambda.data",
+        "target_type": "lambda",
+        "target_type_display_name": "FaaS",
+        "auto_created": false,
+        "conditional_top_level_fields": {
+          "functionarn": "$.graph_entity.originalObject.FunctionArn"
+        },
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^aws"
+          }
+        ],
+        "external_datasource": "aws"
+      }
+    ]
+  },
+  {
+    "plugin_name": "wiz",
+    "asset_type": "SNAPSHOT",
+    "raw_file_name": "wiz_snapshot.json",
+    "filtered_outputs": [
+      {
+        "file_name": "aws-snapshot.data",
+        "target_type": "snapshot",
+        "target_type_display_name": "Snapshot (EBS)",
+        "auto_created": false,
+        "file_filter": [
+          {
+            "field": "$.graph_entity.originalObject.SnapshotId",
+            "pattern": "^snap.*"
+          }
+        ],
+        "conditional_top_level_fields": {
+          "snapshotid": "$.graph_entity.originalObject.SnapshotId"
+        },
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^aws"
+          },
+          {
+            "field": "snapshotid",
+            "pattern": "^snap.*"
+          },
+          {
+            "field": "wizAssetType",
+            "pattern": "^SNAPSHOT"
+          }
+        ],
+        "external_datasource": "aws"
+      },
+      {
+        "file_name": "aws-rdssnapshot.data",
+        "target_type": "rdssnapshot",
+        "target_type_display_name": "Snapshot (RDS)",
+        "auto_created": false,
+        "file_filter": [
+          {
+            "field": "$.graph_entity.originalObject.DBSnapshotIdentifier",
+            "pattern": "^rds.*"
+          }
+        ],
+        "conditional_top_level_fields": {
+          "dbsnapshotidentifier": "$.graph_entity.originalObject.DBSnapshotIdentifier"
+        },
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^aws"
+          },
+          {
+            "field": "dbsnapshotidentifier",
+            "pattern": "^rds.*"
+          }
+        ],
+        "external_datasource": "aws"
+      }
+    ]
+  },
+  {
+    "plugin_name": "wiz",
+    "asset_type": "STORAGE_ACCOUNT",
+    "raw_file_name": "wiz_storage_account.json",
+    "filtered_outputs": [
+      {
+        "file_name": "azure-storageaccount.data",
+        "target_type": "storageaccount",
+        "target_type_display_name": "Storage Account",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^azure"
+          }
+        ],
+        "external_datasource": "azure"
+      }
+    ]
+  },
+  {
+    "plugin_name": "wiz",
+    "asset_type": "VIRTUAL_MACHINE_IMAGE",
+    "raw_file_name": "wiz_virtual_machine_image.json",
+    "filtered_outputs": [
+      {
+        "file_name": "azure-vmimage.data",
+        "target_type": "vmimage",
+        "target_type_display_name": "Virtual Machine Image",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^azure"
+          }
+        ],
+        "external_datasource": "azure"
+      },
+      {
+        "file_name": "gcp-computeimage.data",
+        "target_type": "computeimage",
+        "target_type_display_name": "Virtual Machine Image",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^gcp"
+          }
+        ],
+        "external_datasource": "gcp"
+      },
+      {
+        "file_name": "aws-ami.data",
+        "target_type": "ami",
+        "target_type_display_name": "Virtual Machine Image",
+        "auto_created": false,
+        "conditional_top_level_fields": {
+          "imageid": "$.graph_entity.originalObject.ImageId"
+        },
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^aws"
+          }
+        ],
+        "external_datasource": "aws"
+      }
+    ]
+  },
+  {
+    "plugin_name": "wiz",
+    "asset_type": "VIRTUAL_NETWORK",
+    "raw_file_name": "wiz_virtual_network.json",
+    "filtered_outputs": [
+      {
+        "file_name": "azure-vnet.data",
+        "target_type": "vnet",
+        "target_type_display_name": "Virtual Network",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^azure"
+          }
+        ],
+        "external_datasource": "azure"
+      },
+      {
+        "file_name": "aws-vpc.data",
+        "target_type": "vpc",
+        "target_type_display_name": "Virtual Network",
+        "auto_created": false,
+        "conditional_top_level_fields": {
+          "vpcid": "$.graph_entity.originalObject.VpcId"
+        },
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^aws"
+          }
+        ],
+        "external_datasource": "aws"
+      },
+      {
+        "file_name": "gcp-networks.data",
+        "target_type": "networks",
+        "target_type_display_name": "Virtual Network",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^gcp"
+          }
+        ],
+        "external_datasource": "gcp"
+      }
+    ]
+  },
+  {
+    "plugin_name": "wiz",
+    "asset_type": "VOLUME",
+    "raw_file_name": "wiz_volume.json",
+    "filtered_outputs": [
+      {
+        "file_name": "azure-disk.data",
+        "target_type": "disk",
+        "target_type_display_name": "Storage - Block",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^azure"
+          }
+        ],
+        "external_datasource": "azure"
+      },
+      {
+        "file_name": "aws-volume.data",
+        "target_type": "volume",
+        "target_type_display_name": "Storage - Block",
+        "auto_created": false,
+        "conditional_top_level_fields": {
+          "volumeid": "$.graph_entity.originalObject.VolumeId"
+        },
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^aws"
+          }
+        ],
+        "external_datasource": "aws"
+      },
+      {
+        "file_name": "gcp-gcpdisks.data",
+        "target_type": "gcpdisks",
+        "target_type_display_name": "Storage - Block",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^gcp"
+          }
+        ],
+        "external_datasource": "gcp"
+      }
+    ]
+  },
+  {
+    "plugin_name": "wiz",
+    "asset_type": "WEB_SERVICE",
+    "raw_file_name": "wiz_web_service.json",
+    "filtered_outputs": [
+      {
+        "file_name": "aws-elasticbeanstalkapplication.data",
+        "target_type": "elasticbeanstalkapplication",
+        "target_type_display_name": "Web Platform",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^aws"
+          }
+        ],
+        "external_datasource": "aws"
+      }
+    ]
+  },
+  {
+    "plugin_name": "wiz",
+    "asset_type": "RESOURCE_GROUP",
+    "raw_file_name": "wiz_resource_group.json",
+    "filtered_outputs": [
+      {
+        "file_name": "azure-resourcegroup.data",
+        "target_type": "resourcegroup",
+        "target_type_display_name": "Resource Group",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^azure"
+          }
+        ],
+        "external_datasource": "azure"
+      }
+    ]
+  },
+  {
+    "plugin_name": "wiz",
+    "asset_type": "ACCESS_ROLE",
+    "raw_file_name": "wiz_access_role.json",
+    "filtered_outputs": [
+      {
+        "file_name": "gcp-wizgcprole.data",
+        "target_type": "wizgcprole",
+        "target_type_display_name": "GCP Role",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^gcp"
+          }
+        ],
+        "external_datasource": "gcp"
+      },
+      {
+        "file_name": "azure-wizazurerole.data",
+        "target_type": "wizazurerole",
+        "target_type_display_name": "AZURE ROLE",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^azure"
+          }
+        ],
+        "external_datasource": "azure"
+      }
+    ]
+  },
+  {
+    "plugin_name": "wiz",
+    "asset_type": "NETWORK_ADDRESS",
+    "raw_file_name": "wiz_network_address.json",
+    "filtered_outputs": [
+      {
+        "file_name": "gcp-wizgcpaddres.data",
+        "target_type": "wizgcpaddres",
+        "target_type_display_name": "GCP Address",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^gcp"
+          }
+        ],
+        "external_datasource": "gcp"
+      },
+      {
+        "file_name": "aws-wizawsaddres.data",
+        "target_type": "wizawsaddres",
+        "target_type_display_name": "AWS Address",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^aws"
+          }
+        ],
+        "external_datasource": "aws"
+      }
+    ]
+  },
+  {
+    "plugin_name": "wiz",
+    "asset_type": "DB_SERVER",
+    "raw_file_name": "wiz_db_server.json",
+    "filtered_outputs": [
+      {
+        "file_name": "aws-dbserverinstance.data",
+        "target_type": "dbserverinstance",
+        "target_type_display_name": "AWS DB Server Instance",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^aws"
+          }
+        ],
+        "external_datasource": "aws"
+      }
+    ]
+  },
+  {
+    "plugin_name": "wiz",
+    "asset_type": "DNS_RECORD",
+    "raw_file_name": "wiz_dns_record.json",
+    "filtered_outputs": [
+      {
+        "file_name": "aws-dnsrecord.data",
+        "target_type": "dnsrecord",
+        "target_type_display_name": "DNS Record",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^aws"
+          }
+        ],
+        "external_datasource": "aws"
+      }
+    ]
+  },
+  {
+    "plugin_name": "wiz",
+    "asset_type": "DNS_ZONE",
+    "raw_file_name": "wiz_dns_zone.json",
+    "filtered_outputs": [
+      {
+        "file_name": "aws-dnszone.data",
+        "target_type": "dnszone",
+        "target_type_display_name": "DNS Zone",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^aws"
+          }
+        ],
+        "external_datasource": "aws"
+      }
+    ]
+  },
+  {
+    "plugin_name": "wiz",
+    "asset_type": "DNS_ZONE",
+    "raw_file_name": "wiz_dns_zone.json",
+    "filtered_outputs": [
+      {
+        "file_name": "gcp-managedzone.data",
+        "target_type": "managedzone",
+        "target_type_display_name": "DNS Zone",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "_cloudType",
+            "pattern": "^gcp"
+          }
+        ],
+        "external_datasource": "gcp"
+      }
+    ]
+  }
+]
