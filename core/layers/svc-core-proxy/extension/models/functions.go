@@ -69,3 +69,10 @@ func ConvertSecretToResponse(secret map[string]interface{}) *Response {
 		Message: success,
 	}
 }
+
+func ConvertOutputResponse(output map[string]interface{}) *Response {
+	return &Response{
+		Data:    output,
+		Message: success,
+	}
+}

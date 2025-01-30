@@ -129,6 +129,21 @@ func (d *DynamodbClient) GetOpenSearchDomain(ctx context.Context, tenantId strin
 	return result, nil
 }
 
+func (d *DynamodbClient) GetTenantOutput(ctx context.Context, tenantId string, key string) (map[string]interface{}, error) {
+	result, err := GetItem[map[string]interface{}](
+		ctx,
+		*d,
+		tenantId,
+		d.tenantConfigOutputTable,
+		key,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get config dynamodb item for tenant id [%s]: %w", tenantId, err)
+	}
+
+	return *result, nil
+}
+
 func GetItem[T any](ctx context.Context, d DynamodbClient, tenantId, tableName, projectionExpression string) (*T, error) {
 	log.Printf("fetching item from table [%s] with tenant id [%v] and projection [%s]\n", tableName, tenantId, projectionExpression)
 	key := struct {
