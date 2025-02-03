@@ -1,0 +1,23 @@
+{
+  "top_level_fields": {
+    "policyId":"$.id",
+    "policyUUID":"$.id",
+    "policyName":"$.name",
+    "policyDisplayName":"$.name",
+    "policyDesc":"$.description",
+    "severity":"@convertSeverity($.severity)",
+    "target":"deployment",
+    "assetgroup":"redhat",
+    "category":"security",
+    "status":"@convertPolicyStatus($.disabled)",
+    "resolutionUrl": "@generateRedHatURL(https://acs-,$._cq_source_name,redhat-,.acs.rhcloud.com/main/policy-management/policies/,$.id)"
+  },
+  "replace": {
+
+  },
+  "metadata": {
+    "plugin_name": "redhat",
+    "asset_type": "policies",
+    "file_name": "redhat-policy.data"
+  }
+}

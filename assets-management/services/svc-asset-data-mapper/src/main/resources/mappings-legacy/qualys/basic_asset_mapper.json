@@ -1,0 +1,6 @@
+{
+  "common_fields": {
+    "plugin_name": "qualys"
+  },
+  "target_type_common_fields" : [ ]
+}
