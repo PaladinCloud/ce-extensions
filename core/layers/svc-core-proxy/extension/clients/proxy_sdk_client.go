@@ -28,7 +28,7 @@ import (
 const (
 	proxy_host = "localhost"
 	proxy_port = "4568"
-	base_url   = "https://" + proxy_host + ":" + proxy_host
+	base_url   = "http://" + proxy_host + ":" + proxy_port
 )
 
 // Helper func, given context and a url sends get request to that url
@@ -40,7 +40,7 @@ func DoGetReq(ctx context.Context, url string) (*models.Response, error) {
 	}
 	resp, err := http.DefaultClient.Do(httpReq)
 	if err != nil {
-		return nil, fmt.Errorf("error making HTTP request: %w", err)
+		return nil, fmt.Errorf("error making http request: %w", err)
 	}
 	if !(resp.StatusCode > 199 && resp.StatusCode < 300) {
 		return nil, fmt.Errorf("server erorr: %s", resp.Status)
