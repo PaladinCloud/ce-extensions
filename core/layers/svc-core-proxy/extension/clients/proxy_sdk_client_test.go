@@ -34,7 +34,8 @@ const (
 
 func TestProxySDK_getTenantSecret(t *testing.T) {
 	ctx := context.Background()
-	serv := startMockServer()
+	serv := createServer()
+	startServer(serv)
 	resp, err := getTenantSecret(ctx, tenantID, ID)
 	if err != nil {
 		t.Fatalf("Error while fetching secret: %+v", err)
@@ -47,7 +48,8 @@ func TestProxySDK_getTenantSecret(t *testing.T) {
 
 func TestProxySDK_getTenantFeatures(t *testing.T) {
 	ctx := context.Background()
-	serv := startMockServer()
+	serv := createServer()
+	startServer(serv)
 	resp, err := getTenantFeatures(ctx, tenantID)
 	if err != nil {
 		t.Fatalf("Error while fetching features: %+v", err)
@@ -59,7 +61,8 @@ func TestProxySDK_getTenantFeatures(t *testing.T) {
 }
 func TestProxySDK_getTenantRdsDetails(t *testing.T) {
 	ctx := context.Background()
-	serv := startMockServer()
+	serv := createServer()
+	startServer(serv)
 	resp, err := getTenantRdsDetails(ctx, tenantID)
 	if err != nil {
 		t.Fatalf("Error while fetching rds: %+v", err)
@@ -72,7 +75,8 @@ func TestProxySDK_getTenantRdsDetails(t *testing.T) {
 
 func TestProxySDK_getTenantOpeanSeachDetails(t *testing.T) {
 	ctx := context.Background()
-	serv := startMockServer()
+	serv := createServer()
+	startServer(serv)
 	resp, err := getTenantOpeanSeachDetails(ctx, tenantID)
 	if err != nil {
 		t.Fatalf("Error while fetching os details: %+v", err)
@@ -82,26 +86,26 @@ func TestProxySDK_getTenantOpeanSeachDetails(t *testing.T) {
 	}
 	serv.Shutdown(ctx)
 }
-
-func startMockServer() *http.Server {
+func createServer() *http.Server {
 	var mux *http.ServeMux = http.NewServeMux()
-	mux.HandleFunc("/tenant/"+tenantID+"/sercrets"+ID, mockServerResponse)
+	mux.HandleFunc("/tenant/"+tenantID+"/secrets/"+ID, mockServerResponse)
 	mux.HandleFunc("/tenant/"+tenantID+"/features", mockServerResponse)
-	mux.HandleFunc("/tenant/"+tenantID+"rds", mockServerResponse)
-	mux.HandleFunc("/tenant/"+tenantID+"os", mockServerResponse)
+	mux.HandleFunc("/tenant/"+tenantID+"/rds", mockServerResponse)
+	mux.HandleFunc("/tenant/"+tenantID+"/os", mockServerResponse)
 
 	var serv *http.Server = &http.Server{
 		Addr:    port,
 		Handler: mux,
 	}
-
+	return serv
+}
+func startServer(serv *http.Server) {
 	log.Println("Starting sever" + port)
 	go func() {
 		if err := serv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Mock server startup failed: %+v", err)
 		}
 	}()
-	return serv
 }
 
 func mockServerResponse(w http.ResponseWriter, r *http.Request) {
