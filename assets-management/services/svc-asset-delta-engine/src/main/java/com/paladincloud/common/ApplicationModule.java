@@ -12,6 +12,7 @@ import com.paladincloud.common.assets.ElasticAssetRepository;
 import com.paladincloud.common.auth.AuthHelper;
 import com.paladincloud.common.aws.DatabaseHelper;
 import com.paladincloud.common.aws.S3Helper;
+import com.paladincloud.common.aws.SNSHelper;
 import com.paladincloud.common.aws.SQSHelper;
 import com.paladincloud.common.config.AssetTypes;
 import com.paladincloud.common.mapper.MapperRepository;
@@ -46,6 +47,12 @@ public class ApplicationModule {
     @Provides
     SQSHelper provideSQS() {
         return new SQSHelper();
+    }
+
+    @Singleton
+    @Provides
+    SNSHelper provideSNS() {
+        return new SNSHelper();
     }
 
     @Singleton

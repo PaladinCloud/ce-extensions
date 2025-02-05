@@ -7,6 +7,7 @@ import com.paladincloud.common.assets.AssetCounts;
 import com.paladincloud.common.assets.AssetGroupStatsCollector;
 import com.paladincloud.common.assets.Assets;
 import com.paladincloud.common.assets.DataSourceHelper;
+import com.paladincloud.common.aws.SNSHelper;
 import com.paladincloud.common.aws.SQSHelper;
 import com.paladincloud.common.config.AssetTypes;
 import com.paladincloud.common.config.ConfigConstants;
@@ -36,17 +37,19 @@ public class AssetSenderJob extends JobExecutor {
     private final AssetTypes assetTypes;
     private final Assets assets;
     private final SQSHelper sqsHelper;
+    private final SNSHelper snsHelper;
     private final DataSourceHelper dataSourceHelper;
     private final AssetGroupStatsCollector assetGroupStatsCollector;
     private final AssetCounts assetCounts;
 
     @Inject
-    AssetSenderJob(AssetTypes assetTypes, Assets assets, SQSHelper sqsHelper,
+    AssetSenderJob(AssetTypes assetTypes, Assets assets, SQSHelper sqsHelper, SNSHelper snsHelper,
         DataSourceHelper dataSourceHelper, AssetGroupStatsCollector assetGroupStatsCollector,
         AssetCounts assetCounts) {
         this.assetTypes = assetTypes;
         this.assets = assets;
         this.sqsHelper = sqsHelper;
+        this.snsHelper = snsHelper;
         this.dataSourceHelper = dataSourceHelper;
         this.assetGroupStatsCollector = assetGroupStatsCollector;
         this.assetCounts = assetCounts;
@@ -120,9 +123,15 @@ public class AssetSenderJob extends JobExecutor {
         if ("true".equalsIgnoreCase(ConfigService.get(ConfigConstants.Dev.OMIT_DONE_EVENT))) {
             LOGGER.warn("Omitting completed event: {}", eventAsJson);
         } else {
-            var sqsUrl = ConfigService.get(ConfigConstants.SQS.ASSET_STATE_START_SQS_URL);
-            LOGGER.info("Sending completed event to {} (event={})", sqsUrl, eventAsJson);
-            sqsHelper.sendMessage(sqsUrl, completedEvent, UUID.randomUUID().toString());
+            if (envVars.containsKey(OUTPUT_TOPIC_ARN)) {
+                var outputArn = envVars.get(OUTPUT_TOPIC_ARN);
+                LOGGER.info("Sending completed event to {} (event={})", outputArn, eventAsJson);
+                snsHelper.sendMessage(outputArn, completedEvent, UUID.randomUUID().toString());
+            } else {
+                var sqsUrl = ConfigService.get(ConfigConstants.SQS.ASSET_STATE_START_SQS_URL);
+                LOGGER.info("Sending completed event to {} (event={})", sqsUrl, eventAsJson);
+                sqsHelper.sendMessage(sqsUrl, completedEvent, UUID.randomUUID().toString());
+            }
         }
     }
 
