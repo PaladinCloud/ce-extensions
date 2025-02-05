@@ -33,6 +33,9 @@ public abstract class JobExecutor {
     private static final String TENANT_TABLE_PARTITION_KEY = "TENANT_TABLE_PARTITION_KEY";
     private static final String TENANT_CONFIG_TABLE = "TENANT_CONFIG_TABLE";
 
+    // When set, specifies the ARN to send the message to
+    protected static final String OUTPUT_TOPIC_ARN = "OUTPUT_TOPIC_ARN";
+
     private static final List<String> requiredEnvironmentVariables = List.of(REGION,
         SECRET_NAME_PREFIX, TENANT_CONFIG_OUTPUT_TABLE,
         TENANT_TABLE_PARTITION_KEY, TENANT_CONFIG_TABLE);
@@ -61,7 +64,7 @@ public abstract class JobExecutor {
         try {
             setDefaultParams();
             envVars.putAll(
-                getEnvironmentVariables(List.of(ASSUME_ROLE_ARN, OUTPUT_TRIGGER_ASSET_STATE)));
+                getEnvironmentVariables(List.of(ASSUME_ROLE_ARN, OUTPUT_TOPIC_ARN, OUTPUT_TRIGGER_ASSET_STATE)));
             params.putAll(parseArgs(args));
             validateRequiredFields();
 
