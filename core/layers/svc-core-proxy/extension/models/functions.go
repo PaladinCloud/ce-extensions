@@ -56,7 +56,7 @@ func ConvertTenantFeatureFlagsToResponse(flags TenantFeatureFlags) *Response {
 
 	for featureName, flag := range flags.FeatureFlags {
 		// A feature is considered active if it's enabled and either has no expiration date or is not expired
-		isActive := flag.Status && (flag.ExpirationDate == nil || now.Before(*flag.ExpirationDate))
+		isActive := flag.IsEnabled && (flag.ExpirationDate == nil || now.Before(*flag.ExpirationDate))
 		response.Data[featureName] = isActive
 	}
 
