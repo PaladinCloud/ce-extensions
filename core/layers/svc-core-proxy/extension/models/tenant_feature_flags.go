@@ -17,19 +17,20 @@
 package models
 
 import (
+	"time"
+
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
-	"time"
 )
 
 type TenantFeatureFlags struct {
-	FeatureFlags map[string]FeatureFlag `json:"tenant_feature_flags" dynamodbav:"tenant_feature_flags"`
+	FeatureFlags map[string]FeatureFlag `json:"feature_flags" dynamodbav:"feature_flags"`
 }
 
 type FeatureFlag struct {
 	ExpirationDate *time.Time      `json:"expirationDate,omitempty" dynamodbav:"expirationDate,omitempty"`
 	Metadata       FeatureMetadata `json:"metadata" dynamodbav:"metadata"`
-	Status         bool            `json:"status" dynamodbav:"status"`
+	IsEnabled      bool            `json:"isEnabled" dynamodbav:"isEnabled"`
 }
 
 type FeatureMetadata struct {

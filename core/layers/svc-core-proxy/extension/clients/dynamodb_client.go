@@ -33,7 +33,7 @@ import (
 
 const (
 	projectionExpressionOpenSearchDomain = "datastore_es_ESDomain"
-	projectionTenantFeatureFlags         = "tenant_feature_flags"
+	projectionFeatureFlags               = "feature_flags"
 )
 
 type DynamodbClient struct {
@@ -105,7 +105,7 @@ func (d *DynamodbClient) GetTenantFeatureFlags(ctx context.Context, tenantId str
 		*d,
 		tenantId,
 		d.tenantConfigTable,
-		projectionTenantFeatureFlags,
+		projectionFeatureFlags,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get config dynamodb item for tenant id [%s]: %w", tenantId, err)
@@ -145,7 +145,6 @@ func (d *DynamodbClient) GetTenantOutput(ctx context.Context, tenantId string, k
 }
 
 func GetItem[T any](ctx context.Context, d DynamodbClient, tenantId, tableName, projectionExpression string) (*T, error) {
-	log.Printf("fetching item from table [%s] with tenant id [%v] and projection [%s]\n", tableName, tenantId, projectionExpression)
 	key := struct {
 		TenantId string `dynamodbav:"tenant_id" json:"tenant_id"`
 	}{TenantId: tenantId}
