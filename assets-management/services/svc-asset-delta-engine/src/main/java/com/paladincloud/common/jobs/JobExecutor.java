@@ -87,7 +87,8 @@ public abstract class JobExecutor {
                     .dynamoConfigMap(dynamoConfigMap).build());
             ConfigService.setProperties("param.", params);
 
-            if (ConfigService.isFeatureEnabled("enableAssetStateService")) {
+            // Use either the specified SQS URL or SNS topic
+            if (ConfigService.isFeatureEnabled("enableAssetStateService") && !envVars.containsKey(OUTPUT_TOPIC_ARN)) {
                 var outputSQSUrl = envVars.get(OUTPUT_TRIGGER_ASSET_STATE);
                 if (StringUtils.isNotBlank(outputSQSUrl)) {
                     ConfigService.setProperties("",
@@ -98,9 +99,7 @@ public abstract class JobExecutor {
                 }
             }
 
-            LOGGER.info("enableAssetStateService={} completionQueue={}",
-                ConfigService.isFeatureEnabled("enableAssetStateService"),
-                ConfigService.get(ConfigConstants.SQS.ASSET_STATE_START_SQS_URL));
+            LOGGER.info("enableAssetStateService={}", ConfigService.isFeatureEnabled("enableAssetStateService"));
             var cognitoUrlPrefix = ConfigService.get(PaladinCloud.COGNITO_URL_PREFIX);
             ConfigService.setProperties("", Map.of(PaladinCloud.AUTH_API_URL,
                 STR."https://\{cognitoUrlPrefix}.auth.us-east-1.amazoncognito.com"));
