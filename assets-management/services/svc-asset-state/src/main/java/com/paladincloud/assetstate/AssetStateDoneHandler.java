@@ -20,7 +20,7 @@ public class AssetStateDoneHandler implements RequestHandler<SQSEvent, Integer> 
         for (var message : event.getRecords()) {
             try {
                 var body = message.getBody();
-                if (body.contains("\"Message\":")) {
+                if (body.contains("\"Message\"")) {
                     try {
                         var result = new ObjectMapper().readValue(body, HashMap.class);
                         body = result.get("Message").toString();

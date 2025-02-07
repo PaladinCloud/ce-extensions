@@ -22,7 +22,7 @@ public class AssetDoneHandler implements RequestHandler<SQSEvent, Integer> {
         var parser = Pattern.compile("([^\"]\\S*|\".+?\")\\s*");
         for (var message : event.getRecords()) {
             var body = message.getBody();
-            if (body.contains("\"Message\":")) {
+            if (body.contains("\"Message\" :")) {
                 try {
                     var result = new ObjectMapper().readValue(body, HashMap.class);
                     body = result.get("Message").toString();
