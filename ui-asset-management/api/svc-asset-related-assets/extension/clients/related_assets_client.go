@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"slices"
 	"strings"
 	"svc-asset-related-assets-layer/models"
 )
@@ -40,6 +39,7 @@ const (
 	volume                           = "volume"
 	publicIpAddressDisplayName       = "Public IPs"
 	iamInstanceProfileArnDisplayName = "Instance Roles"
+	relatedAssets                    = "relatedAssets"
 )
 
 var (
@@ -51,17 +51,6 @@ var (
 func (c *RelatedAssetsClient) GetRelatedAssetsDetails(ctx context.Context, tenantId, targetType, assetId string) (*models.Response, error) {
 	if len(strings.TrimSpace(assetId)) == 0 {
 		return nil, fmt.Errorf("asset id must be present")
-	}
-
-	var validTargetTypes []string
-	if targetTypeWithRelatedAssets == "" {
-		validTargetTypes = defaultTargetTypeWithRelatedAssets[:]
-	} else {
-		validTargetTypes = strings.Split(targetTypeWithRelatedAssets, ",")
-	}
-	if !slices.Contains(validTargetTypes, targetType) {
-		log.Printf("no valid related assets for target type [%s]\n", targetType)
-		return &models.Response{Data: &models.RelatedAssets{AllRelatedAssets: &[]models.RelatedAsset{}}, Message: success}, nil
 	}
 
 	// related assets like Public Ip and Iam instance profile ARN are present in the asset details doc
@@ -76,7 +65,7 @@ func (c *RelatedAssetsClient) GetRelatedAssetsDetails(ctx context.Context, tenan
 		return nil, fmt.Errorf("failed to extract source from result: %w", err)
 	}
 
-	var allRelatedAssets []models.RelatedAsset
+	allRelatedAssets := []models.RelatedAsset{}
 	if v, ok := assetDetails[instanceid]; ok {
 
 		// fetch related assets for the asset
@@ -101,32 +90,64 @@ func (c *RelatedAssetsClient) GetRelatedAssetsDetails(ctx context.Context, tenan
 
 			}
 		}
+	}
 
-		// fetch assetId and other info for the related assets from the related assets' own details
-		log.Println("fetching asset details of related assets")
-		relatedAssetDetails, err2 := c.elasticSearchClient.FetchMultipleAssetsByResourceId(ctx, tenantId, allSources, allRelatedAssets)
-		if err2 != nil {
-			return nil, fmt.Errorf("failed to fetch related asset details %w", err2)
+	if v, ok := assetDetails[relatedAssets]; ok {
+		relatedAssetIds := v.([]interface{})
+		for _, relatedAssetId := range relatedAssetIds {
+			relatedAsset := models.RelatedAsset{AssetId: relatedAssetId.(string)}
+			allRelatedAssets = append(allRelatedAssets, relatedAsset)
 		}
+	}
 
-		for _, response := range (*relatedAssetDetails)["responses"].([]interface{}) {
-			responseDetailMap := response.(map[string]interface{})
-			relatedAssetArray := getResults(&responseDetailMap)
-			for _, relatedAssetDoc := range relatedAssetArray {
-				relatedAssets := relatedAssetDoc.(map[string]interface{})["_source"].(map[string]interface{})
-				assetTypeName := relatedAssets[targetTypeDisplayName].(string)
-				documentId := relatedAssets[docId].(string)
-				assetType := relatedAssets[docType].(string)
-				resourceId := relatedAssets[_resourceId].(string)
-				for i, relatedAsset := range allRelatedAssets {
-					if relatedAsset.AssetType == assetType && relatedAsset.ResourceId == resourceId {
-						allRelatedAssets[i].AssetId = documentId
-						allRelatedAssets[i].AssetTypeName = assetTypeName
-					}
+	// fetch related parent assets
+	parentRelatedAssetDetails, err := c.elasticSearchClient.FetchParentRelatedAssets(ctx, tenantId, allSources, assetId)
+	if err != nil {
+		fmt.Errorf("failed to fetch parent related asset details %w", err)
+	}
+	resultArr, err := extractResultArray(parentRelatedAssetDetails)
+	if err != nil {
+		fmt.Errorf("failed to extract parent related asset details %w", err)
+	}
+	for _, result := range resultArr {
+
+		source, ok := result.(map[string]interface{})["_source"].(map[string]interface{})
+		if !ok {
+			return nil, fmt.Errorf("invalid source format")
+		}
+		documentId := source[docId].(string)
+		relatedAsset := models.RelatedAsset{AssetId: documentId}
+		allRelatedAssets = append(allRelatedAssets, relatedAsset)
+	}
+
+	// fetch assetId and other info for the related assets from the related assets' own details
+	log.Println("fetching asset details of related assets")
+	relatedAssetDetails, err2 := c.elasticSearchClient.FetchMultipleAssetsByResourceId(ctx, tenantId, allSources, allRelatedAssets)
+	if err2 != nil {
+		return nil, fmt.Errorf("failed to fetch related asset details %w", err2)
+	}
+
+	for _, response := range (*relatedAssetDetails)["responses"].([]interface{}) {
+		responseDetailMap := response.(map[string]interface{})
+		relatedAssetArray := getResults(&responseDetailMap)
+		for _, relatedAssetDoc := range relatedAssetArray {
+			relatedAsset := relatedAssetDoc.(map[string]interface{})["_source"].(map[string]interface{})
+			assetTypeName := relatedAsset[targetTypeDisplayName].(string)
+			documentId := relatedAsset[docId].(string)
+			assetType := relatedAsset[docType].(string)
+			resourceId := relatedAsset[_resourceId].(string)
+			for i, relatedAsset := range allRelatedAssets {
+				if relatedAsset.AssetId == documentId || (relatedAsset.AssetType == assetType && relatedAsset.ResourceId == resourceId) {
+					allRelatedAssets[i].AssetId = documentId
+					allRelatedAssets[i].AssetTypeName = assetTypeName
+					allRelatedAssets[i].AssetType = assetType
+					allRelatedAssets[i].ResourceId = resourceId
 				}
 			}
 		}
+	}
 
+	if _, ok := assetDetails[instanceid]; ok {
 		if v, ok := assetDetails[publicIpAddress]; ok && v != "" {
 			publicIpAsset := models.RelatedAsset{ResourceId: v.(string), AssetTypeName: publicIpAddressDisplayName}
 			allRelatedAssets = append(allRelatedAssets, publicIpAsset)
@@ -135,10 +156,8 @@ func (c *RelatedAssetsClient) GetRelatedAssetsDetails(ctx context.Context, tenan
 			iamInstanceProfileArnAsset := models.RelatedAsset{ResourceId: v.(string), AssetTypeName: iamInstanceProfileArnDisplayName}
 			allRelatedAssets = append(allRelatedAssets, iamInstanceProfileArnAsset)
 		}
-
-	} else {
-		return nil, fmt.Errorf("instance Id not found for asset id [%s]", assetId)
 	}
+
 	return &models.Response{Data: &models.RelatedAssets{AllRelatedAssets: &allRelatedAssets}, Message: success}, nil
 }
 
@@ -163,4 +182,18 @@ func extractSourceFromResult(result *map[string]interface{}, assetId string) (ma
 	}
 
 	return source, nil
+}
+
+func extractResultArray(result *map[string]interface{}) ([]interface{}, error) {
+	hits, ok := (*result)["hits"].(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("unexpected response format: 'hits' key missing")
+	}
+
+	sourceArr, ok := hits["hits"].([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("could not extract result array")
+	}
+
+	return sourceArr, nil
 }
