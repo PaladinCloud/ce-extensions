@@ -104,11 +104,49 @@ func (c *ElasticSearchClient) FetchRelatedAssets(ctx context.Context, docTypes [
 	return c.fetchFromOpensearch(ctx, tenantId, ag, esRequest)
 }
 
+func (c *ElasticSearchClient) FetchParentRelatedAssets(ctx context.Context, tenantId, ag, assetId string) (*map[string]interface{}, error) {
+
+	query := buildParentRelatedAssetsQuery(assetId)
+	esRequest := map[string]interface{}{
+		"size":    1000,
+		"query":   query,
+		"_source": []string{docId},
+	}
+
+	var buffer bytes.Buffer
+	json.NewEncoder(&buffer).Encode(esRequest)
+
+	client, err := c.CreateNewElasticSearchClient(ctx, tenantId)
+	if err != nil {
+		return nil, fmt.Errorf("error creating opensearch client for tenant id [%s] %w", tenantId, err)
+	}
+	response, err := client.Search(client.Search.WithIndex(ag), client.Search.WithBody(&buffer))
+
+	if err != nil {
+		return nil, fmt.Errorf("error getting ParentRelatedAssets response from ES for assetId: %s. err: %s", assetId, err)
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != 200 {
+		return nil, fmt.Errorf("error while fetching ParentRelatedAssets from ES for assetId: %s", assetId)
+	}
+	var result map[string]interface{}
+	json.NewDecoder(response.Body).Decode(&result)
+	return &result, nil
+}
+
 func (c *ElasticSearchClient) FetchMultipleAssetsByResourceId(ctx context.Context, tenantId, ag string, relatedAssets []models.RelatedAsset) (*map[string]interface{}, error) {
 
 	var esRequest string
+	var assetDetailsQuery map[string]interface{}
 	for _, relatedAsset := range relatedAssets {
-		assetDetailsQuery := buildAssetsQuery(relatedAsset.AssetType, relatedAsset.ResourceId)
+		if relatedAsset.ResourceId != "" {
+			assetDetailsQuery = buildAssetsQuery(relatedAsset.AssetType, relatedAsset.ResourceId)
+		} else if relatedAsset.AssetId != "" {
+			assetDetailsQuery = buildDetailsQuery(relatedAsset.AssetId)
+		} else {
+			continue
+		}
 		searchQuery := map[string]interface{}{
 			"size":    1,
 			"query":   assetDetailsQuery,
@@ -233,4 +271,20 @@ func buildDocIdFilter(docId string) map[string]interface{} {
 		},
 	}
 	return docIdOrFilter
+}
+
+func buildParentRelatedAssetsQuery(assetId string) map[string]interface{} {
+	relatedAssetsFilter := map[string]interface{}{
+		"term": map[string]interface{}{
+			"relatedAssets.keyword": assetId,
+		},
+	}
+
+	query := map[string]interface{}{
+		"bool": map[string]interface{}{
+			"must": [1]map[string]interface{}{relatedAssetsFilter},
+		},
+	}
+
+	return query
 }
