@@ -120,28 +120,30 @@ func (c *RelatedAssetsClient) GetRelatedAssetsDetails(ctx context.Context, tenan
 		allRelatedAssets = append(allRelatedAssets, relatedAsset)
 	}
 
-	// fetch assetId and other info for the related assets from the related assets' own details
-	log.Println("fetching asset details of related assets")
-	relatedAssetDetails, err2 := c.elasticSearchClient.FetchMultipleAssetsByResourceId(ctx, tenantId, allSources, allRelatedAssets)
-	if err2 != nil {
-		return nil, fmt.Errorf("failed to fetch related asset details %w", err2)
-	}
+	if len(allRelatedAssets) > 0 {
+		// fetch assetId and other info for the related assets from the related assets' own details
+		log.Println("fetching asset details of related assets")
+		relatedAssetDetails, err2 := c.elasticSearchClient.FetchMultipleAssetsByResourceId(ctx, tenantId, allSources, allRelatedAssets)
+		if err2 != nil {
+			return nil, fmt.Errorf("failed to fetch related asset details %w", err2)
+		}
 
-	for _, response := range (*relatedAssetDetails)["responses"].([]interface{}) {
-		responseDetailMap := response.(map[string]interface{})
-		relatedAssetArray := getResults(&responseDetailMap)
-		for _, relatedAssetDoc := range relatedAssetArray {
-			relatedAsset := relatedAssetDoc.(map[string]interface{})["_source"].(map[string]interface{})
-			assetTypeName := relatedAsset[targetTypeDisplayName].(string)
-			documentId := relatedAsset[docId].(string)
-			assetType := relatedAsset[docType].(string)
-			resourceId := relatedAsset[_resourceId].(string)
-			for i, relatedAsset := range allRelatedAssets {
-				if relatedAsset.AssetId == documentId || (relatedAsset.AssetType == assetType && relatedAsset.ResourceId == resourceId) {
-					allRelatedAssets[i].AssetId = documentId
-					allRelatedAssets[i].AssetTypeName = assetTypeName
-					allRelatedAssets[i].AssetType = assetType
-					allRelatedAssets[i].ResourceId = resourceId
+		for _, response := range (*relatedAssetDetails)["responses"].([]interface{}) {
+			responseDetailMap := response.(map[string]interface{})
+			relatedAssetArray := getResults(&responseDetailMap)
+			for _, relatedAssetDoc := range relatedAssetArray {
+				relatedAsset := relatedAssetDoc.(map[string]interface{})["_source"].(map[string]interface{})
+				assetTypeName := relatedAsset[targetTypeDisplayName].(string)
+				documentId := relatedAsset[docId].(string)
+				assetType := relatedAsset[docType].(string)
+				resourceId := relatedAsset[_resourceId].(string)
+				for i, relatedAsset := range allRelatedAssets {
+					if relatedAsset.AssetId == documentId || (relatedAsset.AssetType == assetType && relatedAsset.ResourceId == resourceId) {
+						allRelatedAssets[i].AssetId = documentId
+						allRelatedAssets[i].AssetTypeName = assetTypeName
+						allRelatedAssets[i].AssetType = assetType
+						allRelatedAssets[i].ResourceId = resourceId
+					}
 				}
 			}
 		}
