@@ -1,0 +1,23 @@
+{
+  "top_level_fields": {
+    "_cloudType": "gcp",
+    "region": "@getRegionFromName($.name)",
+    "functionName": "$.name",
+    "id": "$.name",
+    "projectId": "$.project_id",
+    "tags": "$.labels",
+    "ingressSetting": "$.ingress_settings",
+    "vpcConnector": "$.vpc_connector",
+    "httpTrigger": "$.trigger.HttpsTrigger.security_level",
+    "discoverydate": "@getDiscoveryDate()",
+    "rawData": "@jsonToString($)",
+    "sourceDisplayName": "GCP",
+    "targetTypeDisplayName" : "Cloud Function"
+  },
+  "metadata": {
+    "plugin_name": "gcp",
+    "asset_type": "cloudfunction",
+    "file_name": "gcp-cloudfunction.data",
+    "delta_engine_enabled": "true"
+  }
+}
