@@ -142,6 +142,17 @@ func (c *AssetDetailsClient) extractTags(assetDetails map[string]interface{}, ma
 				tags[tagDisplayName] = strVal
 			}
 		}
+	} else if kvTags, ok := assetDetails["_kv_tags"].([]interface{}); ok {
+		for _, item := range kvTags {
+			if tagMap, valid := item.(map[string]interface{}); valid {
+				if key, keyOk := tagMap["key"].(string); keyOk {
+					if value, valueOk := tagMap["value"].(string); valueOk {
+						tagDisplayName := getTagDisplayName(key, mandatoryTags)
+						tags[tagDisplayName] = value
+					}
+				}
+			}
+		}
 	} else {
 		tags = c.buildTagsForLegacyAssetModel(assetDetails)
 		assetDetails["tags"] = tags
@@ -258,6 +269,10 @@ func (c *AssetDetailsClient) extractPrimaryProvider(assetDetails map[string]inte
 	}
 
 	isLegacy = true
+	// below if is for wiz plugin
+	if rawData, ok := assetDetails[constants.RawData]; ok {
+		return isLegacy, fmt.Sprintf("%v", rawData), nil
+	}
 	legacyPrimaryProvider := c.buildLegacyPrimaryProvider(assetDetails)
 	legacyPrimaryProviderJson, err := json.Marshal(legacyPrimaryProvider)
 	if err != nil {
