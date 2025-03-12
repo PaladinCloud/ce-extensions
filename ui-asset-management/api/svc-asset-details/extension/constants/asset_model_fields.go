@@ -27,6 +27,7 @@ const (
 	PrimaryProvider = "primaryProvider"
 	AssetState      = "_assetState"
 	ResourceId      = "_resourceid"
+	RawData         = "rawData"
 )
 
 var CommonFields = []string{

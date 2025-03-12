@@ -21,6 +21,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"strings"
 	"svc-asset-details-layer/models"
 	"sync"
 
@@ -103,13 +104,19 @@ func (r *RdsClient) FetchMandatoryTags(ctx context.Context, tenantId string) ([]
 
 	log.Println("getting mandatory tags from rds")
 	query := `
-		select opt.optionName as tagName
-                from pac_v2_ui_options opt join pac_v2_ui_filters fil on opt.filterId= fil.filterId 
-                and opt.optionValue like '%tags%' and fil.filterName='AssetListing';
+		select value from pac_config_properties where cfkey ='tagging.mandatoryTags' and profile='prd' and label='latest';
 	`
-	var tags []models.Tag
-	if err := sqlscan.Select(ctx, rdsClient, &tags, query); err != nil {
+
+	var result []models.ConfigResult
+	if err := sqlscan.Select(ctx, rdsClient, &result, query); err != nil {
 		return nil, fmt.Errorf("failed to fetch mandatory tags %w", err)
+	}
+	var tags []models.Tag
+	if len(result) > 0 {
+		tagsArray := strings.Split(result[0].Value, ",")
+		for _, tag := range tagsArray {
+			tags = append(tags, models.Tag{TagName: strings.TrimSpace(tag)}) // Trim spaces for safety
+		}
 	}
 
 	return tags, nil
