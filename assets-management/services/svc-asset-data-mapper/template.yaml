@@ -1,0 +1,18 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Resources:
+  DataMapperFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: target/data-mapper-0.0.1-SNAPSHOT.jar
+      Handler: com.paladincloud.datamapper.StartMapper::handleRequest
+      Runtime: java8
+      Policies: AmazonDynamoDBFullAccess
+      Events:
+        MySQSEvent:
+          Type: SQS
+          Properties:
+            Queue: ""
+            BatchSize: 10
+  MySqsQueue:
+    Type: AWS::SQS::Queue
