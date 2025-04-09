@@ -152,8 +152,8 @@ jobs:
         uses: trstringer/manual-approval@v1
         timeout-minutes: 3
         with:
-          secret: ${{ github.TOKEN }}
-          approvers: rnithinpaladin,ershad-paladin,plyubich,arunpaladin
+          secret: ${{ github.PALADINCLOUD_SECERT }}
+          approvers: kevin-paladin,arunpaladin
           minimum-approvals: 1
           issue-title: "API JARs to QA"
           issue-body: "Please approve or deny the deployment for QA"
