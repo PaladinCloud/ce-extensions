@@ -152,7 +152,7 @@ jobs:
         uses: trstringer/manual-approval@v1
         timeout-minutes: 3
         with:
-          secret: ${{ github.PALADINCLOUD_SECERT }}
+          secret: ${{ secrets.PALADINCLOUD_SECERT }}
           approvers: kevin-paladin,arunpaladin
           minimum-approvals: 1
           issue-title: "API JARs to QA"
