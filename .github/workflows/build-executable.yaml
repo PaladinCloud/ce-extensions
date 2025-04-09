@@ -153,7 +153,7 @@ jobs:
         timeout-minutes: 3
         with:
           secret: ${{ github.TOKEN }}
-          approvers: rnithinpaladin,ershad-paladin,plyubich,arunpaladin
+          approvers: kevin-paladin,arunpaladin
           minimum-approvals: 1
           issue-title: "API JARs to QA"
           issue-body: "Please approve or deny the deployment for QA"
