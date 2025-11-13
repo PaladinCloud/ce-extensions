@@ -99,8 +99,8 @@ func buildQuery(assetId string) map[string]interface{} {
 		},
 	}
 	latestFilter := map[string]interface{}{
-		"term": map[string]interface{}{
-			"latest": "true",
+		"exists": map[string]interface{}{
+			"field": "latest",
 		},
 	}
 
