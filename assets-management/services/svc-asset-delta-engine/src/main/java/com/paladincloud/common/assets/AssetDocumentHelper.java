@@ -197,7 +197,7 @@ public class AssetDocumentHelper {
         dto.setFirstDiscoveryDate(dto.getLastScanDate());
         dto.setLegacyFirstDiscoveryDate(dto.getLastScanDate());
 
-        tags.parallelStream().filter(tag -> MapHelper.containsAll(tag, data, docIdFields))
+        tags.stream().filter(tag -> MapHelper.containsAll(tag, data, docIdFields))
             .forEach(tag -> {
                 var key = tag.get("key").toString();
                 if (StringUtils.isNotBlank(key)) {
