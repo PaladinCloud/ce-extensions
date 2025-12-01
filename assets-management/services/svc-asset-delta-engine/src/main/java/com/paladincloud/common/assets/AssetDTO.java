@@ -13,6 +13,7 @@ import com.paladincloud.common.AssetDocumentFields;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -23,7 +24,7 @@ public class AssetDTO {
      * Adds the given property and value to fields in this document. Get access to these properties
      * via {@link #getAdditionalProperties()}.
      */
-    private final Map<String, Object> additionalProperties = new HashMap<>();
+    private final Map<String, Object> additionalProperties = new ConcurrentHashMap<>();
     /**
      * This is the unique id for the asset, which depends on the source & type as well as the unique
      * id for the instance. This unique id the same for the lifetime of the asset.
