@@ -19,7 +19,6 @@ package clients
 import (
 	"context"
 	"fmt"
-	"log"
 	"svc-core-proxy-layer/models"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -74,7 +73,6 @@ func NewDynamoDBClient(ctx context.Context, useAssumeRole bool, assumeRoleArn, r
 		svc = dynamodb.NewFromConfig(cfg)
 	}
 
-	log.Println("initialized dynamodb client")
 	return &DynamodbClient{
 		region:                  region,
 		client:                  svc,
