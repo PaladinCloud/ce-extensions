@@ -321,7 +321,10 @@ public class AssetDocumentHelper {
         if (isPrimarySource()) {
             updatePrimary(data, dto, idValue);
         } else {
-            if (dataSource.equalsIgnoreCase(dto.getSource())) {
+            if (dataSource.equalsIgnoreCase(getSource(dto))) {
+                if (dto.getDocId() == null) {
+                    dto.setDocId(dto.getLegacyDocId());
+                }
                 updatePrimaryFromSecondary(data, dto, idValue);
             } else {
                 updateOpinion(data, dto);
@@ -538,6 +541,13 @@ public class AssetDocumentHelper {
             throw new JobException("Mapper data is missing the 'source' field");
         }
         return source;
+    }
+
+    private String getSource(AssetDTO dto) {
+        if (dto.getSource() != null) {
+            return dto.getSource();
+        }
+        return dto.getLegacySource();
     }
 
     private void withValue(Map<String, Object> data, List<String> key,
