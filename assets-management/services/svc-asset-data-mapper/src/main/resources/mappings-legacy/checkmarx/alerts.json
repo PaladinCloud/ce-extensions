@@ -1,0 +1,20 @@
+{
+  "top_level_fields": {
+    "policyId":"$.alert_key",
+    "policyUUID":"$.alert_key",
+    "policyName":"$.title",
+    "policyDisplayName":"$.title",
+    "policyDesc":"$.description",
+    "severity":"@convertSeverityForCheckmarx($.risk)",
+    "target":"environment",
+    "assetgroup":"checkmarx",
+    "category":"security",
+    "status": null,
+    "resolutionUrl": "@getResolutionUrl($.alert_id)"
+  },
+  "metadata": {
+    "plugin_name": "checkmarx",
+    "asset_type": "policies",
+    "file_name": "checkmarx-policy.data"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "top_level_fields": {
+    "_cloudType": "gcp",
+    "region": "global",
+    "id": "@getAsString($.id)",
+    "projectId": "$.project_id",
+    "type": "$.type",
+    "accountid": "$.project_id",
+    "zone": "$.zone",
+    "kind": "$.kind",
+    "users": "$.users",
+    "tags": "$.labels",
+    "licenses": "$.licenses",
+    "licenseCodes": "$.license_codes",
+    "name": "$.name",
+    "status": "$.status",
+    "sizeGb": "$.size_gb",
+    "discoverydate": "@getDiscoveryDate()",
+    "rawData": "@jsonToString($)",
+    "sourceDisplayName": "GCP",
+    "targetTypeDisplayName" : "Managed Disk"
+  },
+  "replacement_fields": {
+  },
+  "metadata": {
+    "plugin_name": "gcp",
+    "asset_type": "gcpdisks",
+    "file_name": "gcp-gcpdisks.data",
+    "delta_engine_enabled": "true"
+  }
+}
