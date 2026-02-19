@@ -21,9 +21,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/elastic/go-elasticsearch/v7"
-	"log"
 	"sync"
+
+	"github.com/elastic/go-elasticsearch/v7"
 )
 
 type ElasticSearchClient struct {
@@ -32,7 +32,6 @@ type ElasticSearchClient struct {
 }
 
 func NewElasticSearchClient(dynamodbClient *DynamodbClient) *ElasticSearchClient {
-	log.Println("initialized opensearch client")
 	return &ElasticSearchClient{
 		dynamodbClient: dynamodbClient,
 	}

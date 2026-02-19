@@ -109,3 +109,11 @@ func (c *ProxyClient) GetTenantOutputDetails(ctx context.Context, tenantId strin
 
 	return models.ConvertOutputResponse(props), nil
 }
+
+func (c *ProxyClient) GetSecretDetails(ctx context.Context, secretName string) (*models.Response, error) {
+	props, err := c.secretsClient.GetSecretData(ctx, secretName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get secret: %w", err)
+	}
+	return models.ConvertOutputResponse(props), nil
+}
