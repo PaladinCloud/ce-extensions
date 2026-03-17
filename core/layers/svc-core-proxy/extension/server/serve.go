@@ -53,7 +53,6 @@ func Start(port string, server *HttpServer, enableExtension bool) {
 			}
 		}()
 	} else {
-		log.Println("Starting the server")
 		if err := startHTTPServer(port, server); err != nil {
 			log.Fatalf("Failed to start server: %v", err)
 		}
@@ -66,21 +65,21 @@ func startHTTPServer(port string, httpConfig *HttpServer) error {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
-	r.Get("/tenant/{tenantId}/secrets/{id}", handleRequestWithId(httpConfig.ProxyClient.GetTenantSecretDetails))
-	r.Get("/tenant/{tenantId}/features", handleRequest(httpConfig.ProxyClient.GetTenantFeatures))
-	r.Get("/tenant/{tenantId}/rds", handleRequest(httpConfig.ProxyClient.GetTenantRdsDetails))
-	r.Get("/tenant/{tenantId}/os", handleRequest(httpConfig.ProxyClient.GetTenantOpenSearchDetails))
-	r.Get("/tenant/{tenantId}/output/{id}", handleRequestWithId(httpConfig.ProxyClient.GetTenantOutputDetails))
+	r.Get("/tenant/{tenantId}/secrets/{id}", handleRequestWithTenandAndId(httpConfig.ProxyClient.GetTenantSecretDetails))
+	r.Get("/tenant/{tenantId}/features", handleRequestTenant(httpConfig.ProxyClient.GetTenantFeatures))
+	r.Get("/tenant/{tenantId}/rds", handleRequestTenant(httpConfig.ProxyClient.GetTenantRdsDetails))
+	r.Get("/tenant/{tenantId}/os", handleRequestTenant(httpConfig.ProxyClient.GetTenantOpenSearchDetails))
+	r.Get("/tenant/{tenantId}/output/{id}", handleRequestWithTenandAndId(httpConfig.ProxyClient.GetTenantOutputDetails))
+	r.Get("/secrets/{id}", handleRequestWithId(httpConfig.ProxyClient.GetSecretDetails))
 
 	log.Printf("Starting server on port [%s]\n", port)
 	return http.ListenAndServe(fmt.Sprintf(":%s", port), r)
 }
 
-// handleRequest is a generic handler for tenant-related requests
-func handleRequest(getDetails func(ctx context.Context, tenantId string) (*models.Response, error)) http.HandlerFunc {
+// handleRequestTenant is a generic handler for tenant-related requests
+func handleRequestTenant(getDetails func(ctx context.Context, tenantId string) (*models.Response, error)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tenantId := chi.URLParam(r, tenantIDParam)
-		log.Printf("fetching details for tenant id [%s]\n", tenantId)
 
 		details, err := getDetails(r.Context(), tenantId)
 		if err != nil {
@@ -96,8 +95,31 @@ func handleRequest(getDetails func(ctx context.Context, tenantId string) (*model
 	}
 }
 
+func handleRequestWithId(getDetailsWithId func(ctx context.Context, id string) (*models.Response, error)) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id, err := url.QueryUnescape(chi.URLParam(r, "id"))
+		if err != nil {
+			logError("Error unescaping id parameter", err)
+			http.Error(w, "Invalid id parameter", http.StatusBadRequest)
+			return
+		}
+
+		details, err := getDetailsWithId(r.Context(), id)
+		if err != nil {
+			logError("Error fetching details", err)
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+
+		if err := json.NewEncoder(w).Encode(details); err != nil {
+			logError("Error encoding response", err)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+		}
+	}
+}
+
 // handleRequest is a generic handler for tenant-related requests
-func handleRequestWithId(getDetailsWithId func(ctx context.Context, tenantId, id string) (*models.Response, error)) http.HandlerFunc {
+func handleRequestWithTenandAndId(getDetailsWithId func(ctx context.Context, tenantId, id string) (*models.Response, error)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tenantId := chi.URLParam(r, tenantIDParam)
 		id, err := url.QueryUnescape(chi.URLParam(r, "id"))
@@ -106,7 +128,6 @@ func handleRequestWithId(getDetailsWithId func(ctx context.Context, tenantId, id
 			http.Error(w, "Invalid id parameter", http.StatusBadRequest)
 			return
 		}
-		log.Printf("fetching details for tenant id [%s]\n", tenantId)
 
 		details, err := getDetailsWithId(r.Context(), tenantId, id)
 		if err != nil {

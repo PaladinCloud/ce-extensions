@@ -42,9 +42,6 @@ var (
 )
 
 func main() {
-	log.Printf("starting extension - %s\n", extensionName)
-
-	log.Println("loading configuration")
 	configuration, err := clients.LoadConfigurationDetails()
 	if err != nil {
 		log.Fatalf("failed to load aws configuration %+v", err)
@@ -60,7 +57,6 @@ func startMain(configuration *clients.Configuration) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	log.Println("initializing http server")
 	proxyClient, err := clients.NewProxyClient(ctx, configuration)
 	if err != nil {
 		return err
@@ -70,11 +66,9 @@ func startMain(configuration *clients.Configuration) error {
 		ProxyClient: proxyClient,
 	}
 
-	log.Printf("starting http server on port [%s]\n", port)
 	server.Start(port, httpServerClient, configuration.EnableExtension)
 
 	if configuration.EnableExtension {
-		log.Printf("registering extension client [%s] [%s]\n", extensionName, lambdaRuntimeAPI)
 		sigs := make(chan os.Signal, 1)
 		signal.Notify(sigs, syscall.SIGTERM, syscall.SIGINT)
 		go func() {
@@ -85,12 +79,10 @@ func startMain(configuration *clients.Configuration) error {
 		}()
 
 		// Register the extension client with the Lambda runtime
-		res, err2 := extensionClient.Register(ctx, extensionName)
+		_, err2 := extensionClient.Register(ctx, extensionName)
 		if err2 != nil {
 			return fmt.Errorf("failed to register extension client: %w", err2)
 		}
-
-		log.Printf("registered extension client: %+v\n", res)
 
 		// Will block until shutdown event is received or cancelled via the context.
 		if err := processEvents(ctx); err != nil {
@@ -102,7 +94,6 @@ func startMain(configuration *clients.Configuration) error {
 }
 
 func processEvents(ctx context.Context) error {
-	log.Println("starting processing events")
 	for {
 		select {
 		case <-ctx.Done():

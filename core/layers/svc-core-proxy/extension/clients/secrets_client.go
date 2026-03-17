@@ -20,9 +20,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/google/uuid"
 	"log"
 	"svc-core-proxy-layer/models"
+
+	"github.com/google/uuid"
 
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
@@ -72,7 +73,6 @@ func NewSecretsClient(ctx context.Context, useAssumeRole bool, assumeRoleArn, re
 		svc = secretsmanager.NewFromConfig(cfg)
 	}
 
-	log.Println("initialized secrets client")
 	return &SecretsClient{
 		secretsClient:      svc,
 		SecretPrefixString: SecretPrefixString,
@@ -112,6 +112,21 @@ func (r *SecretsClient) GetTenantRdsSecret(ctx context.Context, tenantId string)
 	return &secretData, nil
 }
 
+func (r *SecretsClient) GetSecretData(ctx context.Context, secretName string) (map[string]interface{}, error) {
+	secretString, err := r.getSecret(ctx, fmt.Sprintf("%s%s", r.SecretPrefixString, secretName))
+	if err != nil {
+		return nil, err
+	}
+
+	var secretData map[string]interface{}
+	err = json.Unmarshal([]byte(secretString), &secretData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal secret data for [%s] %w", secretName, err)
+	}
+
+	return secretData, nil
+}
+
 // getTenantSecretString retrieves any secret from AWS Secrets Manager
 func (r *SecretsClient) getTenantSecretString(ctx context.Context, tenantId, secretName string) (string, error) {
 	// Create the secretId using the prefix and tenantId
@@ -125,8 +140,8 @@ func (r *SecretsClient) getTenantSecretString(ctx context.Context, tenantId, sec
 
 // GetSecret retrieves any secret from AWS Secrets Manager
 func (r *SecretsClient) getSecret(ctx context.Context, secretId string) (string, error) {
-	log.Printf("getting secret for [%s]\n", secretId)
-	
+	log.Printf("getting secret [%s]\n", secretId)
+
 	// Prepare the input for retrieving the secret
 	input := &secretsmanager.GetSecretValueInput{
 		SecretId:     aws.String(secretId),
