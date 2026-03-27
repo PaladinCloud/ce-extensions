@@ -1,0 +1,27 @@
+{
+  "top_level_fields": {
+    "id": "$.id",
+    "filepath": "$.filepath",
+    "filename": "$.filename",
+    "instanceId": "$.device.instance_id",
+    "externalId": "$.device.device_id",
+    "externalAccountId": "$.cid",
+    "accountId": "$.device.service_provider_account_id",
+    "severity": "$.severity_name",
+    "name": "$.display_name",
+    "description": "$.description",
+    "status": "$.status",
+    "deepLinkUrl": "$.falcon_host_link",
+    "objective": "$.objective",
+    "tactic": "$.tactic",
+    "tacticId": "$.tactic_id",
+    "technique": "$.technique",
+    "techniqueId": "$.technique_id"
+  },
+  "metadata": {
+    "plugin_name": "crowdstrike",
+    "asset_type": "detections",
+    "file_name": "crowdstrike-detections.data",
+    "post_process_fn": "mapCSDetections"
+  }
+}
