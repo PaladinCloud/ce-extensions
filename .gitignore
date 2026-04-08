@@ -393,3 +393,4 @@ pyrightconfig.json
 **/bin/layers/bin/extension.zip
 **/bin/layers/bin/extensions/*-layer
 **/bin/*
+/assets-management/services/svc-asset-delta-engine/.aws-sam
