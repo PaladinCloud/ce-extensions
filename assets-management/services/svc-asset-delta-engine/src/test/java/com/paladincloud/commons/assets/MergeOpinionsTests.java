@@ -382,7 +382,32 @@ public class MergeOpinionsTests {
         assertEquals(Set.of("gcp_vminstance_q13"), merger.getUpdatedPrimaryAssets().keySet());
         assertEquals(List.of(), merger.getDeletedOpinionAssets());
         assertEquals(List.of(), merger.getDeletedPrimaryAssets());
+        assertEquals(0, merger.getNewAssets().size());
+        assertEquals(0, merger.getNewPrimaryAssets().size());
+    }
+
+    // With both a primary and opinion having different-cased doc ids
+    @Test
+    void primaryAndOpinionDifferentCaseDocIds() throws JsonProcessingException {
+        var mixedCaseId = "gcp_vminstance_Q13_Doggo";
+        var existingPrimary = createExistingPrimary(List.of(mixedCaseId), "gcp", null);
+        var existingOpinions = createExistingOpinion(List.of(mixedCaseId.toLowerCase()), "gcp",
+            defaultReportingSource,
+            null);
+        var latest = createLatest(List.of("q13_doggo"), "gcp", defaultReportingSource, defaultRawData);
+
+        // Override the doc id given by the helper
+        existingPrimary.get(mixedCaseId).setDocId(mixedCaseId);
+        existingOpinions.get(mixedCaseId.toLowerCase()).setDocId(mixedCaseId.toLowerCase());
+
+        var creator = getHelper(defaultReportingSource, defaultReportingService);
+        var merger = MergeAssets.process(creator, existingOpinions, latest, existingPrimary);
+
+        assertEquals(Set.of(), merger.getMissingAssets().keySet());
+        assertEquals(Set.of("gcp_vminstance_Q13_Doggo"), merger.getUpdatedAssets().keySet());
+        assertEquals(Set.of("gcp_vminstance_Q13_Doggo"), merger.getUpdatedPrimaryAssets().keySet());
         assertEquals(List.of(), merger.getDeletedOpinionAssets());
+        assertEquals(List.of(), merger.getDeletedPrimaryAssets());
         assertEquals(0, merger.getNewAssets().size());
         assertEquals(0, merger.getNewPrimaryAssets().size());
     }

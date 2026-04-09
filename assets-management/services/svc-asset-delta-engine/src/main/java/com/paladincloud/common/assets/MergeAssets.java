@@ -46,6 +46,16 @@ public class MergeAssets {
         Map<String, AssetDTO> primaryAssets) {
         var response = new MergeAssets();
 
+        // To handle secondary sources with all lowercase docId's, provide a mechanism to resolve
+        // both the lowercase & mixed case id to the primary asset
+        var primaryIdMap = new HashMap<String, AssetDTO>();
+        if (primaryAssets != null) {
+            primaryAssets.forEach((primaryId, primaryAsset) -> {
+                primaryIdMap.put(primaryId.toLowerCase(), primaryAsset);
+                primaryIdMap.put(primaryId, primaryAsset);
+            });
+        }
+
         var latestAssetsDataMap = new HashMap<String, Map<String, Object>>();
         latestAssets.forEach(latestDoc -> {
             var idField = latestDoc.getOrDefault(assetHelper.getIdField(), "").toString();
@@ -54,8 +64,19 @@ public class MergeAssets {
                     STR."Asset missing the id field '\{assetHelper.getIdField()}'");
             }
             var docId = assetHelper.buildDocId(latestDoc);
-            latestAssetsDataMap.put(docId, latestDoc);
             var asset = existingAssets.get(docId);
+
+            var primaryAsset = primaryIdMap.get(docId);
+            if (primaryAsset != null) {
+                docId = primaryAsset.getDocId();
+                if (asset != null) {
+                    asset.setDocId(docId);
+                } else {
+                    asset = existingAssets.get(docId);
+                }
+            }
+
+            latestAssetsDataMap.put(docId, latestDoc);
             var isNew = asset == null || (assetHelper.isPrimarySource()
                 && asset.getPrimaryProvider() == null);
             if (isNew) {
@@ -65,32 +86,37 @@ public class MergeAssets {
                 response.updatedAssets.put(docId, asset);
                 assetHelper.updateFrom(latestDoc, asset);
 
-                if (primaryAssets != null && primaryAssets.containsKey(docId)) {
-                    var primaryAsset = primaryAssets.get(docId);
+                if (primaryIdMap.containsKey(docId)) {
                     assetHelper.updateFrom(latestDoc, primaryAsset);
                     response.updatedPrimaryAssets.put(docId, primaryAsset);
+                    if (primaryAsset.getResourceId().equalsIgnoreCase(docId)) {
+                        // For Tenable, the resource id is always lowercase. Update that if possible
+                        primaryAsset.setResourceId(docId);
+                        primaryAsset.setLegacyResourceId(docId);
+                    }
                 }
             }
         });
 
-        existingAssets.forEach((key, value) -> {
-            if (!isAssetProcessed(key, response)) {
+        existingAssets.forEach((_, value) -> {
+            var existingDocId = value.getDocId();
+            if (!isAssetProcessed(existingDocId, response)) {
                 if (assetHelper.isPrimarySource()) {
                     var assetState = value.getAssetState();
                     if (assetState == null || !(assetState.equals(AssetState.SUSPICIOUS)
                         || assetState.equals(AssetState.RECONCILING))) {
-                        response.missingAssets.put(key, value);
+                        response.missingAssets.put(existingDocId, value);
                         assetHelper.missing(value);
                     }
                 } else {
                     if (assetHelper.missing(value)) {
                         response.deletedOpinionAssets.add(value);
-                        var primaryAsset = primaryAssets.get(key);
+                        var primaryAsset = primaryAssets.get(existingDocId);
                         if (primaryAsset != null && primaryAsset.getPrimaryProvider() == null) {
                             response.deletedPrimaryAssets.add(primaryAsset);
                         }
                     } else {
-                        response.updatedAssets.put(key, value);
+                        response.updatedAssets.put(existingDocId, value);
                     }
                 }
             }

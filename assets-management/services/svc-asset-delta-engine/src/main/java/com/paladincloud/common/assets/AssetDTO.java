@@ -238,7 +238,10 @@ public class AssetDTO {
     @JsonAnySetter
     private void addAdditionalProperty(String key, Object value) {
         if (!key.equals(AssetDocumentFields.OPINIONS)) {
-            additionalProperties.put(key, value);
+            // ConcurrentHashMap does not allow null values
+            if (value != null) {
+                additionalProperties.put(key, value);
+            }
         }
     }
 
