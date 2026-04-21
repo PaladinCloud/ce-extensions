@@ -32,8 +32,12 @@ public class AssetCountsHelper {
         this.databaseHelper = databaseHelper;
     }
 
+    public String encodeUrlParameter(String parameter) {
+        return URLEncoder.encode(parameter, StandardCharsets.UTF_8);
+    }
+
     public List<Map<String, Object>> fetchTypeCounts(String assetGroup) throws Exception {
-        var url = buildPaladinApiUrl(ASSET_SERVICE_BASE_PATH, STR."/count?ag=\{assetGroup}");
+        var url = buildPaladinApiUrl(ASSET_SERVICE_BASE_PATH, STR."/count?ag=\{encodeUrlParameter(assetGroup)}");
         var headers = HttpHelper.getBasicHeaders(AuthorizationType.BEARER, authHelper.getToken());
         headers.put("cache-control", "no-cache");
         var typeCountMap = JsonHelper.mapFromString(HttpHelper.get(url, headers));
@@ -78,8 +82,7 @@ public class AssetCountsHelper {
         List<Map<String, Object>> compInfo = new ArrayList<>();
         for (var domain : domains) {
             var url = buildPaladinApiUrl(COMPLIANCE_SERVICE_BASE_PATH,
-                STR."/overallcompliance?ag=\{assetGroup}&domain=\{URLEncoder.encode(domain,
-                    StandardCharsets.UTF_8)}");
+                STR."/overallcompliance?ag=\{encodeUrlParameter(assetGroup)}&domain=\{encodeUrlParameter(domain)}");
             var complianceResponse = JsonHelper.mapFromString(HttpHelper.get(url,
                 HttpHelper.getBasicHeaders(AuthorizationType.BEARER, authHelper.getToken())));
             @SuppressWarnings("unchecked") var complianceStats = ((Map<String, Map<String, Object>>) complianceResponse.get(
@@ -105,7 +108,7 @@ public class AssetCountsHelper {
     }
 
     public Map<String, Object> fetchTaggingSummary(String assetGroup) throws Exception {
-        var url = buildPaladinApiUrl(COMPLIANCE_SERVICE_BASE_PATH, STR."/tagging?ag=\{assetGroup}");
+        var url = buildPaladinApiUrl(COMPLIANCE_SERVICE_BASE_PATH, STR."/tagging?ag=\{encodeUrlParameter(assetGroup)}");
         var taggingResponse = JsonHelper.mapFromString(HttpHelper.get(url,
             HttpHelper.getBasicHeaders(AuthorizationType.BEARER, authHelper.getToken())));
         @SuppressWarnings("unchecked") var taggingStats = ((Map<String, Map<String, Object>>) taggingResponse.get(
@@ -125,8 +128,7 @@ public class AssetCountsHelper {
         var issuesList = new ArrayList<Map<String, Object>>();
         for (var domain : domains) {
             var url = buildPaladinApiUrl(COMPLIANCE_SERVICE_BASE_PATH,
-                STR."/issues/distribution?ag=\{assetGroup}&domain=\{URLEncoder.encode(domain,
-                    StandardCharsets.UTF_8)}");
+                STR."/issues/distribution?ag=\{encodeUrlParameter(assetGroup)}&domain=\{encodeUrlParameter(domain)}");
             var distributionResponse = JsonHelper.mapFromString(HttpHelper.get(url,
                 HttpHelper.getBasicHeaders(AuthorizationType.BEARER, authHelper.getToken())));
             @SuppressWarnings("unchecked") var distribution = ((Map<String, Map<String, Object>>) distributionResponse.get(
@@ -146,7 +148,7 @@ public class AssetCountsHelper {
 
     @SuppressWarnings("unchecked")
     public Map<String, Object> fetchAssetCounts(String assetGroup) throws Exception {
-        var url = buildPaladinApiUrl(ASSET_SERVICE_BASE_PATH, STR."/count?ag=\{assetGroup}");
+        var url = buildPaladinApiUrl(ASSET_SERVICE_BASE_PATH, STR."/count?ag=\{encodeUrlParameter(assetGroup)}");
         var response = JsonHelper.mapFromString(HttpHelper.get(url,
             HttpHelper.getBasicHeaders(AuthorizationType.BEARER, authHelper.getToken())));
         return (Map<String, Object>) response.get("data");
@@ -154,7 +156,7 @@ public class AssetCountsHelper {
 
     public int fetchAccountAssetCount(String platform, String accountId) throws Exception {
         var url = buildPaladinApiUrl(ASSET_SERVICE_BASE_PATH,
-            STR."/count?ag=\{platform}&accountId=\{accountId}");
+            STR."/count?ag=\{encodeUrlParameter(platform)}&accountId=\{encodeUrlParameter(accountId)}");
         var response = JsonHelper.mapFromString(HttpHelper.get(url,
             HttpHelper.getBasicHeaders(AuthorizationType.BEARER, authHelper.getToken())));
         @SuppressWarnings("unchecked") var data = (Map<String, Object>) response.get("data");
