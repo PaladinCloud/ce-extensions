@@ -10,6 +10,7 @@ import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.HttpResponseException;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
@@ -25,7 +26,6 @@ import org.apache.logging.log4j.util.Strings;
 import software.amazon.awssdk.utils.CollectionUtils;
 
 public class HttpHelper {
-
     public enum AuthorizationType {
         BEARER("Bearer"), BASIC("Basic");
         public final String name;
@@ -35,6 +35,11 @@ public class HttpHelper {
     }
 
     private static final Logger LOGGER = LogManager.getLogger(HttpHelper.class);
+    private static final RequestConfig REQUEST_CONFIG = RequestConfig.custom()
+        .setConnectTimeout(60 * 1000)
+        .setConnectionRequestTimeout(60 * 1000)
+        .setSocketTimeout(60 * 1000)
+        .build();
 
     public static Map<String, String> getBasicHeaders(AuthorizationType authType, String authCredentials) {
         var headers = new HashMap<String, String>();
@@ -96,7 +101,9 @@ public class HttpHelper {
 
     private static CloseableHttpClient getHttpClient() {
         try {
-            return HttpClientBuilder.create().setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE)
+            return HttpClientBuilder.create()
+                .setDefaultRequestConfig(REQUEST_CONFIG)
+                .setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE)
                 .setSSLContext(
                     new SSLContextBuilder().loadTrustMaterial(null, (_, _) -> true).build())
                 .build();
