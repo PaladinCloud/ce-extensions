@@ -223,7 +223,7 @@ public class AssetDocumentHelper {
 
         // Transfer additional mapper provided fields that aren't already set
         data.forEach((key, value) -> {
-            if (!assetFields.contains(key)) {
+            if (!assetFields.contains(key) && value != null) {
                 dto.getAdditionalProperties().put(key, value);
             }
         });
@@ -350,7 +350,7 @@ public class AssetDocumentHelper {
 
         // Transfer additional mapper provided fields that aren't already set
         data.forEach((key, value) -> {
-            if (!assetFields.contains(key)) {
+            if (!assetFields.contains(key) && value != null) {
                 dto.getAdditionalProperties().put(key, value);
             }
         });
