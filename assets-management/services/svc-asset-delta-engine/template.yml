@@ -1,0 +1,32 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Delta Engine
+Globals:
+  Api:
+    EndpointConfiguration: REGIONAL
+
+Resources:
+  SvcDeltaEngineFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: com.paladincloud.assetsender.AssetDoneHandler
+      Runtime: java21
+      CodeUri: .
+      MemorySize: 2048
+      Policies: AWSLambdaBasicExecutionRole
+      Timeout: 900
+      Environment:
+        Variables:
+          JAVA_TOOL_OPTIONS:
+          REGION:
+          SECRET_NAME_PREFIX:
+          TENANT_CONFIG_OUTPUT_TABLE:
+          TENANT_TABLE_PARTITION_KEY:
+          TENANT_CONFIG_TABLE:
+          OUTPUT_TOPIC_ARN:
+      Events:
+        MySQSEvent:
+          Type: SQS
+          Properties:
+            Queue: ""
+            BatchSize: 10

@@ -75,7 +75,11 @@ public class AssetGroupStatsCollector {
             futures.add(executor.submit(new Callable() {
                 @Override
                 public Object call() throws Exception {
-                    uploadAssetGroupTagCompliance(currentDate, assetGroups);
+                    // NOTE: This is disabled due to
+                    //  1) Taking more than 2 1/2 minutes
+                    //  2) Timing out
+                    // We will re-enable when this API is performing well
+//                    uploadAssetGroupTagCompliance(currentDate, assetGroups);
                     return null;
                 }
             }));
