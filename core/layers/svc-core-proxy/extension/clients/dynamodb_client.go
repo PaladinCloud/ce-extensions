@@ -91,7 +91,7 @@ func (d *DynamodbClient) GetConfigDynamodbItem(ctx context.Context, tenantId, pr
 		projection,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get config dynamodb item for tenant id [%s]: %w", tenantId, err)
+		return nil, fmt.Errorf("failed to get output dynamodb item for tenant id [%s]: %w", tenantId, err)
 	}
 
 	return result, nil
@@ -133,6 +133,21 @@ func (d *DynamodbClient) GetTenantOutput(ctx context.Context, tenantId string, k
 		*d,
 		tenantId,
 		d.tenantConfigOutputTable,
+		key,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get output dynamodb item for tenant id [%s]: %w", tenantId, err)
+	}
+
+	return *result, nil
+}
+
+func (d *DynamodbClient) GetTenantConfig(ctx context.Context, tenantId string, key string) (map[string]interface{}, error) {
+	result, err := GetItem[map[string]interface{}](
+		ctx,
+		*d,
+		tenantId,
+		d.tenantConfigTable,
 		key,
 	)
 	if err != nil {
