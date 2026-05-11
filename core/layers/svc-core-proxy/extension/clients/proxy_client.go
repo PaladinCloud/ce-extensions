@@ -110,6 +110,15 @@ func (c *ProxyClient) GetTenantOutputDetails(ctx context.Context, tenantId strin
 	return models.ConvertOutputResponse(props), nil
 }
 
+func (c *ProxyClient) GetTenantConfigDetails(ctx context.Context, tenantId string, key string) (*models.Response, error) {
+	props, err := c.dynamodbClient.GetTenantConfig(ctx, tenantId, key)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get tenant config: %w", err)
+	}
+
+	return models.ConvertOutputResponse(props), nil
+}
+
 func (c *ProxyClient) GetSecretDetails(ctx context.Context, secretName string) (*models.Response, error) {
 	props, err := c.secretsClient.GetSecretData(ctx, secretName)
 	if err != nil {

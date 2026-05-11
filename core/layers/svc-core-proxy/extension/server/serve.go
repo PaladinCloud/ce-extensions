@@ -70,6 +70,7 @@ func startHTTPServer(port string, httpConfig *HttpServer) error {
 	r.Get("/tenant/{tenantId}/rds", handleRequestTenant(httpConfig.ProxyClient.GetTenantRdsDetails))
 	r.Get("/tenant/{tenantId}/os", handleRequestTenant(httpConfig.ProxyClient.GetTenantOpenSearchDetails))
 	r.Get("/tenant/{tenantId}/output/{id}", handleRequestWithTenandAndId(httpConfig.ProxyClient.GetTenantOutputDetails))
+	r.Get("/tenant/{tenantId}/config/{id}", handleRequestWithTenandAndId(httpConfig.ProxyClient.GetTenantConfigDetails))
 	r.Get("/secrets/{id}", handleRequestWithId(httpConfig.ProxyClient.GetSecretDetails))
 
 	log.Printf("Starting server on port [%s]\n", port)
