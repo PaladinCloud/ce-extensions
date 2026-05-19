@@ -274,4 +274,50 @@ public class AssetDocumentHelperTests {
                 }
             """.trim();
     }
+    private String getAzureLoadBalancerMapperDocument() {
+        return """
+        {
+            "id": "subscriptions/f4d319d8/resourceGroups/unused-resource/providers/Microsoft.Network/loadBalancers/Demo-Resource",
+            "name": "Demo-Resource",
+            "region": "eastus",
+            "source": "azure",
+            "source_display_name": "Azure",
+            "_cloudType": "azure",
+            "_entityType": "loadbalancer",
+            "_entityTypeDisplayName": "Load Balancer",
+            "subscriptionId": "f4d319d8",
+            "rawData": "{}",
+            "reporting_source": "azure",
+            "tags": {}
+        }""".trim();
+    }
+
+    @Test
+    void azureDocIdHasNoPrefix() throws JsonProcessingException {
+        var helper = AssetDocumentHelper.builder()
+                .loadDate(ZonedDateTime.now())
+                .idField("id")
+                .docIdFields(List.of("id"))
+                .dataSource("azure")
+                .displayName("Load Balancer")
+                .tags(List.of())
+                .type("loadbalancer")
+                .accountIdToNameFn((_) -> null)
+                .build();
+        var mapperData = JsonHelper.mapFromString(getAzureLoadBalancerMapperDocument());
+        var dto = helper.createFrom(mapperData);
+
+        assertEquals(
+                "subscriptions/f4d319d8/resourceGroups/unused-resource/providers/Microsoft.Network/loadBalancers/Demo-Resource",
+                dto.getDocId());
+    }
+
+    @Test
+    void gcpDocIdHasPrefix() throws JsonProcessingException {
+        AssetDocumentHelper helper = getHelper("gcp", "resource_id", "resource_name");
+        var mapperData = JsonHelper.mapFromString(getV2PrimaryMapperDocument());
+        var dto = helper.createFrom(mapperData);
+
+        assertEquals("gcp_ec2_us-central_17", dto.getDocId());
+    }
 }
