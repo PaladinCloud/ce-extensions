@@ -138,8 +138,10 @@ public class AssetDocumentHelper {
             data.put(AssetDocumentFields.LEGACY_ACCOUNT_ID,
                 data.get(AssetDocumentFields.ACCOUNT_ID));
         }
-        var docId = STR."\{dataSource}_\{type}_\{StringHelper.concatenate(data, docIdFields,
-            "_")}";
+        var concatenatedId = StringHelper.concatenate(data, docIdFields, "_");
+        var docId = "azure".equalsIgnoreCase(dataSource)
+                ? concatenatedId
+                : STR."\{dataSource}_\{type}_\{concatenatedId}";
         if (StringUtils.isBlank(docId)) {
             LOGGER.info(
                 STR."docId is not valid: '\{docId}' docIdFields=\{docIdFields} mapper data=\{MapHelper.toJsonString(
@@ -215,6 +217,9 @@ public class AssetDocumentHelper {
         addTags(data, dto);
         if ("gcp".equalsIgnoreCase(dataSource)) {
             addLegacyTags(data, dto);
+        }
+        else if ("azure".equalsIgnoreCase(dataSource)) {
+            addFlattenedTags(data, dto);
         }
 
         if ("azure".equalsIgnoreCase(dataSource)) {
@@ -343,9 +348,12 @@ public class AssetDocumentHelper {
         }
 
         addTags(data, dto);
-        if ("gcp".equalsIgnoreCase(
-            data.getOrDefault(AssetDocumentFields.LEGACY_SOURCE, "").toString())) {
+        var legacySource = data.getOrDefault(AssetDocumentFields.LEGACY_SOURCE, "").toString();
+        if ("gcp".equalsIgnoreCase(legacySource)){
             addLegacyTags(data, dto);
+        }
+        else if ("azure".equalsIgnoreCase(legacySource)) {
+            addFlattenedTags(data, dto);
         }
 
         // Transfer additional mapper provided fields that aren't already set
@@ -515,6 +523,16 @@ public class AssetDocumentHelper {
                     dto.addType(STR."\{AssetDocumentFields.asTag(upperCaseStart)}", value);
                 });
             }
+        }
+    }
+
+    private void addFlattenedTags(Map<String, Object> data, AssetDTO dto) {
+        var tagData = data.get(AssetDocumentFields.TAGS);
+        if (tagData instanceof Map) {
+            @SuppressWarnings("unchecked") var tagMap = (Map<String, Object>) tagData;
+            tagMap.forEach((key, value) -> {
+                dto.addType(STR."\{AssetDocumentFields.asTag(key)}", value);
+            });
         }
     }
 
