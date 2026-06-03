@@ -1,0 +1,30 @@
+{
+  "top_level_fields": {
+    "_cloudType": "gcp",
+    "region": "$.location",
+    "id": "$.dataset_reference.datasetId",
+    "projectId": "$.project_id",
+    "tags": "$.labels",
+    "datasetId": "$.dataset_reference.datasetId",
+    "acl": "$.access",
+    "defaultTableLifetime": "$.default_table_expiration_ms",
+    "description": "$.description",
+    "etag": "$.etag",
+    "friendlyName": "$.friendly_name",
+    "generatedId": "$.id",
+    "lastModified": "$.last_modified_time",
+    "labels": "$.labels",
+    "kmsKeyName": "$.default_encryption_configuration.kmsKeyName",
+    "defaultPartitionExpirationMs": "$.default_partition_expiration_ms",
+    "discoverydate": "@getDiscoveryDate()",
+    "rawData": "@jsonToString($)",
+    "sourceDisplayName": "GCP",
+    "targetTypeDisplayName" : "BigQuery Dataset"
+  },
+  "metadata": {
+    "plugin_name": "gcp",
+    "asset_type": "bigquerydataset",
+    "file_name": "gcp-bigquerydataset.data",
+    "delta_engine_enabled": "true"
+  }
+}

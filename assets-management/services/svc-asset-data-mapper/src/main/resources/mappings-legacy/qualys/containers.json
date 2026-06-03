@@ -1,0 +1,55 @@
+{
+  "top_level_fields": {
+    "created": "@convertDateToStandardFormat($.created)",
+    "updated": "@convertDateToStandardFormat($.updated)",
+    "rawData": "@jsonToString($)",
+    "lastVulnScan": "@convertDateToStandardFormat($.last_scanned)",
+    "critical": "@getQualysDockerImageCvesBySeverity($.vulnerabilities,5)",
+    "high": "@getQualysDockerImageCvesBySeverity($.vulnerabilities,4)",
+    "medium": "@getQualysDockerImageCvesBySeverity($.vulnerabilities,3)",
+    "low": "@getQualysDockerImageCvesBySeverity($.vulnerabilities,2)",
+    "_deep_link": "",
+    "cluster_version": "$.cluster.version"
+  },
+  "conditional_top_level_fields": [
+    {
+      "field": "cluster_version",
+      "pattern": ".*-gke.*",
+      "fields": {
+        "source": "gcp",
+        "source_display_name": "GCP",
+        "_entityType": "gkecontainer",
+        "_entityTypeDisplayName": "GKE Container",
+        "id": "$.sha",
+        "namespace": "$.cluster.k8s.pod.namespace",
+        "tag": "$.cluster.k8s.pod.label",
+        "projectId": "$.cluster.k8s.project",
+        "name":"$.name",
+        "region": "",
+        "_isActive": "true",
+        "cluster_name" :"$.cluster.name",
+        "imageSha": "$.image_sha"
+      }
+    }
+  ],
+  "replacement_fields": {},
+  "metadata": {
+    "plugin_name": "qualys",
+    "asset_type": "vulnerabilities",
+    "file_name": "qualys-gkecontainer-vulnerabilities.data",
+    "filtered_outputs": [
+      {
+        "file_name": "gcp-gkecontainer.data",
+        "auto_created": false,
+        "fields_to_remove": "critical,high,medium,low,lastVulnScan",
+        "filters": [
+          {
+            "field": "cluster_version",
+            "pattern": ".*-gke.*"
+          }
+        ],
+        "external_datasource": "gcp"
+      }
+    ]
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "top_level_fields": {
+    "_cloudType": "gcp",
+    "region": "@findValueByReverseIndex($.self_link,/,2)",
+    "id": "@getAsString($.id)",
+    "projectId": "$.project_id",
+    "tags": "$.labels",
+    "name": "$.name",
+    "direction": "$.direction",
+    "sourceRanges": "$.source_ranges",
+    "destinationRanges": "$.destination_ranges",
+    "allow": "$.allowed",
+    "disabled": "$.disabled",
+    "discoverydate": "@getDiscoveryDate()",
+    "rawData": "@jsonToString($)",
+    "sourceDisplayName": "GCP",
+    "targetTypeDisplayName" : "VPC Firewall"
+  },
+  "replacement_fields": {
+    "protocol": "I_p_protocol"
+  },
+  "metadata": {
+    "plugin_name": "gcp",
+    "asset_type": "vpcfirewall",
+    "file_name": "gcp-vpcfirewall.data",
+    "delta_engine_enabled": "true"
+  }
+}

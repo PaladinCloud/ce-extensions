@@ -1,0 +1,20 @@
+{
+  "top_level_fields": {
+    "_cloudType": "gcp",
+    "region": "global",
+    "id": "$.name",
+    "projectId": "$.project_id",
+    "tags": "$.tags",
+    "kmsKeyName": "$.kms_key_name",
+    "discoverydate": "@getDiscoveryDate()",
+    "rawData": "@jsonToString($)",
+    "sourceDisplayName": "GCP",
+    "targetTypeDisplayName" : "Pub/Sub"
+  },
+  "metadata": {
+    "plugin_name": "gcp",
+    "asset_type": "pubsub",
+    "file_name": "gcp-pubsub.data",
+    "delta_engine_enabled": "true"
+  }
+}

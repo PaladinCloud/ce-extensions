@@ -1,0 +1,47 @@
+{
+  "top_level_fields": {
+    "record_created": "@convertDateToStandardFormat($.record_created)",
+    "last_checked_in": "@convertDateToStandardFormat($.last_checked_in)",
+    "provider": "$.provider",
+    "registries": "$.registries",
+    "rawData": "@jsonToString($)",
+    "_deep_link": "N/A",
+    "version": "$.version"
+  },
+  "conditional_top_level_fields": [
+    {
+      "field": "version",
+      "pattern": ".*gke.*",
+      "fields": {
+        "source": "gcp",
+        "source_display_name": "GCP",
+        "_entityType": "gke",
+        "_entityTypeDisplayName": "GKE Cluster",
+        "id": "$.cluster_uid",
+        "projectId": "$.account_id",
+        "name":"$.cluster_name",
+        "region": "$.region",
+        "_isActive": "true",
+        "tags" :"N/A"
+      }
+    }
+  ],
+  "replacement_fields": {},
+  "metadata": {
+    "plugin_name": "qualys",
+    "asset_type": "gke",
+    "filtered_outputs": [
+      {
+        "file_name": "gcp-gke.data",
+        "auto_created": false,
+        "filters": [
+          {
+            "field": "version",
+            "pattern": ".*gke.*"
+          }
+        ],
+        "external_datasource": "gcp"
+      }
+    ]
+  }
+}

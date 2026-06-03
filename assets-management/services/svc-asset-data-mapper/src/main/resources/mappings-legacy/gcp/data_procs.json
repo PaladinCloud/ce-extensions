@@ -1,0 +1,20 @@
+{
+  "top_level_fields": {
+    "_cloudType": "gcp",
+    "region": "$.region",
+    "id": "$.id",
+    "projectId": "$.project_id",
+    "tags": "$.tags",
+    "kmsKeyName": "$.kms_key_name",
+    "discoverydate": "@getDiscoveryDate()",
+    "rawData": "@jsonToString($)",
+    "sourceDisplayName": "GCP",
+    "targetTypeDisplayName" : "Dataproc Cluster"
+  },
+  "metadata": {
+    "plugin_name": "gcp",
+    "asset_type": "dataproc",
+    "file_name": "gcp-dataproc.data",
+    "delta_engine_enabled": "true"
+  }
+}

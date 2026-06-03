@@ -1,0 +1,23 @@
+{
+  "top_level_fields": {
+    "_cloudType": "gcp",
+    "region": "global",
+    "id": "@getAsString($.id)",
+    "projectId": "$.project_id",
+    "tags": null,
+    "name": "$.name",
+    "autoCreateSubnetworks": "$.auto_create_subnetworks",
+    "discoverydate": "@getDiscoveryDate()",
+    "rawData": "@jsonToString($)",
+    "sourceDisplayName": "GCP",
+    "targetTypeDisplayName" : "Cloud VPC"
+  },
+  "replacement_fields": {
+  },
+  "metadata": {
+    "plugin_name": "gcp",
+    "asset_type": "networks",
+    "file_name": "gcp-networks.data",
+    "delta_engine_enabled": "true"
+  }
+}

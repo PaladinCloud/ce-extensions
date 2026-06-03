@@ -1,0 +1,55 @@
+{
+  "top_level_fields": {
+    "_cloudType": "contrast",
+    "region": "N/A",
+    "id": "$.id",
+    "discoverydate": "$._cq_sync_time",
+    "orgUUID": "$.org_uuid",
+    "accountid":"$.org_uuid",
+    "applicationID": "$.application_id",
+    "applicationName":"#[applications.[%s].name;$.application_id]",
+    "policyId":"$.rule_name",
+    "policyName":"#[rules.[%s].title;$.rule_name]",
+    "firstSeenTime": "@convertDateTimeFormat($.first_seen_time,yyyy-MM-dd HH:mm:ss,yyyy-MM-dd'T'HH:mm:ss.SSS'Z')",
+    "lastSeenTime": "@convertDateTimeFormat($.last_seen_time,yyyy-MM-dd HH:mm:ss,yyyy-MM-dd'T'HH:mm:ss.SSS'Z')",
+    "programmingLanguage": "#[applications.[%s].language;$.application_id]",
+    "tags": "$.tags",
+    "annotationid": "$.id",
+    "pac_ds": "contrast",
+    "severity":"@toLowerCase(#[rules.[%s].severity;$.rule_name])",
+    "policyCategory":"security",
+    "_resourceid": "$.application_id",
+    "type": "issue",
+    "issueDetails":"$.title",
+    "desc":"$.title",
+    "issueStatus":"@convertStatus($.status)",
+    "createdDate": "@convertDateTimeFormat(#[applications.[%s].first_seen_time;$.application_id],yyyy-MM-dd HH:mm:ss,yyyy-MM-dd'T'HH:mm:ss.SSS'Z')",
+    "modifiedDate": "@convertDateTimeFormat(#[applications.[%s].last_seen_time;$.application_id],yyyy-MM-dd HH:mm:ss,yyyy-MM-dd'T'HH:mm:ss.SSS'Z')",
+    "url": "$.violation_url",
+    "cveList":"@createLinks(#[rules.[%s].cwe;$.rule_name],#[rules.[%s].owasp;$.rule_name])",
+    "updateDescription":"true",
+    "resourceName":"#[applications.[%s].name;$.application_id]",
+    "manyToOneViolationMapping":"true"
+  },
+  "replacement_fields": {},
+  "metadata": {
+    "plugin_name": "contrast",
+    "asset_type": "violations",
+    "file_name": "contrast-issues-application.data",
+    "relation_mapping": [
+      {
+        "assetType":"applications",
+        "primaryKey":"id",
+        "foreignKey":"$.application_id",
+        "isMandatory":true
+      },
+      {
+        "assetType":"rules",
+        "primaryKey": "name",
+        "foreignKey":"$.rule_name",
+        "isMandatory":true
+       
+      }
+    ]
+  }
+}

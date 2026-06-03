@@ -1,0 +1,37 @@
+{
+  "top_level_fields": {
+    "_cloudType": "checkmarx",
+    "annotationid": "$.id",
+    "accountid": "$.account_id",
+    "policyCategory":"security",
+    "issueStatus":"@convertStatusForCheckmarx($.status)",
+    "severity":"@convertSeverityForCheckmarx($.severity)",
+    "policyId":"$.alert_key",
+    "policyUUID":"$.alert_key",
+    "policyName":"$.name",
+    "path": "$.path",
+    "desc":"@getVulnerabilityDescription($.name,$.path)",
+    "issueDetails":"$.name",
+    "pac_ds":"checkmarx",
+    "createdDate": "@convertScanTimeToElasticFormat($.last_scan_time)",
+    "modifiedDate": "@convertScanTimeToElasticFormat($.last_scan_time)",
+    "url": "$.scan_results_url",
+    "_resourceid": "$.environment_id",
+    "manyToOneViolationMapping":"true",
+    "cveList":"@createCheckmarxCWELink(#[alerts.[%s].cwe;$.alert_key])",
+    "type": "issue"
+  },
+  "metadata": {
+    "plugin_name": "checkmarx",
+    "asset_type": "violations",
+    "file_name": "checkmarx-issues-environment.data",
+    "relation_mapping": [
+      {
+        "assetType":"alerts",
+        "primaryKey": "alert_key",
+        "foreignKey":"$.alert_key",
+        "isMandatory":true
+      }
+    ]
+  }
+}

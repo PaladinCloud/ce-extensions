@@ -1,0 +1,57 @@
+{
+  "top_level_fields": {
+    "id": "$.host_asset.qwebHostId",
+    "hostName": "$.host_asset.name",
+    "vulnsUpdated": "$.host_asset.vulnsUpdated",
+    "lastVulnScan": "$.host_asset.lastVulnScan",
+    "source": "qualys",
+    "agentInfo": "$.host_asset.agentInfo",
+    "cloudProvider": "$.host_asset.cloudProvider",
+    "critical": "@getQualysCvesBySeverity($.host_asset.vuln.list,5)",
+    "high": "@getQualysCvesBySeverity($.host_asset.vuln.list,4)",
+    "medium": "@getQualysCvesBySeverity($.host_asset.vuln.list,3)",
+    "low": "@getQualysCvesBySeverity($.host_asset.vuln.list,2)"
+  },
+  "conditional_top_level_fields": [
+    {
+      "field": "cloudProvider",
+      "pattern": "^AWS",
+      "fields": {
+        "targetType": "ec2",
+        "instanceId": "@getValueFromSpecificIndex($.host_asset.sourceInfo.list[*].Ec2AssetSourceSimple.instanceId,0)",
+        "cloudType": "aws",
+        "accountId": "@getValueFromSpecificIndex($.host_asset.sourceInfo.list[*].Ec2AssetSourceSimple.accountId,0)",
+        "region": "@getValueFromSpecificIndex($.host_asset.sourceInfo.list[*].Ec2AssetSourceSimple.region,0)"
+      }
+    },
+    {
+      "field": "cloudProvider",
+      "pattern": "^AZURE",
+      "fields": {
+        "targetType": "virtualmachine",
+        "vmId": "@getValueFromSpecificIndex($.host_asset.sourceInfo.list[*].AzureAssetSourceSimple.vmId,0)",
+        "cloudType": "azure",
+        "subscriptionId": "@getValueFromSpecificIndex($.host_asset.sourceInfo.list[*].AzureAssetSourceSimple.subscriptionId,0)",
+        "region": "@getValueFromSpecificIndex($.host_asset.sourceInfo.list[*].AzureAssetSourceSimple.location,0)"
+      }
+    },
+    {
+      "field": "cloudProvider",
+      "pattern": "^GCP",
+      "fields": {
+        "targetType": "vminstance",
+        "instanceId": "@getValueFromSpecificIndex($.host_asset.sourceInfo.list[*].GcpAssetSourceSimple.instanceId,0)",
+        "cloudType": "gcp",
+        "projectId": "@getValueFromSpecificIndex($.host_asset.sourceInfo.list[*].GcpAssetSourceSimple.projectIdNo,0)",
+        "region": "@getValueFromSpecificIndex($.host_asset.sourceInfo.list[*].GcpAssetSourceSimple.zone,0)"
+
+      }
+    }
+  ],
+  "replacement_fields": {},
+  "metadata": {
+    "plugin_name": "qualys",
+    "asset_type": "vulnerabilities",
+    "file_name": "qualys-vulnerabilities.data"
+  }
+}

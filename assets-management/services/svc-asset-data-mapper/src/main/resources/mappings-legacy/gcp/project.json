@@ -1,0 +1,24 @@
+{
+  "top_level_fields": {
+    "_cloudType": "gcp",
+    "region": "N/A",
+    "id": "$.project_id",
+    "projectId": "$.project_id",
+    "tags": "$.labels",
+    "cloudAsset": "$.cloud_asset",
+    "projectNumber":"$.project_number",
+    "computeInstanceMetadata": "$.compute_instance_metadata.items",
+    "discoverydate": "@getDiscoveryDate()",
+    "rawData": "@jsonToString($)",
+    "sourceDisplayName": "GCP",
+    "targetTypeDisplayName" : "Project"
+  },
+  "replacement_fields": {
+  },
+  "metadata": {
+    "plugin_name": "gcp",
+    "asset_type": "project",
+    "file_name": "gcp-project.data",
+    "delta_engine_enabled": "true"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "top_level_fields": {
+    "_cloudType": "burpsuite",
+    "region": "N/A",
+    "annotationid": "$.serial_number",
+    "accountid": "@getAccountId($._cq_source_name,burpsuite-)",
+    "accountname": "N/A",
+    "policyCategory":"security",
+    "issueStatus":"open",
+    "severity":"@convertSeverityForPlugin(burpsuite,$.severity)",
+    "policyId":"$.issue_type.type_index",
+    "policyName":"$.issue_type.name",
+    "desc":"@formatIssueDetail($.origin,$.path,$.description_html)",
+    "issueDetails":"$.description_html",
+    "cveList":"@parseHtmlToCveList($.issue_type.vulnerability_classifications_html)",
+    "createdDate":"@convertDateTimeFormat($.start_time,yyyy-MM-dd HH:mm:ss.SSS,yyyy-MM-dd'T'HH:mm:ss.SSS'Z')",
+    "modifiedDate":"@convertDateTimeFormat($.end_time,yyyy-MM-dd HH:mm:ss.SSS,yyyy-MM-dd'T'HH:mm:ss.SSS'Z')",
+    "pac_ds":"burpsuite",
+    "_resourceid": "$.site_id",
+    "type": "issue",
+    "url": "$.issue_url",
+    "manyToOneViolationMapping":"true",
+    "updateDescription":"true",
+    "resourceName":"$.origin"
+  },
+  "metadata": {
+    "plugin_name": "burpsuite",
+    "asset_type": "violations",
+    "file_name": "burpsuite-issues-site.data"
+  }
+}

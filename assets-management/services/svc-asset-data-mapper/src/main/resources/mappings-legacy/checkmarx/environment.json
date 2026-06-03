@@ -1,0 +1,26 @@
+{
+  "top_level_fields": {
+    "_cloudType": "checkmarx",
+    "id": "$.environment_id",
+    "accountid":"$.account_id",
+    "discoverydate": "$._cq_sync_time",
+    "name": "$.domain",
+    "displayName":"$.domain",
+    "groups": "$.groups",
+    "url":"$.url",
+    "scanType":"$.scan_type",
+    "lastScanId":"$.last_scan_id",
+    "lastScanTime":"$.last_scan_time",
+    "lastScanStatus":"$.last_status",
+    "projectIds":"$.project_ids",
+    "riskLevel":"$.risk_level",
+    "riskRating":"$.risk_rating",
+    "groups":"$.groups",
+    "tags": "$.tags"
+  },
+  "metadata": {
+    "plugin_name": "checkmarx",
+    "asset_type": "environment",
+    "file_name": "checkmarx-environment.data"
+  }
+}

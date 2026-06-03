@@ -1,0 +1,28 @@
+{
+    "top_level_fields": {
+      "_cloudType": "contrast",
+      "region": "N/A",
+      "id": "$.id",
+      "accountid":"$.org_uuid",
+      "discoverydate": "$._cq_sync_time",
+      "name": "$.name",
+      "displayName":"$.display_name",
+      "path":"$.path",
+      "language":"$.language",
+      "importance":"$.importance",
+      "isArchived":"$.is_archived",
+      "technologies":"$.technologies",
+      "tags":"$.tags",
+      "firstSeenTime":"$.first_seen_time",
+      "lastSeenTime":"$.last_seen_time",
+      "orgUUID":"$.org_uuid"
+    },
+    "replacement_fields": {
+  
+    },
+    "metadata": {
+      "plugin_name": "contrast",
+      "asset_type": "application",
+      "file_name": "contrast-application.data"
+    }
+  }

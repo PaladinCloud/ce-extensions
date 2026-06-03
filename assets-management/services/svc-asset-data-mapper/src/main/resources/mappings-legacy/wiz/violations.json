@@ -1,0 +1,40 @@
+{
+  "top_level_fields": {
+    "_cloudType": "@toLowerCase($.cloud_platform)",
+    "region": "$.region",
+    "annotationid": "$.id",
+    "accountid": "$.account_id",
+    "accountname": "$.account_name",
+    "policyCategory": "security",
+    "issueStatus": "@convertStatus($.status)",
+    "severity": "@convertSeverity($.severity)",
+    "policyId": "@concatenateStrings(@toLowerCase($.cloud_platform),-,$.rule.id,-,$.targetType)",
+    "policyName": "$.rule.name",
+    "desc": "$.rule.description",
+    "issueDetails": "$.rule.description",
+    "createdDate": "$.created_at",
+    "modifiedDate": "$.updated_at",
+    "pac_ds": "@toLowerCase($.cloud_platform)",
+    "_resourceid": "$.resource_id",
+    "type": "issue",
+    "url": "",
+    "_docid": "@generateDocId($.cloud_platform,$.targetType,$.account_id,$.region,$.resource_id)"
+  },
+  "policy_mapping": {
+    "top_level_fields": {
+      "_cloudType": "@toLowerCase($.cloud_platform)",
+      "policyId": "@concatenateStrings(@toLowerCase($.cloud_platform),-,$.rule.id,-,$.targetType)",
+      "policyUUID": "@concatenateStrings(@toLowerCase($.cloud_platform),-,$.rule.id,-,$.targetType)",
+      "policyName": "$.rule.name",
+      "policyDisplayName": "$.rule.name",
+      "policyDesc": "$.rule.description",
+      "severity": "@convertSeverity($.severity)",
+      "target": "$.targetType",
+      "assetgroup": "@toLowerCase($.cloud_platform)",
+      "category": "security",
+      "status": "ENABLED",
+      "resolutionUrl": "",
+      "type": "policy"
+    }
+  }
+}

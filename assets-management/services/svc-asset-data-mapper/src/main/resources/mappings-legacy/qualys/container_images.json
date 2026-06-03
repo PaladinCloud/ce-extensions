@@ -1,0 +1,57 @@
+{
+  "top_level_fields": {
+    "createdOn": "@convertDateToStandardFormat($.created)",
+    "docker_version": "$.docker_version",
+    "repository": "@getValueFromSpecificIndex($.repo[*].repository,0)",
+    "registry": "@getValueFromSpecificIndex($.repo[*].registry,0)",
+    "rawData": "@removeField($,vulnerabilities)",
+    "_last_scan_date": "@convertDateToStandardFormat($.last_scanned)",
+    "_deep_link": "$.deepLink",
+    "critical": "@getQualysDockerImageCvesBySeverity($.vulnerabilities,5)",
+    "high": "@getQualysDockerImageCvesBySeverity($.vulnerabilities,4)",
+    "medium": "@getQualysDockerImageCvesBySeverity($.vulnerabilities,3)",
+    "low": "@getQualysDockerImageCvesBySeverity($.vulnerabilities,2)"
+  },
+  "conditional_top_level_fields": [
+    {
+      "field": "repository",
+      "pattern": ".*gcf-artifacts.*",
+      "fields": {
+        "source": "gcp",
+        "source_display_name": "GCP",
+        "_entityType": "artifactregistrydockerimages",
+        "_entityTypeDisplayName": "Container Image",
+        "id": "@concatenateStrings(sha256:,$.repo_digests[0].digest)",
+        "digest": "@concatenateStrings(sha256:,$.repo_digests[0].digest)",
+        "projectId": "@findValueAtIndex($.repo[0].repository,/,0)",
+        "name":"@extractArtifactName($.repo[0].repository)",
+        "region": "@extractRegionFromRegistry($.repo[0].registry)",
+        "_isActive": "true",
+        "tags" :"$.label",
+        "reporting_source_service" : "container_security",
+        "reporting_source_service_display_name" : "ContainerSecurity"
+
+      }
+    }
+  ],
+  "replacement_fields": {},
+  "metadata": {
+    "plugin_name": "qualys",
+    "asset_type": "vulnerabilities",
+    "file_name": "qualys-dockerimage-vulnerabilities.data",
+    "filtered_outputs": [
+      {
+        "file_name": "gcp-artifactregistrydockerimages.data",
+        "auto_created": false,
+        "fields_to_remove": "critical,high,medium,low,lastVulnScan",
+        "filters": [
+          {
+            "field": "repository",
+            "pattern": ".*gcf-artifacts.*"
+          }
+        ],
+        "external_datasource": "gcp"
+      }
+    ]
+  }
+}
