@@ -36,9 +36,9 @@ public class HttpHelper {
 
     private static final Logger LOGGER = LogManager.getLogger(HttpHelper.class);
     private static final RequestConfig REQUEST_CONFIG = RequestConfig.custom()
-        .setConnectTimeout(60 * 1000)
-        .setConnectionRequestTimeout(60 * 1000)
-        .setSocketTimeout(60 * 1000)
+        .setConnectTimeout(3 * 60 * 1000)
+        .setConnectionRequestTimeout(3 * 60 * 1000)
+        .setSocketTimeout(3 * 60 * 1000)
         .build();
 
     public static Map<String, String> getBasicHeaders(AuthorizationType authType, String authCredentials) {
