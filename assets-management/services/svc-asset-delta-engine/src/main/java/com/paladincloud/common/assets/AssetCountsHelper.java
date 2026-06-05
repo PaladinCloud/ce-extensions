@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.inject.Inject;
+import com.paladincloud.common.aws.LambdaInvoker;
 
 public class AssetCountsHelper {
     private static final String ASSET_SERVICE_BASE_PATH = "/asset/v1";
@@ -152,6 +153,54 @@ public class AssetCountsHelper {
         var response = JsonHelper.mapFromString(HttpHelper.get(url,
             HttpHelper.getBasicHeaders(AuthorizationType.BEARER, authHelper.getToken())));
         return (Map<String, Object>) response.get("data");
+    }
+
+    @SuppressWarnings("unchecked")
+    public List<Map<String, Object>> fetchTaggingSummaryForAssetGroup(String assetGroup) throws Exception {
+        var response = JsonHelper.mapFromString(
+                LambdaInvoker.invokeTaggingSummaryLambda(assetGroup));
+        var data = (Map<String, Object>) response.get("data");
+        if (data == null) {
+            return List.of();
+        }
+
+        var summaryInfo = new HashMap<String, Object>();
+        summaryInfo.put("totalAssets", data.get("totalAssets"));
+        summaryInfo.put("overallCompliancePercentage", data.get("overallCompliancePercentage"));
+        summaryInfo.put("overallTaggedCount", data.get("overallTaggedCount"));
+        summaryInfo.put("overallAssetCount", data.get("overallAssetCount"));
+        summaryInfo.put("description", data.get("description"));
+
+        var assetTypesArray = (List<Map<String, Object>>) data.get("assetTypes");
+        var assetTypesList = new ArrayList<Map<String, Object>>();
+
+        if (assetTypesArray != null) {
+            for (var assetType : assetTypesArray) {
+                var assetTypeInfo = new HashMap<String, Object>();
+                assetTypeInfo.put("targetType", assetType.get("targetType"));
+                assetTypeInfo.put("displayName", assetType.get("displayName"));
+                assetTypeInfo.put("assetCount", assetType.get("assetCount"));
+                assetTypeInfo.put("taggedCount", assetType.get("taggedCount"));
+                assetTypeInfo.put("untaggedCount", assetType.get("untaggedCount"));
+                assetTypeInfo.put("compliancePercentage", assetType.get("compliancePercentage"));
+
+                var tagDetails = (List<Map<String, Object>>) assetType.get("tagDetails");
+                var tagDetailsList = new ArrayList<Map<String, Object>>();
+                if (tagDetails != null) {
+                    for (var tagDetail : tagDetails) {
+                        tagDetailsList.add(new HashMap<>(Map.ofEntries(
+                                entry("tagName", tagDetail.get("tagName")),
+                                entry("count", tagDetail.get("count")),
+                                entry("tagCompliancePercentage", tagDetail.get("tagCompliancePercentage"))
+                        )));
+                    }
+                }
+                assetTypeInfo.put("tagDetails", tagDetailsList);
+                assetTypesList.add(assetTypeInfo);
+            }
+        }
+        summaryInfo.put("assetTypes", assetTypesList);
+        return List.of(summaryInfo);
     }
 
     public int fetchAccountAssetCount(String platform, String accountId) throws Exception {
