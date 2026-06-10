@@ -7,6 +7,21 @@ public record TaggingSummaryResponse(
 ) {
 
     public record TaggingSummaryData(
+            String ag,
+            int totalAssets,
+            double overallCompliancePercentage,
+            int overallTaggedCount,
+            int overallAssetCount,
+            String description,
+            List<AssetGroupEntry> assetgroups
+    ) {}
+
+    public record AssetGroupEntry(
+            String ag,
+            Stats stats
+    ) {}
+
+    public record Stats(
             int totalAssets,
             double overallCompliancePercentage,
             int overallTaggedCount,
