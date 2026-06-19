@@ -16,6 +16,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.inject.Inject;
+import com.paladincloud.common.aws.LambdaInvoker;
+import com.fasterxml.jackson.core.type.TypeReference;
 
 public class AssetCountsHelper {
     private static final String ASSET_SERVICE_BASE_PATH = "/asset/v1";
@@ -152,6 +154,18 @@ public class AssetCountsHelper {
         var response = JsonHelper.mapFromString(HttpHelper.get(url,
             HttpHelper.getBasicHeaders(AuthorizationType.BEARER, authHelper.getToken())));
         return (Map<String, Object>) response.get("data");
+    }
+
+    public List<Map<String, Object>> fetchTaggingSummaryForAssetGroup(String assetGroup) throws Exception {
+        var responseJson = LambdaInvoker.invokeTaggingSummaryLambda(assetGroup);
+        var response = JsonHelper.fromString(TaggingSummaryResponse.class, responseJson);
+        if (response.data() == null) {
+            return List.of();
+        }
+
+        Map<String, Object> summaryInfo = JsonHelper.objectMapper.convertValue(
+                response.data(), new TypeReference<Map<String, Object>>() {});
+        return List.of(summaryInfo);
     }
 
     public int fetchAccountAssetCount(String platform, String accountId) throws Exception {
