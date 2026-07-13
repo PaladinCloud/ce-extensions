@@ -108,6 +108,15 @@ public class AssetGroupStatsCollector {
                 }
             }));
 
+            futures.add(executor.submit(new Callable() {
+                @Override
+                public Object call() throws Exception {
+                    uploadAssetGroupTaggingOverviewStats(currentDate, assetGroups);
+                    return null;
+                }
+            }));
+
+
             futures.forEach(f -> {
                 try {
                     f.get();
@@ -284,6 +293,31 @@ public class AssetGroupStatsCollector {
             }
         }
     }
+
+    private void uploadAssetGroupTaggingOverviewStats(String currentDate, List<String> assetGroups)
+            throws Exception {
+        try (var batch = new ElasticBatch(elasticSearch)) {
+            for (String assetGroup : assetGroups) {
+                try {
+                    var docList = assetCountsHelper.fetchTaggingOverviewForAssetGroup(assetGroup);
+                    docList.forEach(doc -> {
+                        doc.put("ag", assetGroup);
+                        doc.put("date", currentDate);
+                        var id = StringHelper.generateSignature(
+                                STR."\{assetGroup}\{currentDate}tagging_overview");
+                        doc.put("@id", id);
+                        doc.put(AssetDocumentFields.DOC_TYPE, "tagging_overview");
+                    });
+                    batch.add(docList.stream().map(
+                            d -> BatchItem.documentEntry(ASSET_GROUP_STATS_INDEX, d.get("@id").toString(),
+                                    d)).toList());
+                } catch (Exception e) {
+                    LOGGER.warn("Failed to fetch tagging overview for asset group: {}", assetGroup, e);
+                }
+            }
+        }
+    }
+
 
     private Map<String, Map<String, Map<String, Object>>> getCurrentCounts(String date)
         throws IOException {
