@@ -219,7 +219,7 @@ public class AssetDocumentHelper {
         if ("gcp".equalsIgnoreCase(dataSource)) {
             addLegacyTags(data, dto);
         }
-        else if ("azure".equalsIgnoreCase(dataSource)) {
+        else if ("azure".equalsIgnoreCase(dataSource)|| "aws".equalsIgnoreCase(dataSource)) {
             addFlattenedTags(data, dto);
         }
 
@@ -353,7 +353,7 @@ public class AssetDocumentHelper {
         if ("gcp".equalsIgnoreCase(legacySource)){
             addLegacyTags(data, dto);
         }
-        else if ("azure".equalsIgnoreCase(legacySource)) {
+        else if ("azure".equalsIgnoreCase(legacySource) || "aws".equalsIgnoreCase(legacySource)) {
             addFlattenedTags(data, dto);
         }
 
