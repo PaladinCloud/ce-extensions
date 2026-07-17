@@ -1,0 +1,21 @@
+{
+  "top_level_fields": {
+    "_cloudType": "gcp",
+    "region": "global",
+    "id": "$.id",
+    "projectId": "$.project_id",
+    "tags": "$.tags",
+    "userId": "$.user_id",
+    "roles": "$.roles",
+    "discoverydate": "@getDiscoveryDate()",
+    "rawData": "@jsonToString($)",
+    "sourceDisplayName": "GCP",
+    "targetTypeDisplayName" : "IAM User"
+  },
+  "metadata": {
+    "plugin_name": "gcp",
+    "asset_type": "iamusers",
+    "file_name": "gcp-iamusers.data",
+    "delta_engine_enabled": "true"
+  }
+}

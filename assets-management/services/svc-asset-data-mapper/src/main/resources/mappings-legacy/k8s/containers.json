@@ -1,0 +1,46 @@
+{
+  "top_level_fields": {
+    "discoverydate": "@getDiscoveryDate()",
+    "createdDate": "$.metadata.creationTimestamp",
+    "name": "$.metadata.name",
+    "id": "@getLastIndexOf(@getValueFromSpecificIndex($.status.containerStatuses[*].containerID,0),containerd://)",
+    "imageId": "$.status.containerStatuses[0].imageID",
+    "digest": "@extractDigest(@getValueFromSpecificIndex($.status.containerStatuses[*].imageID,0))",
+    "source": "$.source",
+    "rawData": "@jsonToString($)"
+  },
+  "conditional_top_level_fields": [
+    {
+      "field": "source",
+      "pattern": "^gcp",
+      "fields": {
+        "source": "gcp",
+        "sourceDisplayName": "GCP",
+        "_entityType": "gkecontainer",
+        "_entityTypeDisplayName": "GKE Container",
+        "projectId": "$.project_id",
+        "region": "$.region",
+        "_isActive": "true"
+      }
+    }
+  ],
+  "metadata": {
+    "plugin_name": "k8s",
+    "asset_type": "gkecontainers",
+    "delta_engine_enabled": "true",
+    "filtered_outputs": [
+      {
+        "file_name": "gcp-gkecontainer.data",
+        "auto_created": false,
+        "source": "gcp",
+        "filters": [
+          {
+            "field": "source",
+            "pattern": "^gcp"
+          }
+        ],
+        "external_datasource": "gcp"
+      }
+    ]
+  }
+}

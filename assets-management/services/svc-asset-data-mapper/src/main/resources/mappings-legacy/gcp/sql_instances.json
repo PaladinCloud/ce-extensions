@@ -1,0 +1,68 @@
+{
+  "top_level_fields": {
+    "_cloudType": "gcp",
+    "region": "$.region",
+    "id": "$.connection_name",
+    "projectId": "$.project_id",
+    "tags": "$.userLabels",
+    "name": "$.name",
+    "authorizedNetwork": "$.settings.ipConfiguration.authorizedNetworks[*]",
+    "databaseFlags": "$.settings.databaseFlags[*]",
+    "maxDiskSize": "$.max_disk_size",
+    "databaseVersion": "$.database_version",
+    "serviceAccountEmail": "$.service_account_email_address",
+    "masterInstanceName": "$.master_instance_name",
+    "databaseInstalledVersion": "$.database_installed_version",
+    "createdTime": "$.create_time",
+    "eTag": "$.etag",
+    "state": "$.state",
+    "settings": "$.settings",
+    "kind": "$.kind",
+    "instanceType": "$.instance_type",
+    "ipAddress": "$.ip_addresses",
+    "kmsKeyName": "$.disk_encryption_configuration.kmsKeyName",
+    "kmsKeyVersion": "$.disk_encryption_configuration.kmsKeyVersionName",
+    "selfLink": "$.self_link",
+    "backupEnabled": "$.settings.backupConfiguration.enabled",
+    "currentDiskSize": "$.currentDiskSize",
+    "serverCaCert": "$.server_ca_cert",
+    "discoverydate": "@getDiscoveryDate()",
+    "rawData": "@jsonToString($)",
+    "sourceDisplayName": "GCP"
+  },
+  "metadata": {
+    "plugin_name": "gcp",
+    "asset_type": "cloudsql",
+    "file_name": "gcp-cloudsql.data",
+    "delta_engine_enabled": "true",
+    "filtered_outputs": [
+      {
+        "asset_type": "mysql",
+        "targetTypeDisplayName" : "MySQL Server",
+        "file_name": "gcp-cloudsql_mysqlserver.data",
+        "filters": [{
+          "field":"databaseVersion",
+          "pattern": "^MYSQL"
+        }]
+      },
+      {
+        "asset_type": "sqlserver",
+        "targetTypeDisplayName" : "SQL Server",
+        "file_name": "gcp-cloudsql_sqlserver.data",
+        "filters": [{
+          "field":"databaseVersion",
+          "pattern": "^SQLSERVER"
+        }]
+      },
+      {
+        "asset_type": "postgresql",
+        "targetTypeDisplayName" : "PostgreSQL",
+        "file_name": "gcp-cloudsql_postgres.data",
+        "filters": [{
+          "field":"databaseVersion",
+          "pattern": "^POSTGRES"
+        }]
+      }
+    ]
+  }
+}

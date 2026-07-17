@@ -2,7 +2,7 @@
 # Version of the services
 VERSION := 1.0-SNAPSHOT
 # Names of the services
-SERVICES := svc-asset-delta-engine svc-asset-state
+SERVICES := svc-asset-delta-engine svc-asset-state svc-asset-data-mapper
 # Directory for distribution artifacts
 DIST_DIR := dist
 

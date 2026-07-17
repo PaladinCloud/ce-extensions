@@ -1,0 +1,8 @@
+{
+  "metadata": {
+    "plugin_name": "rapid7",
+    "asset_type": "rules",
+    "is_rules_data": true,
+    "rule_key": "id"
+  }
+}

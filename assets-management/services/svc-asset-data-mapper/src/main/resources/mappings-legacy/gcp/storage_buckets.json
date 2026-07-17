@@ -1,0 +1,22 @@
+{
+  "top_level_fields": {
+    "_cloudType": "gcp",
+    "region": "$.location",
+    "id": "$.name",
+    "projectId": "$.project_id",
+    "tags": "$.labels",
+    "users": "$.acl.Entity",
+    "uniformBucketLevelAccess": "$.uniform_bucket_level_access.Enabled",
+    "discoverydate": "@getDiscoveryDate()",
+    "defaultKmsKeyName" :"$.encryption.kmsKeyName",
+    "rawData": "@jsonToString($)",
+    "sourceDisplayName": "GCP",
+    "targetTypeDisplayName" : "Cloud Storage"
+  },
+  "metadata": {
+    "plugin_name": "gcp",
+    "asset_type": "cloudstorage",
+    "file_name": "gcp-cloudstorage.data",
+    "delta_engine_enabled": "true"
+  }
+}

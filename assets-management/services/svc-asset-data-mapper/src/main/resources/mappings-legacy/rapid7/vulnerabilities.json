@@ -1,0 +1,20 @@
+{
+  "top_level_fields": {
+    "id": "$.id",
+    "instanceId": "@getRapid7AssetId($.unique_identifiers)",
+    "instanceName": "$.host_name",
+    "source": "@getRapid7AssetSource($.unique_identifiers)",
+    "critical": "@getRapid7Cves($.same,severe)",
+    "high": "@getRapid7Cves($.same,critical)",
+    "medium": "@getRapid7Cves($.same,moderate)",
+    "low": "@emptyArray()",
+    "lastAssessedForVulnerabilities": "$.last_assessed_for_vulnerabilities",
+    "lastScanEnd": "$.last_scan_end",
+    "lastScanStart": "$.last_scan_start"
+  },
+  "metadata": {
+    "plugin_name": "rapid7",
+    "asset_type": "vulnerabilities",
+    "file_name": "rapid7-vulnerabilities.data"
+  }
+}

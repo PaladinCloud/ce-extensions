@@ -1,0 +1,6 @@
+{
+  "common_fields": {
+    "plugin_name": "k8s"
+  },
+  "target_type_common_fields" : [ ]
+}

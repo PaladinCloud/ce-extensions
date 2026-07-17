@@ -1,0 +1,30 @@
+{
+  "top_level_fields": {
+    "_cloudType": "gcp",
+    "region": "@findValueAtIndex($.name,/,3)",
+    "id": "$.name",
+    "projectId": "$.project_id",
+    "tags": "$.labels",
+    "keyRingName": "$.key_ring_name",
+    "name": "$.name",
+    "cryptoBackend": "$.crypto_key_backend",
+    "purpose": "$.purpose",
+    "importOnly": "$.import_only",
+    "labelsCount": "$.labels_count",
+    "labels": "$.labels",
+    "bindings": "$.bindings",
+    "rotationPeriod": "$.rotation_period",
+    "discoverydate": "@getDiscoveryDate()",
+    "rawData": "@jsonToString($)",
+    "sourceDisplayName": "GCP",
+    "targetTypeDisplayName" : "KMS Key"
+  },
+  "replacement_fields": {
+  },
+  "metadata": {
+    "plugin_name": "gcp",
+    "asset_type": "kmskey",
+    "file_name": "gcp-kmskey.data",
+    "delta_engine_enabled": "true"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "top_level_fields": {
+    "_cloudType": "redhat",
+    "region": "N/A",
+    "id": "$.id",
+    "discoverydate": "$._cq_sync_time",
+    "name": "$.name",
+    "cluster_id": "$.cluster_id",
+    "cluster_name": "$.cluster_name",
+    "created": "$.created",
+    "priority": "$.priority",
+    "accountid": "@getAccountId($._cq_source_name,redhat-)",
+    "tags": "$.labels",
+    "components": "$.components",
+    "internal_ip_addresses": "$.internal_ip_addresses",
+    "os_image": "$.os_image",
+    "container_runtime": "$.container_runtime",
+    "container_runtime_version": "$.container_runtime_version",
+    "accountname": "N/A"
+  },
+  "replace": {
+
+  },
+  "metadata": {
+    "plugin_name": "redhat",
+    "asset_type": "node",
+    "file_name": "redhat-node.data"
+  }
+}

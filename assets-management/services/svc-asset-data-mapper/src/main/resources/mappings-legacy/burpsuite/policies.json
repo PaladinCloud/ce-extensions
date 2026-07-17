@@ -1,0 +1,23 @@
+{
+  "top_level_fields": {
+    "policyId":"$.index_dec",
+    "policyUUID":"$.index_dec",
+    "policyName":"$.name",
+    "policyDisplayName":"$.name",
+    "policyDesc":"$.description",
+    "severity":"@convertSeverityForPlugin(burpsuite,$.severity)",
+    "target":"site",
+    "assetgroup":"burpsuite",
+    "category":"security",
+    "status":"ENABLED",
+    "resolutionUrl": "$.resolution_url"
+  },
+  "replace": {
+
+  },
+  "metadata": {
+    "plugin_name": "burpsuite",
+    "asset_type": "policies",
+    "file_name": "burpsuite-policy.data"
+  }
+}

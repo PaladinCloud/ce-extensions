@@ -1,0 +1,24 @@
+{
+  "top_level_fields": {
+    "_cloudType": "gcp",
+    "region": "global",
+    "id": "@findValueByReverseIndex($.name,/,0)",
+    "projectId": "$.project_id",
+    "tags": "$.labels",
+    "name": "$.name",
+    "displayName": "$.display_name",
+    "createdTime": "$.create_time",
+    "restrictions": "@createRestrictionsForApiKeys($.restrictions.ClientRestrictions)",
+    "apiTargetList": "$.restrictions.api_targets[*].service",
+    "discoverydate": "@getDiscoveryDate()",
+    "rawData": "@jsonToString($)",
+    "sourceDisplayName": "GCP",
+    "targetTypeDisplayName" : "API Key"
+  },
+  "metadata": {
+    "plugin_name": "gcp",
+    "asset_type": "apikeys",
+    "file_name": "gcp-apikeys.data",
+    "delta_engine_enabled": "true"
+  }
+}

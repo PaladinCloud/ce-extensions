@@ -1,0 +1,37 @@
+{
+  "top_level_fields": {
+    "_cloudType": "gcp",
+    "region": "$.region",
+    "id": "$.id",
+    "name": "$.name",
+    "projectId": "$.project_id",
+    "tags": "$.labels",
+    "enablePrivateNodes": "$.enable_private_nodes",
+    "masterAuthorizedNetworksConfig": "$.master_authorized_networks_config",
+    "cloudLogging": "$.logging_service",
+    "password": "$.password",
+    "username": "$.username",
+    "disableKubernetesDashBoard": "$.diasable_kubernetes_dashboard",
+    "clientKey": "$.client_key",
+    "bootDiskKmsKey": "$.boot_disk_kms_key",
+    "enableKubernetesAlpha": "$.enable_kubernetes_alpha",
+    "nodePools": "$.node_pools",
+    "intraNodeVisibility": "$.intra_node_visibility",
+    "ipalias": "$.use_ip_aliases",
+    "keyName": "$.key_name",
+    "cloudMonitoring": "$.msonitoring_service",
+    "version": "$.version",
+    "legacyAuthorization": "$.legacy_authorization",
+    "enablePrivateEndPoints": "$.enable_private_endpoints",
+    "discoverydate": "@getDiscoveryDate()",
+    "rawData": "@jsonToString($)",
+    "sourceDisplayName": "GCP",
+    "targetTypeDisplayName" : "GKE"
+  },
+  "metadata": {
+    "plugin_name": "gcp",
+    "asset_type": "gkecluster",
+    "file_name": "gcp-gke.data",
+    "delta_engine_enabled": "true"
+  }
+}

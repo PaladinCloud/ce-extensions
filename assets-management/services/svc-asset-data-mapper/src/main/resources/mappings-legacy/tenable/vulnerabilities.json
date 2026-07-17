@@ -1,0 +1,64 @@
+{
+  "top_level_fields": {
+    "id": "$.plugin.id",
+    "hostName": "$.asset.hostname",
+    "cve": "$.plugin.cve",
+    "title": "$.plugin.name",
+    "severity": "$.severity",
+    "first_found": "$.first_found",
+    "last_found": "$.last_found",
+    "source": "$.source",
+    "device_type": "$.asset.device_type",
+    "asset_uuid": "$.asset.uuid"
+  },
+  "conditional_top_level_fields": [
+    {
+      "field": "device_type",
+      "pattern": "^aws-ec2-instance",
+      "fields": {
+        "targetType": "ec2",
+        "instanceId": "#[assets.[%s].aws_ec2_instance_id;$.asset.uuid]",
+        "cloudType": "aws",
+        "accountid": "#[assets.[%s].aws_owner_id;$.asset.uuid]",
+        "region": "#[assets.[%s].aws_region;$.asset.uuid]"
+      }
+    },
+    {
+      "field": "device_type",
+      "pattern": "^gcp-instance",
+      "fields": {
+        "targetType": "vminstance",
+        "instanceId": "#[assets.[%s].gcp_instance_id;$.asset.uuid]",
+        "cloudType": "gcp",
+        "accountid": "#[assets.[%s].gcp_project_id;$.asset.uuid]",
+        "region": "#[assets.[%s].gcp_zone;$.asset.uuid]"
+      }
+    },
+    {
+      "field": "device_type",
+      "pattern": "^azure-instance",
+      "fields": {
+        "targetType": "virtualmachine",
+        "instanceId": "#[assets.[%s].azure_resource_id;$.asset.uuid]",
+        "cloudType": "azure",
+        "azure_vm_id": "#[assets.[%s].azure_vm_id;$.asset.uuid]"
+
+      }
+    }
+  ],
+  "replacement_fields": {},
+  "metadata": {
+    "plugin_name": "tenable",
+    "asset_type": "vulnerabilities",
+    "post_process_fn":"groupTenableVulnerabilities",
+    "file_name": "tenable-vulnerabilities.data",
+    "relation_mapping": [
+      {
+        "assetType": "assets",
+        "primaryKey": "id",
+        "foreignKey": "$.asset.uuid",
+        "isMandatory": true
+      }
+    ]
+  }
+}

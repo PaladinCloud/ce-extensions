@@ -1,0 +1,24 @@
+{
+  "top_level_fields": {
+    "_cloudType": "burpsuite",
+    "region": "N/A",
+    "id": "$.id",
+    "discoverydate": "$._cq_sync_time",
+    "accountid": "@getAccountId($._cq_source_name,burpsuite-)",
+    "name": "$.name",
+    "scan_configuration_ids": "$.scan_configurations[*].id",
+    "in_scope_url_prefixes": "$.scope_v2.in_scope_url_prefixes[*]",
+    "out_of_scope_url_prefixes": "$.scope_v2.out_of_scope_url_prefixes[*]",
+    "protocol_options": "$.scope_v2.protocol_options[*]",
+    "tags": "N/A",
+    "accountname": "N/A"
+  },
+  "replace": {
+
+  },
+  "metadata": {
+    "plugin_name": "burpsuite",
+    "asset_type": "site",
+    "file_name": "burpsuite-site.data"
+  }
+}

@@ -1,0 +1,81 @@
+{
+  "top_level_fields": {
+    "_cloudType": "@getCloudTypeFromNameOrDefault($.service_provider,crowdstrike)",
+    "externalId": "$.device_id",
+    "externalAccountId": "$.cid",
+    "_resourcename": "$.hostname",
+    "privateIpAddress": "$.local_ip",
+    "publicIpAddress": "$.external_ip",
+    "macAddress": "$.mac_address",
+    "osBuild": "$.os_build",
+    "osVersion": "$.os_version",
+    "osType": "$.platform_name",
+    "_entitytype": "@toLowerCase($.product_type_desc)",
+    "provisionStatus": "$.provision_status",
+    "reducedFunctionalityMode": "$.reduced_functionality_mode",
+    "serialNumber": "$.serial_number",
+    "status": "$.status",
+    "systemManufacturer": "$.system_manufacturer",
+    "systemProductName": "$.system_product_name",
+    "discoverydate": "$._cq_sync_time",
+    "firstSeenTime":"$.first_seen",
+    "lastSeenTime":"$.last_seen",
+    "region": "$.region"
+  },
+  "conditional_top_level_fields": [
+    {
+      "field": "_entitytype",
+      "pattern": "^server",
+      "fields": {
+        "accountid": "$.service_provider_account_id",
+        "_resourceid": "$.instance_id"
+      }
+    },
+    {
+      "field": "_entitytype",
+      "pattern": "^workstation",
+      "fields": {
+        "accountid": "$.cid",
+        "_resourceid": "$.device_id"
+      }
+    },
+    {
+      "field": "_entitytype",
+      "pattern": "^mobile",
+      "fields": {
+        "accountid": "$.cid",
+        "_resourceid": "$.device_id"
+      }
+    }
+  ],
+  "replacement_fields": {},
+  "metadata": {
+    "plugin_name": "crowdstrike",
+    "filtered_outputs": [
+      {
+        "asset_type": "workstation",
+        "file_name": "crowdstrike-workstation.data",
+        "filters": [{
+          "field":"_entitytype",
+          "pattern": "^workstation"
+        }]
+      },
+      {
+        "asset_type": "server",
+        "file_name": "crowdstrike-server.data",
+        "filters": [{
+          "field":"_entitytype",
+          "pattern": "^server"
+        }]
+      },
+      {
+        "asset_type": "mobile",
+        "file_name": "crowdstrike-mobile.data",
+        "filters": [{
+          "field":"_entitytype",
+          "pattern": "^mobile"
+        }]
+      }
+    ]
+  }
+}

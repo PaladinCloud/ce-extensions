@@ -1,0 +1,44 @@
+{
+  "top_level_fields": {
+    "_cloudType": "gcp",
+    "region": "$.region",
+    "id": "@getAsString($.id)",
+    "projectId": "$.project_id",
+    "tags": "$.labels",
+    "name": "$.name",
+    "description": "$.description",
+    "disks": "$.disks",
+    "machineType": "$.machine_type",
+    "status": "$.status",
+    "_isActive": "@isStateActive($.status)",
+    "networkInterfaces": "$.network_interfaces",
+    "items": "$.item_interfaces",
+    "serviceAccounts": "$.service_accounts",
+    "confidentialComputing": "$.confidential_computing",
+    "autoRestart": "$.auto_restart",
+    "canIPForward": "$.can_ip_forward",
+    "onHostMaintainence": "$.on_host_maintainence",
+    "shieldedInstanceConfig": "$.shielded_instance_config",
+    "projectNumber": "$.project_number",
+    "scopesList": "$.scopes",
+    "emailList": "$.emails",
+    "discoverydate": "@getDiscoveryDate()",
+    "rawData": "@jsonToString($)",
+    "sourceDisplayName": "GCP",
+    "targetTypeDisplayName" : "VM"
+  },
+  "replacement_fields": {
+    "sizeInGB": "disk_size_gb",
+    "name": "device_name",
+    "accessConfigs": "accessConfig",
+    "autoDelete": "auto_delete",
+    "natIP": "natIp",
+    "hasKmsKeyName": "hasKMSKeyName"
+  },
+  "metadata": {
+    "plugin_name": "gcp",
+    "asset_type": "vminstance",
+    "file_name": "gcp-vminstance.data",
+    "delta_engine_enabled": "true"
+  }
+}
