@@ -203,5 +203,6 @@ jobs:
               environment: 'dev',                // Adjust if dynamic
               aws_region: 'us-east-1',           // Adjust if dynamic
               release_version: 'vlatest'        // Adjust if dynamic
+              stack_names: 'svc-asset-delta-engine,svc-asset-details'
             }
           });
