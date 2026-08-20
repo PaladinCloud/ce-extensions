@@ -14,7 +14,8 @@ import com.paladincloud.common.config.ConfigService;
 public class LambdaInvoker {
 
     private static final Logger LOGGER = LogManager.getLogger(LambdaInvoker.class);
-    private static final String LAMBDA_NAME_SUFFIX = "-svc-tagging-compliance-summary-lambda";
+    private static final String TAGGING_SUMMARY_LAMBDA_SUFFIX = "-svc-tagging-compliance-summary-lambda";
+    private static final String TAGGING_OVERVIEW_LAMBDA_SUFFIX = "-svc-tagging-compliance-overview-lambda";
     private static final String INTERNAL_STACK_NAME = "internal_stack_name";
 
     private static String cachedInternalStackName;
@@ -61,9 +62,17 @@ public class LambdaInvoker {
     }
 
     public static String invokeTaggingSummaryLambda(String ag) throws Exception {
+        return invokeTaggingLambda(ag, TAGGING_SUMMARY_LAMBDA_SUFFIX, "api/v2/compliance/tagging-summary");
+    }
+
+    public static String invokeTaggingOverviewLambda(String ag) throws Exception {
+        return invokeTaggingLambda(ag, TAGGING_OVERVIEW_LAMBDA_SUFFIX, "api/v2/compliance/tagging-overview");
+    }
+
+    private static String invokeTaggingLambda(String ag, String lambdaSuffix, String rawPath) throws Exception {
         var tenantId = getTenantId();
         var internalStackName = getInternalStackName();
-        var lambdaName = internalStackName + LAMBDA_NAME_SUFFIX;
+        var lambdaName = internalStackName + lambdaSuffix;
         var region = getRegion();
         var assumeRoleArn = getAssumeRoleArn();
         var mapper = JsonHelper.objectMapper;
@@ -91,7 +100,7 @@ public class LambdaInvoker {
 
         var payload = mapper.createObjectNode();
         payload.set("requestContext", requestContext);
-        payload.put("rawPath", "api/v2/compliance/tagging-summary");
+        payload.put("rawPath", rawPath);
         payload.set("queryStringParameters", mapper.createObjectNode());
         payload.set("headers", headers);
         payload.put("body", body.toString());
@@ -136,7 +145,7 @@ public class LambdaInvoker {
             } catch (JobException e) {
                 throw e;
             } catch (Exception e) {
-                throw new JobException("Error invoking tagging summary Lambda", e);
+                throw new JobException("Error invoking tagging Lambda", e);
             }
         });
     }
