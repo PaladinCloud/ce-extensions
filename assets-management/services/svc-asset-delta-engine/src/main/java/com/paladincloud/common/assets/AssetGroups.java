@@ -9,13 +9,11 @@ import com.paladincloud.common.search.ElasticAliasResponse;
 import com.paladincloud.common.search.ElasticSearchHelper;
 import com.paladincloud.common.search.ElasticSearchHelper.HttpMethod;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
+
+import com.paladincloud.common.util.JsonHelper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -115,7 +113,6 @@ public class AssetGroups {
 
         var updatedAssetGroups = new ArrayList<String>();
         var actions = new ArrayList<String>();
-        var updatedAssetGroupsCount = 0;
         for (var assetGroup : assetGroupsList) {
             var alias = assetGroup.get("groupName");
             var groupType = assetGroup.get("groupType");
@@ -137,23 +134,18 @@ public class AssetGroups {
                 }
                 actions.add(
                     generateStakeholdersAssetGroupAliasQuery(alias, assetGroupTags, dataSource));
-                updatedAssetGroupsCount += 1;
                 updatedAssetGroups.add(alias);
 
             } else if (alias.equalsIgnoreCase(ASSET_GROUP_FOR_ALL_SOURCES)
                 || alias.equalsIgnoreCase(dataSource)) {
                 actions.add(String.format(UPDATE_ALIAS_TEMPLATE, "", STR."\{dataSource}_*", alias));
-                updatedAssetGroupsCount += 1;
                 updatedAssetGroups.add(alias);
             } else if (groupType.equalsIgnoreCase("user") && existingAliasQuery != null
                 && !existingAliasQuery.equalsIgnoreCase("null") && !alias.equalsIgnoreCase(
                 ASSET_GROUP_FOR_ALL_SOURCES) && !alias.equalsIgnoreCase(dataSource) || (
                 existingAliasQuery != null && existingAliasQuery.contains("_*"))) {
-                var filterContents = getFilterFromExistingAliasQuery(existingAliasQuery);
-                var filter = filterContents.isEmpty() ? "" : STR."\"filter\": \{filterContents},";
-                actions.add(
-                    String.format(UPDATE_ALIAS_TEMPLATE, filter, STR."\{dataSource}_*", alias));
-                updatedAssetGroupsCount += 1;
+                actions.addAll(
+                        updateFilterFromExistingAliasQuery(existingAliasQuery, dataSource, alias));
                 updatedAssetGroups.add(alias);
             } else {
                 throw new JobException(
@@ -167,6 +159,7 @@ public class AssetGroups {
         }
 
         var payload = STR."{ \"actions\": \{combinedActions} }";
+
         try {
             var response = elasticSearch.invokeCheckAndConvert(ElasticAliasResponse.class,
                 HttpMethod.POST, "_aliases", payload);
@@ -176,34 +169,53 @@ public class AssetGroups {
         } catch (IOException e) {
             throw new JobException(STR."Error updating alias for \{dataSource}", e);
         }
+
         LOGGER.info("Finished updating impacted aliases for indices={} dataSource={}. "
-                + "Updated {} asset groups: {}", aliases, dataSource, updatedAssetGroupsCount,
+                + "Updated {} asset groups: {}", aliases, dataSource, updatedAssetGroups.size(),
             updatedAssetGroups);
     }
 
-    private String getFilterFromExistingAliasQuery(String existingAliasQuery) {
+    /**
+     * Return the full set of filters for the alias. If the dataSource is missing, it'll be added
+     */
+    private List<String> updateFilterFromExistingAliasQuery(String existingAliasQuery, String dataSource, String alias) {
+        // Retain all actions that are unrelated to the data source
         try {
+            var actions = new ArrayList<String>();
             JsonNode rootNode = objectMapper.readTree(existingAliasQuery);
             if (rootNode != null && rootNode.has("actions")) {
                 rootNode = rootNode.get("actions");
                 for (JsonNode actionNode : rootNode) {
+                    var addedFilter = false;
                     JsonNode addNode = actionNode.path("add");
-                    if (addNode.get("index").isMissingNode() || !addNode.get("index").toString()
-                        .contains("_*")) {
-                        continue;
+                    JsonNode indexNode = addNode.path("index");
+                    // addNode fields: index, alias, filter
+                    if (!indexNode.isMissingNode() && indexNode.toString().contains("_*")) {
+                        // Only update the filters for the current data source, retaining the others
+                        if (indexNode.textValue().startsWith(dataSource)) {
+                            JsonNode filterNode = addNode.get("filter");
+                            if (filterNode != null && !filterNode.isMissingNode()) {
+                                var filterString = filterNode.toString();
+                                if (!filterString.isEmpty()) {
+                                    actions.add(String.format(UPDATE_ALIAS_TEMPLATE, STR."\"filter\":\{filterString},", STR."\{dataSource}_*", alias));
+                                }
+                                addedFilter = true;
+                            }
+                        }
                     }
-                    JsonNode filterNode = addNode.get("filter");
-                    if (filterNode != null && !filterNode.isMissingNode()) {
-                        return filterNode.toString();
+
+                    // Retain the existing filter
+                    if (!addedFilter) {
+                        actions.add(String.format("{\"actions\": [{\"add\":%s}]}", addNode));
                     }
                 }
             }
+            return actions;
         } catch (Exception e) {
             throw new JobException(
                 STR."Error while extracting filter from existingAliasQuery : \{existingAliasQuery}",
                 e);
         }
-        return "";
     }
 
     private List<Map<String, String>> getCachedAssetGroupTagsOrFetch(String groupId) {
