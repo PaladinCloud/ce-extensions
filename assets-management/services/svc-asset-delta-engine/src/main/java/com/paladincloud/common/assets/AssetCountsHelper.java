@@ -168,6 +168,19 @@ public class AssetCountsHelper {
         return List.of(summaryInfo);
     }
 
+    public List<Map<String, Object>> fetchTaggingOverviewForAssetGroup(String assetGroup) throws Exception {
+        var responseJson = LambdaInvoker.invokeTaggingOverviewLambda(assetGroup);
+        var response = JsonHelper.fromString(TaggingOverviewResponse.class, responseJson);
+        if (response.data() == null) {
+            return List.of();
+        }
+
+        Map<String, Object> overviewInfo = JsonHelper.objectMapper.convertValue(
+                response.data(), new TypeReference<Map<String, Object>>() {});
+        return List.of(overviewInfo);
+    }
+
+
     public int fetchAccountAssetCount(String platform, String accountId) throws Exception {
         var url = buildPaladinApiUrl(ASSET_SERVICE_BASE_PATH,
             STR."/count?ag=\{encodeUrlParameter(platform)}&accountId=\{encodeUrlParameter(accountId)}");
