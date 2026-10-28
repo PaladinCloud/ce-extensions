@@ -219,7 +219,7 @@ public class AssetDocumentHelper {
         if ("gcp".equalsIgnoreCase(dataSource)) {
             addLegacyTags(data, dto);
         }
-        else if ("azure".equalsIgnoreCase(dataSource)|| "aws".equalsIgnoreCase(dataSource)) {
+        else if ("azure".equalsIgnoreCase(dataSource)|| "aws".equalsIgnoreCase(dataSource)|| "oci".equalsIgnoreCase(dataSource)) {
             addFlattenedTags(data, dto);
         }
 
