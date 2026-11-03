@@ -71,28 +71,28 @@ public class AssetDTO {
     private Boolean isActive;
     /**
      * Managed by the asset-shipper; this is the earliest discovery date there are records for. The
-     * format is "yyyy-MM-dd HH:mm:00Z"
+     * format is "yyyy-MM-dd HH:mm:ssZ"
      */
     @Setter
     @Getter
-    @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd HH:mm:00Z")
+    @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ssZ")
     @JsonProperty(AssetDocumentFields.FIRST_DISCOVERY_DATE)
     private ZonedDateTime firstDiscoveryDate;
     /**
      * The most recent date the primary source discovered this asset; this is set in the mapper. The
-     * format is "yyyy-MM-dd HH:mm:00Z"
+     * format is "yyyy-MM-dd HH:mm:ssZ"
      */
     @Setter
     @Getter
-    @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd HH:mm:00Z")
+    @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ssZ")
     @JsonProperty(AssetDocumentFields.LAST_SCAN_DATE)
     private ZonedDateTime lastScanDate;
     /**
-     * The date the item was loaded/saved into the repository: The format is "yyyy-MM-dd HH:mm:00Z"
+     * The date the item was loaded/saved into the repository: The format is "yyyy-MM-dd HH:mm:ssZ"
      */
     @Setter
     @Getter
-    @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd HH:mm:00Z")
+    @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ssZ")
     @JsonProperty(AssetDocumentFields.LOAD_DATE)
     private ZonedDateTime loadDate;
     // ---------------------------------------------------------------------------------------------
@@ -129,17 +129,17 @@ public class AssetDTO {
     private Boolean legacyIsLatest;
     @Setter
     @Getter
-    @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd HH:mm:00Z")
+    @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ssZ")
     @JsonProperty(AssetDocumentFields.LEGACY_LAST_SCAN_DATE)
     private ZonedDateTime legacyLastScanDate;
     @Setter
     @Getter
-    @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd HH:mm:00Z")
+    @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ssZ")
     @JsonProperty(AssetDocumentFields.LEGACY_LOAD_DATE)
     private ZonedDateTime legacyLoadDate;
     @Setter
     @Getter
-    @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd HH:mm:00Z")
+    @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ssZ")
     @JsonProperty(AssetDocumentFields.LEGACY_FIRST_DISCOVERY_DATE)
     private ZonedDateTime legacyFirstDiscoveryDate;
     @Setter
@@ -309,11 +309,11 @@ public class AssetDTO {
         @JsonProperty("data")
         private String data;
 
-        @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:00'Z'", timezone = "UTC")
+        @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'", timezone = "UTC")
         @JsonProperty("firstScanDate")
         private ZonedDateTime firstScanDate;
 
-        @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:00'Z'", timezone = "UTC")
+        @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'", timezone = "UTC")
         @JsonProperty("lastScanDate")
         private ZonedDateTime lastScanDate;
 

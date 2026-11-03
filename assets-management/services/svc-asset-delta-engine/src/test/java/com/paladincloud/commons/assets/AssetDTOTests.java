@@ -13,7 +13,6 @@ import com.paladincloud.common.assets.AssetDTO.OpinionItem;
 import com.paladincloud.common.assets.AssetState;
 import com.paladincloud.common.search.ElasticQueryAssetResponse;
 import com.paladincloud.common.util.JsonHelper;
-import com.paladincloud.common.util.TimeHelper;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -28,7 +27,7 @@ public class AssetDTOTests {
      */
     @Test
     void specialTypesUsedForSomeFields() throws JsonProcessingException {
-        var dateTime = ZonedDateTime.now();
+        var dateTime = ZonedDateTime.parse("2026-10-27T17:03:07Z");
         var original = createPrimaryAsset(dateTime);
         var asJson = JsonHelper.objectMapper.writeValueAsString(original);
 
@@ -41,19 +40,47 @@ public class AssetDTOTests {
         assertEquals("true", asMap.get(AssetDocumentFields.LEGACY_IS_ENTITY));
 
         // These are serialized as strings and exposed as ZonedDateTime
-        assertEquals(TimeHelper.formatZeroSeconds(dateTime),
+        assertEquals("2026-10-27 17:03:07+0000",
             asMap.get(AssetDocumentFields.LOAD_DATE));
-        assertEquals(TimeHelper.formatZeroSeconds(dateTime),
+        assertEquals("2026-10-27 17:03:07+0000",
             asMap.get(AssetDocumentFields.FIRST_DISCOVERY_DATE));
-        assertEquals(TimeHelper.formatZeroSeconds(dateTime),
+        assertEquals("2026-10-27 17:03:07+0000",
             asMap.get(AssetDocumentFields.LAST_SCAN_DATE));
-        assertEquals(TimeHelper.formatZeroSeconds(dateTime),
+        assertEquals("2026-10-27 17:03:07+0000",
             asMap.get(AssetDocumentFields.LEGACY_LOAD_DATE));
-        assertEquals(TimeHelper.formatZeroSeconds(dateTime),
+        assertEquals("2026-10-27 17:03:07+0000",
             asMap.get(AssetDocumentFields.LEGACY_FIRST_DISCOVERY_DATE));
-        assertEquals(TimeHelper.formatZeroSeconds(dateTime),
+        assertEquals("2026-10-27 17:03:07+0000",
             asMap.get(AssetDocumentFields.LEGACY_LAST_SCAN_DATE));
         assertEquals("managed", asMap.get(AssetDocumentFields.ASSET_STATE));
+    }
+
+    @Test
+    void assetTimestampsAcceptNonzeroSecondsAndRoundTrip() throws JsonProcessingException {
+        var timestamp = "2026-10-27 17:03:07+0000";
+        var fields = Set.of(AssetDocumentFields.FIRST_DISCOVERY_DATE,
+            AssetDocumentFields.LAST_SCAN_DATE, AssetDocumentFields.LOAD_DATE,
+            AssetDocumentFields.LEGACY_FIRST_DISCOVERY_DATE,
+            AssetDocumentFields.LEGACY_LAST_SCAN_DATE, AssetDocumentFields.LEGACY_LOAD_DATE);
+        var data = new HashMap<String, Object>();
+        fields.forEach(field -> data.put(field, timestamp));
+        var dto = JsonHelper.fromString(AssetDTO.class, JsonHelper.toJson(data));
+        var roundTrip = JsonHelper.mapFromString(JsonHelper.toJson(dto));
+        fields.forEach(field -> assertEquals(timestamp, roundTrip.get(field), field));
+    }
+
+    @Test
+    void opinionTimestampsAcceptNonzeroSecondsAndRoundTrip() throws JsonProcessingException {
+        var json = """
+            {"firstScanDate":"2026-10-27T17:03:07Z","lastScanDate":"2026-10-27T17:04:59Z"}
+            """;
+        var opinion = JsonHelper.fromString(OpinionItem.class, json);
+        assertEquals(ZonedDateTime.parse("2026-10-27T17:03:07Z").toInstant(),
+            opinion.getFirstScanDate().toInstant());
+        assertEquals(ZonedDateTime.parse("2026-10-27T17:04:59Z").toInstant(),
+            opinion.getLastScanDate().toInstant());
+        assertEquals(JsonHelper.mapFromString(json),
+            JsonHelper.mapFromString(JsonHelper.toJson(opinion)));
     }
 
     // Ensure no additional fields are serialized. Specifically, 'latest' and 'entity' for opinions.

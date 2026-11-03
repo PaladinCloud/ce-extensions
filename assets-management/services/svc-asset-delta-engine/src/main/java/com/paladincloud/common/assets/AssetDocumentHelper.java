@@ -195,7 +195,7 @@ public class AssetDocumentHelper {
 
         setCommonPrimaryFields(data, dto, idValue);
 
-        dto.setPrimaryProvider(data.getOrDefault(MapperFields.RAW_DATA, "").toString());
+        dto.setPrimaryProvider(Objects.toString(data.get(MapperFields.RAW_DATA), ""));
 
         dto.setFirstDiscoveryDate(dto.getLastScanDate());
         dto.setLegacyFirstDiscoveryDate(dto.getLastScanDate());
@@ -254,7 +254,7 @@ public class AssetDocumentHelper {
                 (dto.getOpinions().getSourceAndServiceOpinion(reportingSource, reportingSourceService)))
             .orElseGet(OpinionItem::new);
         opinionItem.setData(
-            data.getOrDefault(MapperFields.RAW_DATA, "").toString());
+            Objects.toString(data.get(MapperFields.RAW_DATA), ""));
         if (StringUtils.isBlank(reportingSourceServiceDisplayName)) {
             if (warnReportingServiceDisplayName) {
                 LOGGER.warn("reportingSourceServiceDisplayName is not set");
@@ -339,7 +339,7 @@ public class AssetDocumentHelper {
     }
 
     private void updatePrimary(Map<String, Object> data, AssetDTO dto, String idValue) {
-        dto.setPrimaryProvider(data.getOrDefault(MapperFields.RAW_DATA, "").toString());
+        dto.setPrimaryProvider(Objects.toString(data.get(MapperFields.RAW_DATA), ""));
         setCommonPrimaryFields(data, dto, idValue);
 
         // The display name comes out of our database, but could potentially change with an update.
@@ -349,7 +349,7 @@ public class AssetDocumentHelper {
         }
 
         addTags(data, dto);
-        var legacySource = data.getOrDefault(AssetDocumentFields.LEGACY_SOURCE, "").toString();
+        var legacySource = Objects.toString(data.get(AssetDocumentFields.LEGACY_SOURCE), "");
         if ("gcp".equalsIgnoreCase(legacySource)){
             addLegacyTags(data, dto);
         }
@@ -419,11 +419,11 @@ public class AssetDocumentHelper {
         dto.setIsEntity(true);
         dto.setEntityType(type);
         dto.setEntityTypeDisplayName(displayName);
-        dto.setResourceName(data.getOrDefault(resourceNameField, idValue).toString());
+        dto.setResourceName(Objects.toString(data.get(resourceNameField), idValue));
         dto.setLoadDate(loadDate);
         dto.setIsLatest(true);
         dto.setIsActive(
-            Boolean.parseBoolean(data.getOrDefault(MapperFields.IS_ACTIVE, "true").toString()));
+            Boolean.parseBoolean(Objects.toString(data.get(MapperFields.IS_ACTIVE), "true")));
 
         dto.setLegacyIsEntity(true);
         dto.setLegacyEntityType(type);
@@ -545,7 +545,7 @@ public class AssetDocumentHelper {
     }
 
     private String getIdValue(Map<String, Object> data) {
-        var idValue = data.getOrDefault(idField, "").toString();
+        var idValue = Objects.toString(data.get(idField), "");
         if (idValue.isEmpty()) {
             throw new JobException(
                 STR."Mapper data is missing the designated id field: '\{idField}'");

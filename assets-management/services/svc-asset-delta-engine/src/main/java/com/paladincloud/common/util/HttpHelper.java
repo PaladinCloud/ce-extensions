@@ -65,11 +65,11 @@ public class HttpHelper {
             post.setEntity(new StringEntity(body));
             try (var httpResponse = client.execute(post)) {
                 if (httpResponse.getStatusLine().getStatusCode() == HttpStatus.SC_UNAUTHORIZED) {
-                    throw new JobException("Unauthorized");
+                    throw new JobException(STR."HTTP POST unauthorized; uri=\{uri}");
                 }
                 if (httpResponse.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
                     throw new JobException(STR."HTTP call failed: \{httpResponse.getStatusLine()
-                        .getStatusCode()} \{httpResponse.getStatusLine().getReasonPhrase()}");
+                        .getStatusCode()} \{httpResponse.getStatusLine().getReasonPhrase()}; method=POST; uri=\{uri}");
                 }
                 return EntityUtils.toString(httpResponse.getEntity());
             }
@@ -92,7 +92,7 @@ public class HttpHelper {
                         httpResponse.getStatusLine().getStatusCode(),
                         httpResponse.getStatusLine().getReasonPhrase(), uri);
                     throw new HttpResponseException(httpResponse.getStatusLine().getStatusCode(),
-                        httpResponse.getStatusLine().getReasonPhrase());
+                        STR."\{httpResponse.getStatusLine().getReasonPhrase()}; method=GET; uri=\{uri}");
                 }
                 return EntityUtils.toString(httpResponse.getEntity());
             }

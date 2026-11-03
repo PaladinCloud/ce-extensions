@@ -117,7 +117,7 @@ public class AssetDocumentHelperOpinionTests {
                             "assets": {
                                 "data": "{\\"flavor\\":\\"licorice\\"}",
                                 "firstScanDate": "2024-09-05T14:57:00Z",
-                                "lastScanDate": "2024-10-31T18:33:00Z",
+                                "lastScanDate": "2024-10-31T18:33:19Z",
                                 "serviceName": "Assets API",
                                 "deepLink": "https://fubar.com"
                             }
@@ -126,4 +126,15 @@ public class AssetDocumentHelperOpinionTests {
                 }
             """.trim();
     }
+    @Test
+    void nullRawDataUsesEmptyOpinionData() throws JsonProcessingException {
+        var data = JsonHelper.mapFromString(getOpinionMapperDocument());
+        data.put("rawData", null);
+        var helper = getHelper();
+        var dto = helper.createFrom(data);
+        assertEquals("", dto.getOpinions().getSourceAndServiceOpinion("secondary", "assets").getData());
+        helper.updateFrom(data, dto);
+        assertEquals("", dto.getOpinions().getSourceAndServiceOpinion("secondary", "assets").getData());
+    }
+
 }
