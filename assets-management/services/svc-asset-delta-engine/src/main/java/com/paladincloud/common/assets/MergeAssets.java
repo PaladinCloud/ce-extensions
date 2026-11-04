@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import lombok.Getter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -58,7 +59,7 @@ public class MergeAssets {
 
         var latestAssetsDataMap = new HashMap<String, Map<String, Object>>();
         latestAssets.forEach(latestDoc -> {
-            var idField = latestDoc.getOrDefault(assetHelper.getIdField(), "").toString();
+            var idField = Objects.toString(latestDoc.get(assetHelper.getIdField()), "");
             if (idField.isEmpty()) {
                 throw new JobException(
                     STR."Asset missing the id field '\{assetHelper.getIdField()}'");

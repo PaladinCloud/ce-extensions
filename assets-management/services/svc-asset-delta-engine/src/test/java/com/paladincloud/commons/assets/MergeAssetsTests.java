@@ -171,4 +171,15 @@ public class MergeAssetsTests {
         assertNotNull(stubAsset);
         assertEquals(AssetState.RECONCILING, stubAsset.getAssetState());
     }
+    @Test
+    void nullMapperIdReportsValidationError() {
+        var data = new HashMap<String, Object>();
+        data.put("id", null);
+        var helper = getHelper(ZonedDateTime.now(), "oci", "ociinstance", null);
+        var error = org.junit.jupiter.api.Assertions.assertThrows(
+            com.paladincloud.common.errors.JobException.class,
+            () -> MergeAssets.process(helper, Map.of(), List.of(data), null));
+        assertTrue(error.getMessage().contains("id"));
+    }
+
 }

@@ -320,4 +320,32 @@ public class AssetDocumentHelperTests {
 
         assertEquals("gcp_ec2_us-central_17", dto.getDocId());
     }
+    @Test
+    void nullOptionalMapperFieldsUseDefaultsOnCreateAndUpdate() throws JsonProcessingException {
+        var data = JsonHelper.mapFromString(getV2PrimaryMapperDocument());
+        data.put("rawData", null);
+        data.put("resource_name", null);
+        data.put("_cloudType", null);
+        data.put("_isActive", null);
+        var helper = getHelper("gcp", "resource_id", "resource_name");
+        var dto = helper.createFrom(data);
+        assertEquals("", dto.getPrimaryProvider());
+        assertEquals(data.get("resource_id").toString(), dto.getResourceName());
+        assertTrue(dto.getIsActive());
+        helper.updateFrom(data, dto);
+        assertEquals("", dto.getPrimaryProvider());
+        assertEquals(data.get("resource_id").toString(), dto.getResourceName());
+        assertTrue(dto.getIsActive());
+    }
+
+    @Test
+    void nullIdReportsValidationError() throws JsonProcessingException {
+        var data = JsonHelper.mapFromString(getV2PrimaryMapperDocument());
+        data.put("resource_id", null);
+        var error = org.junit.jupiter.api.Assertions.assertThrows(
+            com.paladincloud.common.errors.JobException.class,
+            () -> getHelper("gcp", "resource_id", "resource_name").createFrom(data));
+        assertTrue(error.getMessage().contains("resource_id"));
+    }
+
 }
